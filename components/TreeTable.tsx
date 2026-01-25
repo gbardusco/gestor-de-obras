@@ -1,0 +1,232 @@
+
+import React from 'react';
+import { WorkItem } from '../types';
+import { financial } from '../utils/math';
+import { 
+  ChevronRight, 
+  ChevronDown, 
+  Plus, 
+  Trash2, 
+  Edit3, 
+  Package, 
+  Layers, 
+  Maximize2, 
+  Minimize2,
+  FolderPlus,
+  FilePlus
+} from 'lucide-react';
+
+interface TreeTableProps {
+  data: (WorkItem & { depth: number })[];
+  expandedIds: Set<string>;
+  onToggle: (id: string) => void;
+  onExpandAll: () => void;
+  onCollapseAll: () => void;
+  onEdit: (item: WorkItem) => void;
+  onDelete: (id: string) => void;
+  onAddChild: (parentId: string, type: 'category' | 'item') => void;
+  onUpdateQuantity: (id: string, qty: number) => void;
+  onUpdatePercentage: (id: string, pct: number) => void;
+  searchQuery: string;
+}
+
+export const TreeTable: React.FC<TreeTableProps> = ({ 
+  data, 
+  expandedIds, 
+  onToggle, 
+  onExpandAll,
+  onCollapseAll,
+  onEdit, 
+  onDelete,
+  onAddChild,
+  onUpdateQuantity,
+  onUpdatePercentage,
+  searchQuery
+}) => {
+  const filteredData = searchQuery.trim() 
+    ? data.filter(item => item.name.toLowerCase().includes(searchQuery.toLowerCase()) || item.wbs.includes(searchQuery))
+    : data;
+
+  return (
+    <div className="flex flex-col gap-4">
+      {/* Tree Controls */}
+      <div className="flex items-center gap-2 no-print">
+        <button 
+          onClick={onExpandAll}
+          className="flex items-center gap-2 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-blue-600 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg transition-all"
+        >
+          <Maximize2 size={12} /> Expandir Tudo
+        </button>
+        <button 
+          onClick={onCollapseAll}
+          className="flex items-center gap-2 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-blue-600 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg transition-all"
+        >
+          <Minimize2 size={12} /> Recolher Tudo
+        </button>
+      </div>
+
+      <div className="overflow-x-auto border border-slate-200 dark:border-slate-800 rounded-3xl bg-white dark:bg-slate-900 shadow-2xl overflow-hidden">
+        <table className="min-w-[1950px] w-full border-collapse text-[11px]">
+          <thead className="bg-slate-900 dark:bg-black text-white sticky top-0 z-20">
+            <tr className="uppercase tracking-widest font-black text-[9px] opacity-80">
+              <th rowSpan={2} className="p-4 border-r border-slate-800 w-16 no-print text-center">Ações</th>
+              <th rowSpan={2} className="p-4 border-r border-slate-800 w-20 text-center">WBS</th>
+              <th rowSpan={2} className="p-4 border-r border-slate-800 w-20 text-center">Código</th>
+              <th rowSpan={2} className="p-4 border-r border-slate-800 text-left min-w-[450px]">Estrutura Analítica do Projeto (EAP)</th>
+              <th rowSpan={2} className="p-4 border-r border-slate-800 w-14 text-center">Und</th>
+              
+              <th colSpan={2} className="p-2 border-r border-slate-800 bg-slate-800/50">Unitário (R$)</th>
+              <th colSpan={2} className="p-2 border-r border-slate-800 bg-slate-800/30">Planilha Contratual</th>
+              <th colSpan={2} className="p-2 border-r border-slate-800 bg-amber-900/20">Anterior</th>
+              <th colSpan={3} className="p-2 border-r border-slate-800 bg-blue-900/20">Período Corrente</th>
+              <th colSpan={3} className="p-2 border-r border-slate-800 bg-emerald-900/20">Acumulado Total</th>
+              <th colSpan={2} className="p-2 bg-rose-900/20">Saldo</th>
+            </tr>
+            <tr className="text-[8px] bg-slate-800 dark:bg-slate-950 font-bold uppercase">
+              <th className="p-2 border-r border-slate-700 w-24">S/ BDI</th>
+              <th className="p-2 border-r border-slate-700 w-24">C/ BDI</th>
+              <th className="p-2 border-r border-slate-700 w-16 text-center">Qtd</th>
+              <th className="p-2 border-r border-slate-700 w-32 text-right">Total</th>
+              <th className="p-2 border-r border-slate-700 w-16 text-center">Qtd</th>
+              <th className="p-2 border-r border-slate-700 w-32 text-right">Total</th>
+              <th className="p-2 border-r border-slate-700 w-12 text-center">%</th>
+              <th className="p-2 border-r border-slate-700 w-16 text-center">Qtd</th>
+              <th className="p-2 border-r border-slate-700 w-32 text-right">Total</th>
+              <th className="p-2 border-r border-slate-700 w-16 text-center">Qtd</th>
+              <th className="p-2 border-r border-slate-700 w-32 text-right">Total</th>
+              <th className="p-2 border-r border-slate-700 w-12 text-center">%</th>
+              <th className="p-2 border-r border-slate-700 w-16 text-center">Qtd</th>
+              <th className="p-2 w-32 text-right">Total</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+            {filteredData.map((item) => {
+              const isCategory = item.type === 'category';
+              const depth = item.depth;
+              
+              return (
+                <tr key={item.id} className={`group relative transition-all duration-150 ${isCategory ? 'bg-slate-50/80 dark:bg-slate-800/30 font-bold' : 'hover:bg-blue-50/40 dark:hover:bg-blue-900/5'}`}>
+                  {/* Actions Column */}
+                  <td className="p-2 border-r border-slate-100 dark:border-slate-800 no-print">
+                    <div className="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button onClick={() => onEdit(item)} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg"><Edit3 size={14}/></button>
+                      <button onClick={() => onDelete(item.id)} className="p-1.5 text-rose-300 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-lg"><Trash2 size={14}/></button>
+                    </div>
+                  </td>
+
+                  {/* WBS & Code */}
+                  <td className="p-2 text-center border-r border-slate-100 dark:border-slate-800 font-mono text-[10px] text-slate-400">{item.wbs}</td>
+                  <td className="p-2 text-center border-r border-slate-100 dark:border-slate-800 text-slate-400 font-mono text-[10px]">{item.cod || '-'}</td>
+
+                  {/* Nesting & Description */}
+                  <td className="p-2 border-r border-slate-100 dark:border-slate-800 relative min-w-[400px]">
+                    <div className="flex items-center gap-1 h-full">
+                      {/* Depth Guide Lines */}
+                      {[...Array(depth)].map((_, i) => (
+                        <div key={i} className="w-5 h-full border-r border-slate-200 dark:border-slate-800 absolute top-0" style={{ left: `${i * 1.25}rem` }} />
+                      ))}
+                      
+                      <div className="flex items-center gap-2" style={{ marginLeft: `${depth * 1.25}rem` }}>
+                        {isCategory ? (
+                          <button 
+                            onClick={() => onToggle(item.id)} 
+                            className={`p-1 rounded-md transition-colors ${expandedIds.has(item.id) ? 'text-blue-600 bg-blue-100 dark:bg-blue-900/40' : 'text-slate-400 bg-slate-100 dark:bg-slate-800'}`}
+                          >
+                            {expandedIds.has(item.id) ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                          </button>
+                        ) : <div className="w-6 h-px bg-slate-200 dark:bg-slate-700" />}
+                        
+                        {isCategory ? (
+                          <Layers size={14} className="text-blue-500 flex-shrink-0" />
+                        ) : (
+                          <Package size={14} className="text-slate-300 flex-shrink-0" />
+                        )}
+                        
+                        <span className={`truncate ${isCategory ? 'text-slate-900 dark:text-slate-100 uppercase text-[10px] font-black' : 'text-slate-600 dark:text-slate-300'}`}>
+                          {item.name}
+                        </span>
+
+                        {isCategory && (
+                          <div className="ml-auto opacity-0 group-hover:opacity-100 flex items-center gap-1 transition-opacity">
+                            <button onClick={() => onAddChild(item.id, 'category')} className="p-1 text-slate-400 hover:text-blue-600" title="Nova Subcategoria"><FolderPlus size={14} /></button>
+                            <button onClick={() => onAddChild(item.id, 'item')} className="p-1 text-slate-400 hover:text-emerald-600" title="Novo Item"><FilePlus size={14} /></button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </td>
+
+                  {/* Specifications */}
+                  <td className="p-2 text-center border-r border-slate-100 dark:border-slate-800 font-black text-slate-400 uppercase text-[9px]">{item.unit || '-'}</td>
+                  
+                  {/* Unitary Values */}
+                  <td className="p-2 text-right border-r border-slate-100 dark:border-slate-800 text-slate-400 font-mono text-[10px]">{!isCategory ? financial.formatBRL(item.unitPriceNoBdi) : '-'}</td>
+                  <td className="p-2 text-right border-r border-slate-100 dark:border-slate-800 font-mono font-bold text-slate-700 dark:text-slate-300">{!isCategory ? financial.formatBRL(item.unitPrice) : '-'}</td>
+                  
+                  {/* Contract */}
+                  <td className="p-2 text-center border-r border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-900/20 text-slate-500 font-mono">{!isCategory ? item.contractQuantity : '-'}</td>
+                  <td className="p-2 text-right border-r border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-900/20 font-bold text-slate-900 dark:text-slate-200">{financial.formatBRL(item.contractTotal)}</td>
+                  
+                  {/* Previous */}
+                  <td className="p-2 text-center border-r border-slate-100 dark:border-slate-800 bg-amber-50/10 dark:bg-amber-900/5 text-slate-400 font-mono">{!isCategory ? item.previousQuantity : '-'}</td>
+                  <td className="p-2 text-right border-r border-slate-100 dark:border-slate-800 bg-amber-50/10 dark:bg-amber-900/5 text-slate-400">{financial.formatBRL(item.previousTotal)}</td>
+                  
+                  {/* Current */}
+                  <td className="p-2 text-center border-r border-slate-100 dark:border-slate-800 bg-blue-50/20 dark:bg-blue-900/5">
+                    {!isCategory ? (
+                      <div className="flex items-center justify-center gap-1">
+                        <input 
+                          type="number" 
+                          className="w-12 bg-white dark:bg-slate-800 border border-blue-200 dark:border-blue-800 rounded px-1 py-0.5 text-center text-[10px] font-bold text-blue-600"
+                          value={item.currentPercentage}
+                          onChange={(e) => onUpdatePercentage(item.id, parseFloat(e.target.value) || 0)}
+                        />
+                        <span className="text-[8px] text-blue-400 font-black">%</span>
+                      </div>
+                    ) : '-'}
+                  </td>
+                  <td className="p-2 text-center border-r border-slate-100 dark:border-slate-800 bg-blue-50/20 dark:bg-blue-900/5">
+                    {!isCategory ? (
+                      <input 
+                        type="number" 
+                        className="w-16 bg-white dark:bg-slate-800 border border-blue-300 dark:border-blue-700 rounded px-1 py-0.5 text-center text-[10px] font-bold text-blue-700 dark:text-blue-400 focus:ring-2 focus:ring-blue-500/20 outline-none"
+                        value={item.currentQuantity}
+                        onChange={(e) => onUpdateQuantity(item.id, parseFloat(e.target.value) || 0)}
+                      />
+                    ) : '-'}
+                  </td>
+                  <td className="p-2 text-right border-r border-slate-100 dark:border-slate-800 bg-blue-50/40 dark:bg-blue-900/10 font-black text-blue-700 dark:text-blue-300">{financial.formatBRL(item.currentTotal)}</td>
+                  
+                  {/* Accumulated */}
+                  <td className="p-2 text-center border-r border-slate-100 dark:border-slate-800 bg-emerald-50/10 dark:bg-emerald-900/5 font-bold text-slate-500 font-mono">{!isCategory ? item.accumulatedQuantity : '-'}</td>
+                  <td className="p-2 text-right border-r border-slate-100 dark:border-slate-800 bg-emerald-50/10 dark:bg-emerald-900/5 font-black text-emerald-700 dark:text-emerald-400">{financial.formatBRL(item.accumulatedTotal)}</td>
+                  <td className="p-2 text-center border-r border-slate-100 dark:border-slate-800 bg-emerald-50/30 dark:bg-emerald-900/10 font-black text-emerald-800 dark:text-emerald-100 text-[10px]">{item.accumulatedPercentage}%</td>
+                  
+                  {/* Balance */}
+                  <td className="p-2 text-center border-r border-slate-100 dark:border-slate-800 bg-rose-50/10 dark:bg-rose-900/5 font-bold text-rose-600/60 font-mono">{!isCategory ? item.balanceQuantity : '-'}</td>
+                  <td className="p-2 text-right bg-rose-50/20 dark:bg-rose-900/5 font-black text-rose-800 dark:text-rose-300">{financial.formatBRL(item.balanceTotal)}</td>
+                </tr>
+              );
+            })}
+            
+            {/* TOTAL GERAL FOOTER */}
+            <tr className="bg-slate-950 text-white font-black text-xs sticky bottom-0 z-10 shadow-[0_-4px_10px_rgba(0,0,0,0.1)]">
+               <td colSpan={5} className="p-5 text-right uppercase tracking-[0.2em] text-[10px]">Consolidado Geral da Obra:</td>
+               <td colSpan={2} className="p-4 border-r border-slate-800"></td>
+               <td className="p-4 border-r border-slate-800"></td>
+               <td className="p-4 border-r border-slate-800 text-right text-base tracking-tighter">{financial.formatBRL(financial.sum(filteredData.filter(i => i.depth === 0).map(i => i.contractTotal)))}</td>
+               <td colSpan={2} className="p-4 border-r border-slate-800 text-right opacity-50">{financial.formatBRL(financial.sum(filteredData.filter(i => i.depth === 0).map(i => i.previousTotal)))}</td>
+               <td colSpan={2} className="p-4 border-r border-slate-800"></td>
+               <td className="p-4 border-r border-slate-800 text-right text-blue-400 text-base tracking-tighter">{financial.formatBRL(financial.sum(filteredData.filter(i => i.depth === 0).map(i => i.currentTotal)))}</td>
+               <td className="p-4 border-r border-slate-800"></td>
+               <td className="p-4 border-r border-slate-800 text-right text-emerald-400 text-base tracking-tighter">{financial.formatBRL(financial.sum(filteredData.filter(i => i.depth === 0).map(i => i.accumulatedTotal)))}</td>
+               <td className="p-4 border-r border-slate-800"></td>
+               <td className="p-4 border-r border-slate-800"></td>
+               <td className="p-4 text-right text-rose-400 text-base tracking-tighter">{financial.formatBRL(financial.sum(filteredData.filter(i => i.depth === 0).map(i => i.balanceTotal)))}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
