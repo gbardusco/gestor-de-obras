@@ -40,21 +40,6 @@ export interface WorkItem {
   children?: WorkItem[];
 }
 
-export interface Project {
-  id: string;
-  name: string;
-  companyName: string;
-  measurementNumber: number;
-  referenceDate: string;
-  logo: string | null;
-  items: WorkItem[];
-  config: {
-    strict: boolean;
-    printCards: boolean;
-    printSubtotals: boolean;
-  };
-}
-
 export interface PDFTheme {
   primary: string;
   secondary: string;
@@ -67,12 +52,28 @@ export interface PDFTheme {
 }
 
 export const DEFAULT_THEME: PDFTheme = {
-  primary: '#0f172a',
-  secondary: '#2563eb',
-  headerBg: '#f1f5f9',
-  headerText: '#1e293b',
-  rowCategory: '#e0f2fe',
+  primary: '#2563eb',
+  secondary: '#64748b',
+  headerBg: '#0f172a',
+  headerText: '#ffffff',
+  rowCategory: '#f8fafc',
   rowItem: '#ffffff',
-  rowTotal: '#0f172a',
-  border: '#cbd5e1'
+  rowTotal: '#1e293b',
+  border: '#e2e8f0'
 };
+
+export interface Project {
+  id: string;
+  name: string;
+  companyName: string;
+  measurementNumber: number;
+  referenceDate: string;
+  logo: string | null;
+  items: WorkItem[];
+  theme: PDFTheme;
+  config: {
+    strict: boolean;
+    printCards: boolean;
+    printSubtotals: boolean;
+  };
+}

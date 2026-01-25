@@ -15,25 +15,25 @@ export const excelService = {
   downloadTemplate: () => {
     const wb = XLSX.utils.book_new();
 
-    // Instructions Sheet
+    // Aba de Instruções para o Usuário
     const instructions = [
       ["MANUAL DE PREENCHIMENTO - PROMEASURE"],
-      ["1. TIPO: Use 'category' para grupos e 'item' para serviços."],
-      ["2. PAI: Digite o NOME EXATO da categoria superior."],
-      ["3. UNIDADE: Obrigatória apenas para 'item'."],
-      ["4. QTD e PREÇO: Use números. Apenas para 'item'."],
-      ["5. HIERARQUIA: O sistema aceita níveis ilimitados (Subcategorias)."],
+      ["1. TIPO: Use 'category' para grupos/etapas e 'item' para serviços executáveis."],
+      ["2. PAI: Digite o NOME EXATO da categoria superior (para criar subcategorias)."],
+      ["3. UNIDADE: Obrigatória apenas para linhas do tipo 'item'."],
+      ["4. QTD e PREÇO: Use apenas números. Obrigatórios para 'item'."],
+      ["5. DICA: A ordem das linhas não importa, o sistema vincula pelo nome."],
       [],
-      ["ESTRUTURA EXEMPLO ABAIXO:"]
+      ["--- EXEMPLO DE ESTRUTURA ABAIXO ---"]
     ];
     const wsInstructions = XLSX.utils.aoa_to_sheet(instructions);
     XLSX.utils.book_append_sheet(wb, wsInstructions, "Instruções");
 
-    // Pre-filled Data Sheet
+    // Dados Exemplo para Aprendizado do Usuário
     const data = [
       ["Tipo", "Nome", "Pai", "Unidade", "Qtd_Contrato", "Preco_Unitario"],
       ["category", "1. INFRAESTRUTURA", "", "", "", ""],
-      ["category", "1.1 FUNDAÇÕES", "1.1 INFRAESTRUTURA", "", "", ""],
+      ["category", "1.1 FUNDAÇÕES", "1.1 INFRAESTRUTURA", "", "", ""], // Exemplo de Subcategoria
       ["item", "Estaca Escavada Diam=30cm", "1.1 FUNDAÇÕES", "m", "150", "95.50"],
       ["item", "Bloco de Coroamento", "1.1 FUNDAÇÕES", "m³", "12.5", "1250.00"],
       ["category", "1.2 MOVIMENTAÇÃO DE TERRA", "1.1 INFRAESTRUTURA", "", "", ""],
@@ -43,27 +43,24 @@ export const excelService = {
       ["item", "Pilar P1 a P10", "2. SUPERESTRUTURA", "m³", "8.4", "2100.00"]
     ];
 
-    // Correction: In the example, the WBS numbering in the names helps, 
-    // but the system maps by the "Nome" and "Pai" strings.
-    // Fixed the parent reference in dummy data for clarity.
-    data[2][2] = "1. INFRAESTRUTURA"; // Correcting parent ref for sub-cat
-    data[5][2] = "1. INFRAESTRUTURA"; // Correcting parent ref for sub-cat
+    // Correção lógica no template para garantir que o exemplo de hierarquia esteja correto
+    data[2][2] = "1. INFRAESTRUTURA"; 
+    data[5][2] = "1. INFRAESTRUTURA";
 
     const wsData = XLSX.utils.aoa_to_sheet(data);
     
-    // Set column widths for better UX
-    const wscols = [
-      { wch: 12 }, // Tipo
-      { wch: 40 }, // Nome
-      { wch: 40 }, // Pai
+    // Configuração de largura das colunas
+    wsData['!cols'] = [
+      { wch: 15 }, // Tipo
+      { wch: 45 }, // Nome
+      { wch: 45 }, // Pai
       { wch: 10 }, // Unidade
       { wch: 15 }, // Qtd
       { wch: 15 }, // Preço
     ];
-    wsData['!cols'] = wscols;
 
     XLSX.utils.book_append_sheet(wb, wsData, "Estrutura");
-    XLSX.writeFile(wb, "Template_ProMeasure_Engenharia.xlsx");
+    XLSX.writeFile(wb, "Template_Importacao_ProMeasure.xlsx");
   },
 
   parseAndValidate: async (file: File): Promise<ImportResult> => {
@@ -81,22 +78,22 @@ export const excelService = {
           const stats = { categories: 0, items: 0 };
           const nameToIdMap: Record<string, string> = {};
 
-          // First Pass: Collect all category and item IDs by name
+          // Passo 1: Mapear todos os nomes para novos UUIDs
           json.forEach((row) => {
             const name = String(row.Nome || '').trim();
             if (name) nameToIdMap[name] = crypto.randomUUID();
           });
 
-          // Second Pass: Build objects and validate
+          // Passo 2: Construir objetos e validar relações
           json.forEach((row, index) => {
             const rowNum = index + 2;
-            const typeInput = String(row.Tipo || '').toLowerCase().trim();
-            const type = typeInput === 'category' || typeInput === 'categoria' ? 'category' : 'item';
+            const typeRaw = String(row.Tipo || '').toLowerCase().trim();
+            const type: ItemType = (typeRaw === 'category' || typeRaw === 'categoria') ? 'category' : 'item';
             const name = String(row.Nome || '').trim();
             const parentName = String(row.Pai || '').trim();
 
             if (!name) {
-              errors.push(`Linha ${rowNum}: O nome é obrigatório.`);
+              errors.push(`Linha ${rowNum}: O campo Nome é obrigatório.`);
               return;
             }
 
@@ -104,7 +101,7 @@ export const excelService = {
             const parentId = parentName ? (nameToIdMap[parentName] || null) : null;
 
             if (parentName && !nameToIdMap[parentName]) {
-              errors.push(`Linha ${rowNum}: Categoria pai '${parentName}' não encontrada na planilha.`);
+              errors.push(`Linha ${rowNum}: Categoria pai '${parentName}' não encontrada na lista.`);
             }
 
             const newItem: WorkItem = {
@@ -135,8 +132,8 @@ export const excelService = {
 
             if (type === 'item') {
               stats.items++;
-              if (!newItem.unit) errors.push(`Linha ${rowNum}: Item '${name}' exige uma unidade.`);
-              if (newItem.contractQuantity <= 0) errors.push(`Linha ${rowNum}: Item '${name}' exige quantidade > 0.`);
+              if (!newItem.unit) errors.push(`Linha ${rowNum}: Itens de serviço exigem 'Unidade'.`);
+              if (newItem.contractQuantity <= 0) errors.push(`Linha ${rowNum}: Item '${name}' deve ter quantidade maior que zero.`);
             } else {
               stats.categories++;
             }
@@ -146,7 +143,7 @@ export const excelService = {
 
           resolve({ items, errors, stats });
         } catch (err) {
-          reject("Falha ao ler Excel. Verifique se o arquivo está corrompido.");
+          reject("Erro ao processar arquivo Excel. Certifique-se de usar o template correto.");
         }
       };
       reader.readAsArrayBuffer(file);
