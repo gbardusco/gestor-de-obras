@@ -1,7 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { WorkItem, ItemType } from '../types';
-import { X, Save, AlertCircle, Briefcase, Layers, Package, FolderTree } from 'lucide-react';
+import { financial } from '../utils/math';
+import { X, Save, AlertCircle, Briefcase, Layers, Package, FolderTree, Percent } from 'lucide-react';
 
 interface WorkItemModalProps {
   isOpen: boolean;
@@ -10,6 +11,7 @@ interface WorkItemModalProps {
   editingItem: WorkItem | null;
   type: ItemType;
   categories: WorkItem[];
+  projectBdi: number;
 }
 
 export const WorkItemModal: React.FC<WorkItemModalProps> = ({
@@ -18,7 +20,8 @@ export const WorkItemModal: React.FC<WorkItemModalProps> = ({
   onSave,
   editingItem,
   type: initialType,
-  categories
+  categories,
+  projectBdi
 }) => {
   const [activeType, setActiveType] = useState<ItemType>(initialType);
   const [formData, setFormData] = useState<Partial<WorkItem>>({
@@ -66,6 +69,22 @@ export const WorkItemModal: React.FC<WorkItemModalProps> = ({
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
+  };
+
+  /**
+   * Updates Price C/ BDI based on Price S/ BDI
+   */
+  const handlePriceNoBdiChange = (val: number) => {
+    const priceWithBdi = financial.round(val * (1 + (projectBdi || 0) / 100));
+    setFormData({ ...formData, unitPriceNoBdi: val, unitPrice: priceWithBdi });
+  };
+
+  /**
+   * Updates Price S/ BDI based on Price C/ BDI (Reverse calculation)
+   */
+  const handlePriceWithBdiChange = (val: number) => {
+    const priceWithoutBdi = financial.round(val / (1 + (projectBdi || 0) / 100));
+    setFormData({ ...formData, unitPrice: val, unitPriceNoBdi: priceWithoutBdi });
   };
 
   const isCategory = activeType === 'category';
@@ -118,7 +137,7 @@ export const WorkItemModal: React.FC<WorkItemModalProps> = ({
               <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Descrição do Elemento</label>
               <textarea 
                 rows={2}
-                className={`w-full px-6 py-4 rounded-2xl border bg-slate-50 dark:bg-slate-800 dark:text-white text-sm font-medium transition-all focus:ring-4 focus:ring-blue-500/10 outline-none ${errors.name ? 'border-rose-500' : 'border-slate-200 dark:border-slate-700 focus:border-blue-500'}`}
+                className={`w-full px-6 py-4 rounded-2xl border bg-slate-50 dark:bg-slate-800 dark:text-white text-sm font-medium transition-all focus:ring-4 focus:ring-blue-500/10 outline-none ${errors.name ? 'border-rose-500 shadow-[0_0_0_1px_rgba(244,63,94,1)]' : 'border-slate-200 dark:border-slate-700 focus:border-blue-500'}`}
                 value={formData.name}
                 placeholder={isCategory ? "Ex: ESTRUTURAS DE CONCRETO" : "Ex: Viga Baldrame em Concreto Armado"}
                 onChange={e => setFormData({...formData, name: e.target.value})}
@@ -163,24 +182,44 @@ export const WorkItemModal: React.FC<WorkItemModalProps> = ({
                     onChange={e => setFormData({...formData, cod: e.target.value})}
                   />
                 </div>
-                <div className="col-span-2 grid grid-cols-2 gap-4 bg-slate-50 dark:bg-slate-800/50 p-6 rounded-3xl border border-slate-100 dark:border-slate-700">
-                  <div>
-                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Quantidade Contratual</label>
-                    <input 
-                      type="number"
-                      className="w-full px-6 py-4 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 dark:text-white text-sm font-black text-center"
-                      value={formData.contractQuantity}
-                      onChange={e => setFormData({...formData, contractQuantity: parseFloat(e.target.value) || 0})}
-                    />
+                
+                <div className="col-span-2 space-y-4 bg-slate-50 dark:bg-slate-800/50 p-6 rounded-3xl border border-slate-100 dark:border-slate-700">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Quantidade Contratual</label>
+                      <input 
+                        type="number"
+                        step="any"
+                        className="w-full px-6 py-4 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 dark:text-white text-sm font-black text-center"
+                        value={formData.contractQuantity}
+                        onChange={e => setFormData({...formData, contractQuantity: parseFloat(e.target.value) || 0})}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">P. Unitário S/ BDI (R$)</label>
+                      <input 
+                        type="number"
+                        step="any"
+                        className="w-full px-6 py-4 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 dark:text-slate-600 text-sm font-black text-right"
+                        value={formData.unitPriceNoBdi}
+                        onChange={e => handlePriceNoBdiChange(parseFloat(e.target.value) || 0)}
+                      />
+                    </div>
                   </div>
-                  <div>
-                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Preço Unitário (R$)</label>
+                  
+                  <div className="pt-2 border-t border-slate-200 dark:border-slate-700">
+                    <div className="flex items-center justify-between mb-2">
+                       <label className="text-[10px] font-black text-emerald-600 uppercase tracking-widest ml-1">Preço Final C/ BDI ({projectBdi}%)</label>
+                       <Percent size={12} className="text-emerald-500" />
+                    </div>
                     <input 
                       type="number"
-                      className="w-full px-6 py-4 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 dark:text-emerald-400 text-sm font-black text-right"
+                      step="any"
+                      className="w-full px-6 py-5 rounded-2xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-900/20 dark:text-emerald-400 text-lg font-black text-right text-emerald-700 focus:ring-4 focus:ring-emerald-500/10 outline-none"
                       value={formData.unitPrice}
-                      onChange={e => setFormData({...formData, unitPrice: parseFloat(e.target.value) || 0})}
+                      onChange={e => handlePriceWithBdiChange(parseFloat(e.target.value) || 0)}
                     />
+                    <p className="text-[8px] text-slate-400 font-bold mt-2 italic text-center uppercase tracking-widest">Base de cálculo: Valor sem BDI * {(1 + (projectBdi || 0)/100).toFixed(2)}</p>
                   </div>
                 </div>
               </div>
@@ -190,7 +229,7 @@ export const WorkItemModal: React.FC<WorkItemModalProps> = ({
 
         {/* Footer */}
         <div className="px-10 py-8 bg-slate-50 dark:bg-slate-800/80 border-t border-slate-100 dark:border-slate-700 flex justify-end items-center gap-4">
-          <button onClick={onClose} className="px-8 py-3 text-xs font-black text-slate-500 uppercase tracking-widest">Descartar</button>
+          <button onClick={onClose} className="px-8 py-3 text-xs font-black text-slate-500 hover:text-slate-800 dark:hover:text-white uppercase tracking-widest transition-all">Descartar</button>
           <button 
             onClick={() => {
               if (validate()) {

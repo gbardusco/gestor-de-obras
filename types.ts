@@ -71,6 +71,7 @@ export interface Project {
   logo: string | null;
   items: WorkItem[];
   theme: PDFTheme;
+  bdi: number; // BDI em porcentagem (ex: 25 para 25%)
   config: {
     strict: boolean;
     printCards: boolean;

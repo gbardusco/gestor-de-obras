@@ -1,6 +1,7 @@
 
 import * as XLSX from 'xlsx';
-import { WorkItem, ItemType } from '../types';
+import { WorkItem, Project, ItemType } from '../types';
+import { financial } from '../utils/math';
 
 export interface ImportResult {
   items: WorkItem[];
@@ -14,53 +15,51 @@ export interface ImportResult {
 export const excelService = {
   downloadTemplate: () => {
     const wb = XLSX.utils.book_new();
-
-    // Aba de Instruções para o Usuário
-    const instructions = [
-      ["MANUAL DE PREENCHIMENTO - PROMEASURE"],
-      ["1. TIPO: Use 'category' para grupos/etapas e 'item' para serviços executáveis."],
-      ["2. PAI: Digite o NOME EXATO da categoria superior (para criar subcategorias)."],
-      ["3. UNIDADE: Obrigatória apenas para linhas do tipo 'item'."],
-      ["4. QTD e PREÇO: Use apenas números. Obrigatórios para 'item'."],
-      ["5. DICA: A ordem das linhas não importa, o sistema vincula pelo nome."],
-      [],
-      ["--- EXEMPLO DE ESTRUTURA ABAIXO ---"]
-    ];
-    const wsInstructions = XLSX.utils.aoa_to_sheet(instructions);
-    XLSX.utils.book_append_sheet(wb, wsInstructions, "Instruções");
-
-    // Dados Exemplo para Aprendizado do Usuário
     const data = [
-      ["Tipo", "Nome", "Pai", "Unidade", "Qtd_Contrato", "Preco_Unitario"],
+      ["Tipo (category ou item)", "Nome", "Pai (Nome da Categoria)", "Unidade", "Qtd_Contrato", "Preco_Unitario_Sem_BDI"],
       ["category", "1. INFRAESTRUTURA", "", "", "", ""],
-      ["category", "1.1 FUNDAÇÕES", "1.1 INFRAESTRUTURA", "", "", ""], // Exemplo de Subcategoria
-      ["item", "Estaca Escavada Diam=30cm", "1.1 FUNDAÇÕES", "m", "150", "95.50"],
-      ["item", "Bloco de Coroamento", "1.1 FUNDAÇÕES", "m³", "12.5", "1250.00"],
-      ["category", "1.2 MOVIMENTAÇÃO DE TERRA", "1.1 INFRAESTRUTURA", "", "", ""],
-      ["item", "Escavação Mecânica", "1.2 MOVIMENTAÇÃO DE TERRA", "m³", "240", "22.30"],
-      ["category", "2. SUPERESTRUTURA", "", "", "", ""],
-      ["item", "Laje Maciça e=12cm", "2. SUPERESTRUTURA", "m²", "180", "145.00"],
-      ["item", "Pilar P1 a P10", "2. SUPERESTRUTURA", "m³", "8.4", "2100.00"]
+      ["item", "Estaca Escavada", "1. INFRAESTRUTURA", "m", "150", "95.50"],
     ];
+    const ws = XLSX.utils.aoa_to_sheet(data);
+    XLSX.utils.book_append_sheet(wb, ws, "Estrutura");
+    XLSX.writeFile(wb, "Template_ProMeasure.xlsx");
+  },
 
-    // Correção lógica no template para garantir que o exemplo de hierarquia esteja correto
-    data[2][2] = "1. INFRAESTRUTURA"; 
-    data[5][2] = "1. INFRAESTRUTURA";
-
-    const wsData = XLSX.utils.aoa_to_sheet(data);
+  /**
+   * Exporta a planilha formatada
+   */
+  exportProjectToExcel: (project: Project, flattenedItems: (WorkItem & { depth: number })[]) => {
+    const wb = XLSX.utils.book_new();
     
-    // Configuração de largura das colunas
-    wsData['!cols'] = [
-      { wch: 15 }, // Tipo
-      { wch: 45 }, // Nome
-      { wch: 45 }, // Pai
-      { wch: 10 }, // Unidade
-      { wch: 15 }, // Qtd
-      { wch: 15 }, // Preço
+    const reportHeader = [
+      [project.companyName.toUpperCase()],
+      ["RELATÓRIO DE MEDIÇÃO CONSOLIDADO"],
+      [`Projeto: ${project.name}`],
+      [`Medição: #${project.measurementNumber} | BDI: ${project.bdi}%`],
+      [],
+      ["WBS", "DESCRIÇÃO", "UND", "QTD CONTRATO", "P. UNIT (C/ BDI)", "TOTAL PERÍODO", "TOTAL ACUMULADO", "% ACUM."]
     ];
 
-    XLSX.utils.book_append_sheet(wb, wsData, "Estrutura");
-    XLSX.writeFile(wb, "Template_Importacao_ProMeasure.xlsx");
+    const rows = flattenedItems.map(item => [
+      item.wbs,
+      "  ".repeat(item.depth) + item.name,
+      item.unit || "-",
+      item.type === 'item' ? item.contractQuantity : "-",
+      item.type === 'item' ? item.unitPrice : "-",
+      item.currentTotal,
+      item.accumulatedTotal,
+      (item.accumulatedPercentage / 100)
+    ]);
+
+    const ws = XLSX.utils.aoa_to_sheet([...reportHeader, ...rows]);
+
+    // Configuração de colunas
+    ws['!cols'] = [
+      { wch: 10 }, { wch: 50 }, { wch: 8 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 10 }
+    ];
+
+    XLSX.utils.book_append_sheet(wb, ws, "Medição");
+    XLSX.writeFile(wb, `Medicao_${project.measurementNumber}_${project.name}.xlsx`);
   },
 
   parseAndValidate: async (file: File): Promise<ImportResult> => {
@@ -70,81 +69,46 @@ export const excelService = {
         try {
           const data = new Uint8Array(e.target?.result as ArrayBuffer);
           const workbook = XLSX.read(data, { type: 'array' });
-          const worksheet = workbook.Sheets["Estrutura"] || workbook.Sheets[workbook.SheetNames[0]];
+          const worksheet = workbook.Sheets[workbook.SheetNames[0]];
           const json: any[] = XLSX.utils.sheet_to_json(worksheet);
 
           const items: WorkItem[] = [];
-          const errors: string[] = [];
+          const nameToId: Record<string, string> = {};
           const stats = { categories: 0, items: 0 };
-          const nameToIdMap: Record<string, string> = {};
 
-          // Passo 1: Mapear todos os nomes para novos UUIDs
-          json.forEach((row) => {
+          json.forEach(row => {
             const name = String(row.Nome || '').trim();
-            if (name) nameToIdMap[name] = crypto.randomUUID();
+            if (name) nameToId[name] = crypto.randomUUID();
           });
 
-          // Passo 2: Construir objetos e validar relações
-          json.forEach((row, index) => {
-            const rowNum = index + 2;
-            const typeRaw = String(row.Tipo || '').toLowerCase().trim();
-            const type: ItemType = (typeRaw === 'category' || typeRaw === 'categoria') ? 'category' : 'item';
+          json.forEach((row, idx) => {
             const name = String(row.Nome || '').trim();
+            if (!name) return;
+            
+            const typeRaw = String(row[Object.keys(row)[0]] || '').toLowerCase();
+            const type: ItemType = typeRaw.includes('cat') ? 'category' : 'item';
             const parentName = String(row.Pai || '').trim();
 
-            if (!name) {
-              errors.push(`Linha ${rowNum}: O campo Nome é obrigatório.`);
-              return;
-            }
-
-            const id = nameToIdMap[name];
-            const parentId = parentName ? (nameToIdMap[parentName] || null) : null;
-
-            if (parentName && !nameToIdMap[parentName]) {
-              errors.push(`Linha ${rowNum}: Categoria pai '${parentName}' não encontrada na lista.`);
-            }
-
-            const newItem: WorkItem = {
-              id,
-              parentId,
+            items.push({
+              id: nameToId[name],
+              parentId: parentName ? (nameToId[parentName] || null) : null,
               name,
               type,
               wbs: '',
-              order: index,
-              unit: String(row.Unidade || ''),
-              cod: String(row.Codigo || ''),
-              fonte: 'Importado',
+              order: idx,
+              unit: row.Unidade || 'un',
               contractQuantity: Number(row.Qtd_Contrato || 0),
-              unitPrice: Number(row.Preco_Unitario || 0),
-              unitPriceNoBdi: Number(row.Preco_Unitario || 0),
+              unitPrice: 0,
+              unitPriceNoBdi: Number(row.Preco_Unitario_Sem_BDI || row.Preco_Unitario || 0),
               contractTotal: 0,
-              previousQuantity: 0,
-              previousTotal: 0,
-              currentQuantity: 0,
-              currentTotal: 0,
-              currentPercentage: 0,
-              accumulatedQuantity: 0,
-              accumulatedTotal: 0,
-              accumulatedPercentage: 0,
-              balanceQuantity: 0,
-              balanceTotal: 0
-            };
-
-            if (type === 'item') {
-              stats.items++;
-              if (!newItem.unit) errors.push(`Linha ${rowNum}: Itens de serviço exigem 'Unidade'.`);
-              if (newItem.contractQuantity <= 0) errors.push(`Linha ${rowNum}: Item '${name}' deve ter quantidade maior que zero.`);
-            } else {
-              stats.categories++;
-            }
-
-            items.push(newItem);
+              previousQuantity: 0, previousTotal: 0, currentQuantity: 0, currentTotal: 0, currentPercentage: 0,
+              accumulatedQuantity: 0, accumulatedTotal: 0, accumulatedPercentage: 0, balanceQuantity: 0, balanceTotal: 0
+            });
+            if (type === 'item') stats.items++; else stats.categories++;
           });
 
-          resolve({ items, errors, stats });
-        } catch (err) {
-          reject("Erro ao processar arquivo Excel. Certifique-se de usar o template correto.");
-        }
+          resolve({ items, errors: [], stats });
+        } catch (err) { reject(err); }
       };
       reader.readAsArrayBuffer(file);
     });
