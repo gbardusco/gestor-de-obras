@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Project, WorkItem, ItemType } from '../types';
 import { treeService } from '../services/treeService';
 import { excelService, ImportResult } from '../services/excelService';
@@ -25,6 +25,14 @@ export const WbsView: React.FC<WbsViewProps> = ({
   const [isImporting, setIsImporting] = useState(false);
   const [importSummary, setImportSummary] = useState<ImportResult | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && importSummary) setImportSummary(null);
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [importSummary]);
 
   const processedTree = useMemo(() => {
     const tree = treeService.buildTree(project.items);
@@ -156,16 +164,17 @@ export const WbsView: React.FC<WbsViewProps> = ({
         />
       </div>
 
+      {/* MODAL DE CONFIRMAÇÃO DE IMPORTAÇÃO */}
       {importSummary && (
         <div 
           className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-300"
           onClick={() => setImportSummary(null)}
         >
           <div 
-            className="bg-white dark:bg-slate-900 w-full max-w-md rounded-[2.5rem] shadow-2xl border border-slate-200 dark:border-slate-800 flex flex-col overflow-hidden"
+            className="bg-white dark:bg-slate-900 w-full max-w-md rounded-[2.5rem] shadow-2xl border border-slate-200 dark:border-slate-800 flex flex-col max-h-[90vh] overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="px-8 pt-8 pb-4 flex items-center justify-between border-b border-slate-50 dark:border-slate-800">
+            <div className="px-8 pt-8 pb-4 flex items-center justify-between border-b border-slate-50 dark:border-slate-800 shrink-0">
               <div className="flex items-center gap-3">
                 <div className="p-3 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 rounded-2xl">
                   <UploadCloud size={24} />
@@ -184,7 +193,7 @@ export const WbsView: React.FC<WbsViewProps> = ({
               </button>
             </div>
 
-            <div className="p-8 space-y-6">
+            <div className="p-8 space-y-6 overflow-y-auto custom-scrollbar flex-1">
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-slate-50 dark:bg-slate-800/50 p-6 rounded-3xl border border-slate-100 dark:border-slate-800 text-center">
                   <div className="flex justify-center mb-2 text-indigo-500"><Layers size={20}/></div>
@@ -215,7 +224,7 @@ export const WbsView: React.FC<WbsViewProps> = ({
               </p>
             </div>
 
-            <div className="px-8 py-6 bg-slate-50 dark:bg-slate-800/80 border-t border-slate-100 dark:border-slate-800 flex flex-col gap-3">
+            <div className="px-8 py-6 bg-slate-50 dark:bg-slate-800/80 border-t border-slate-100 dark:border-slate-800 flex flex-col gap-3 shrink-0">
               <button 
                 type="button" 
                 onClick={confirmImport} 

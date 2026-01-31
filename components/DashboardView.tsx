@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Project } from '../types';
 import { Briefcase, Plus, Edit2, Trash2, X, AlertTriangle, CheckCircle2, Save } from 'lucide-react';
 import { treeService } from '../services/treeService';
@@ -15,6 +15,17 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ projects, onOpenPr
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [deletingProject, setDeletingProject] = useState<Project | null>(null);
   const [newName, setNewName] = useState('');
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (editingProject) setEditingProject(null);
+        if (deletingProject) setDeletingProject(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [editingProject, deletingProject]);
 
   const handleStartRename = (e: React.MouseEvent, p: Project) => {
     e.stopPropagation();
@@ -96,7 +107,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ projects, onOpenPr
           onClick={() => setEditingProject(null)}
         >
           <div 
-            className="bg-white dark:bg-slate-900 w-full max-w-md rounded-[2.5rem] shadow-2xl border border-slate-200 dark:border-slate-800 flex flex-col overflow-hidden"
+            className="bg-white dark:bg-slate-900 w-full max-w-md rounded-[2.5rem] shadow-2xl border border-slate-200 dark:border-slate-800 flex flex-col max-h-[90vh] overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="px-8 pt-8 pb-4 flex items-center justify-between border-b border-slate-50 dark:border-slate-800">
@@ -147,11 +158,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ projects, onOpenPr
           onClick={() => setDeletingProject(null)}
         >
           <div 
-            className="bg-white dark:bg-slate-900 w-full max-w-md rounded-[2.5rem] shadow-2xl border border-slate-200 dark:border-slate-800 flex flex-col overflow-hidden"
+            className="bg-white dark:bg-slate-900 w-full max-w-md rounded-[2.5rem] shadow-2xl border border-slate-200 dark:border-slate-800 flex flex-col max-h-[90vh] overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="p-8 text-center flex flex-col items-center">
-              <div className="w-20 h-20 bg-rose-100 dark:bg-rose-900/30 text-rose-600 rounded-[2rem] flex items-center justify-center mb-6">
+            <div className="p-8 text-center flex flex-col items-center overflow-y-auto">
+              <div className="w-20 h-20 bg-rose-100 dark:bg-rose-900/30 text-rose-600 rounded-[2rem] flex items-center justify-center mb-6 shrink-0">
                 <AlertTriangle size={40} />
               </div>
               <h2 className="text-2xl font-black dark:text-white tracking-tight mb-2">Excluir Projeto?</h2>
@@ -159,7 +170,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ projects, onOpenPr
                 Você está prestes a apagar permanentemente a obra <span className="font-black text-slate-800 dark:text-slate-200">"{deletingProject.name}"</span>. Esta ação não pode ser desfeita.
               </p>
             </div>
-            <div className="px-8 py-6 bg-slate-50 dark:bg-slate-800/80 border-t border-slate-100 dark:border-slate-800 flex flex-col gap-3">
+            <div className="px-8 py-6 bg-slate-50 dark:bg-slate-800/80 border-t border-slate-100 dark:border-slate-800 flex flex-col gap-3 shrink-0">
               <button 
                 type="button"
                 onClick={handleConfirmDelete} 

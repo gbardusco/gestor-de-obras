@@ -27,6 +27,14 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
   const [strAmount, setStrAmount] = useState('0');
 
   useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen) onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
+  useEffect(() => {
     if (editingItem) {
       setFormData(editingItem);
       setActiveItemType(editingItem.itemType);
@@ -100,17 +108,17 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
       onClick={onClose}
     >
       <div 
-        className="bg-white dark:bg-slate-900 w-full max-w-xl rounded-[2.5rem] shadow-2xl border border-slate-200 dark:border-slate-800 flex flex-col overflow-hidden"
+        className="bg-white dark:bg-slate-900 w-full max-w-xl rounded-[2rem] shadow-2xl border border-slate-200 dark:border-slate-800 flex flex-col max-h-[90vh] overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="px-8 pt-8 pb-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+        <div className="px-8 py-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
-            <div className={`p-3 rounded-2xl ${isRevenue ? 'bg-emerald-600' : (expenseType === 'labor' ? 'bg-blue-600' : 'bg-indigo-600')} text-white`}>
-              {isRevenue ? <ArrowRightLeft size={22} /> : (expenseType === 'labor' ? <Users size={22} /> : <Truck size={22} />)}
+            <div className={`p-2.5 rounded-2xl ${isRevenue ? 'bg-emerald-600' : (expenseType === 'labor' ? 'bg-blue-600' : 'bg-indigo-600')} text-white`}>
+              {isRevenue ? <ArrowRightLeft size={20} /> : (expenseType === 'labor' ? <Users size={20} /> : <Truck size={20} />)}
             </div>
             <div>
-              <h2 className="text-xl font-black dark:text-white tracking-tight">{editingItem ? 'Editar' : 'Novo'} {isRevenue ? 'Recebimento' : (expenseType === 'labor' ? 'Gasto de MO' : 'Gasto de Material')}</h2>
-              <p className="text-[9px] text-slate-500 font-bold uppercase tracking-widest">Controle de Fluxo Hierárquico</p>
+              <h2 className="text-lg font-black dark:text-white tracking-tight leading-tight">{editingItem ? 'Editar' : 'Novo'} {isRevenue ? 'Recebimento' : (expenseType === 'labor' ? 'Gasto de MO' : 'Gasto de Material')}</h2>
+              <p className="text-[8px] text-slate-500 font-bold uppercase tracking-widest">Controle de Fluxo Hierárquico</p>
             </div>
           </div>
           <button 
@@ -122,22 +130,22 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex flex-col overflow-hidden">
-          <div className="p-8 space-y-6 overflow-y-auto custom-scrollbar">
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
+          <div className="p-8 space-y-5 overflow-y-auto custom-scrollbar flex-1">
             {!editingItem && (
               <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-2xl gap-2">
-                <button type="button" onClick={() => setActiveItemType('category')} className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeItemType === 'category' ? 'bg-white dark:bg-slate-700 text-indigo-600 shadow-md' : 'text-slate-500 dark:text-slate-400'}`}>Categoria/Grupo</button>
-                <button type="button" onClick={() => setActiveItemType('item')} className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeItemType === 'item' ? 'bg-white dark:bg-slate-700 text-emerald-600 shadow-md' : 'text-slate-500 dark:text-slate-400'}`}>{isRevenue ? 'Lançar Valor' : 'Gasto Individual'}</button>
+                <button type="button" onClick={() => setActiveItemType('category')} className={`flex-1 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${activeItemType === 'category' ? 'bg-white dark:bg-slate-700 text-indigo-600 shadow-md' : 'text-slate-500 dark:text-slate-400'}`}>Categoria/Grupo</button>
+                <button type="button" onClick={() => setActiveItemType('item')} className={`flex-1 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${activeItemType === 'item' ? 'bg-white dark:bg-slate-700 text-emerald-600 shadow-md' : 'text-slate-500 dark:text-slate-400'}`}>{isRevenue ? 'Lançar Valor' : 'Gasto Individual'}</button>
               </div>
             )}
 
             <div className="space-y-4">
               <div>
-                <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase mb-2 block tracking-widest">Grupo Pai (Vinculação)</label>
+                <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase mb-2 block tracking-widest">Grupo Pai (Vinculação)</label>
                 <div className="relative">
                   <FolderTree className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
                   <select 
-                    className="w-full pl-11 pr-4 py-4 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 dark:text-white text-xs font-bold outline-none appearance-none focus:border-indigo-500 transition-all"
+                    className="w-full pl-11 pr-4 py-3.5 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 dark:text-white text-xs font-bold outline-none appearance-none focus:border-indigo-500 transition-all"
                     value={formData.parentId || ''}
                     onChange={e => setFormData({...formData, parentId: e.target.value || null})}
                   >
@@ -150,33 +158,33 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
               </div>
 
               <div>
-                <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase mb-2 block tracking-widest">Descrição / Título</label>
-                <input className="w-full px-6 py-4 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 dark:text-white text-sm font-semibold outline-none focus:border-indigo-500 transition-all" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} />
+                <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase mb-2 block tracking-widest">Descrição / Título</label>
+                <input className="w-full px-6 py-3.5 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 dark:text-white text-sm font-semibold outline-none focus:border-indigo-500 transition-all" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} />
               </div>
 
               {activeItemType === 'item' && (
                 <div className="grid grid-cols-2 gap-4">
                   <div className="col-span-2">
-                    <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase mb-2 block tracking-widest">{isRevenue ? 'Pagador / Origem' : 'Fornecedor / Profissional'}</label>
-                    <input className="w-full px-6 py-4 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 dark:text-white text-xs font-bold outline-none focus:border-indigo-500 transition-all" value={formData.entityName} onChange={e => setFormData({...formData, entityName: e.target.value})} />
+                    <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase mb-2 block tracking-widest">{isRevenue ? 'Pagador / Origem' : 'Fornecedor / Profissional'}</label>
+                    <input className="w-full px-6 py-3.5 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 dark:text-white text-xs font-bold outline-none focus:border-indigo-500 transition-all" value={formData.entityName} onChange={e => setFormData({...formData, entityName: e.target.value})} />
                   </div>
                   <div>
-                    <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase mb-2 block tracking-widest">Unidade</label>
-                    <input className="w-full px-6 py-4 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 dark:text-white text-xs font-bold text-center outline-none focus:border-indigo-500 transition-all" value={formData.unit} onChange={e => setFormData({...formData, unit: e.target.value})} placeholder="un, vb, h..." />
+                    <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase mb-2 block tracking-widest">Unidade</label>
+                    <input className="w-full px-6 py-3.5 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 dark:text-white text-xs font-bold text-center outline-none focus:border-indigo-500 transition-all" value={formData.unit} onChange={e => setFormData({...formData, unit: e.target.value})} placeholder="un, vb, h..." />
                   </div>
                   <div>
-                    <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase mb-2 block tracking-widest">Quantidade</label>
-                    <input type="text" inputMode="decimal" className="w-full px-6 py-4 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 dark:text-white text-xs font-bold text-center outline-none focus:border-indigo-500 transition-all" value={strQty} onChange={e => handleNumericChange(setStrQty, e.target.value, 'qty')} />
+                    <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase mb-2 block tracking-widest">Quantidade</label>
+                    <input type="text" inputMode="decimal" className="w-full px-6 py-3.5 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 dark:text-white text-xs font-bold text-center outline-none focus:border-indigo-500 transition-all" value={strQty} onChange={e => handleNumericChange(setStrQty, e.target.value, 'qty')} />
                   </div>
                   <div>
-                    <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase mb-2 block tracking-widest">Preço Unitário</label>
-                    <input type="text" inputMode="decimal" className="w-full px-6 py-4 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 dark:text-white text-xs font-bold text-right outline-none focus:border-indigo-500 transition-all" value={strPrice} onChange={e => handleNumericChange(setStrPrice, e.target.value, 'price')} />
+                    <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase mb-2 block tracking-widest">Preço Unitário</label>
+                    <input type="text" inputMode="decimal" className="w-full px-6 py-3.5 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 dark:text-white text-xs font-bold text-right outline-none focus:border-indigo-500 transition-all" value={strPrice} onChange={e => handleNumericChange(setStrPrice, e.target.value, 'price')} />
                   </div>
-                  <div className={`col-span-2 pt-4 p-6 rounded-3xl border-2 border-dashed ${isRevenue ? 'bg-emerald-50/50 dark:bg-emerald-900/10 border-emerald-200 dark:border-emerald-800' : 'bg-indigo-50/50 dark:bg-indigo-900/10 border-indigo-200 dark:border-indigo-800'}`}>
-                    <label className={`text-[10px] font-black ${isRevenue ? 'text-emerald-600 dark:text-emerald-400' : 'text-indigo-600 dark:text-indigo-400'} uppercase mb-2 block tracking-widest text-center`}>Valor Total Liquidado</label>
+                  <div className={`col-span-2 pt-2 p-5 rounded-3xl border-2 border-dashed ${isRevenue ? 'bg-emerald-50/50 dark:bg-emerald-900/10 border-emerald-200 dark:border-emerald-800' : 'bg-indigo-50/50 dark:bg-indigo-900/10 border-indigo-200 dark:border-indigo-800'}`}>
+                    <label className={`text-[9px] font-black ${isRevenue ? 'text-emerald-600 dark:text-emerald-400' : 'text-indigo-600 dark:text-indigo-400'} uppercase mb-1 block tracking-widest text-center`}>Valor Total Liquidado</label>
                     <div className="relative">
-                      <Calculator className={`absolute left-4 top-1/2 -translate-y-1/2 ${isRevenue ? 'text-emerald-400' : 'text-indigo-400'}`} size={18} />
-                      <input type="text" inputMode="decimal" className={`w-full pl-12 pr-4 py-4 rounded-2xl border-2 ${isRevenue ? 'border-emerald-200 dark:border-emerald-900 focus:border-emerald-600 text-emerald-700 dark:text-emerald-300' : 'border-indigo-200 dark:border-indigo-900 focus:border-indigo-600 text-indigo-700 dark:text-indigo-300'} bg-white dark:bg-slate-950 text-xl font-black text-right outline-none transition-all`} value={strAmount} onChange={e => handleNumericChange(setStrAmount, e.target.value, 'amount')} />
+                      <Calculator className={`absolute left-4 top-1/2 -translate-y-1/2 ${isRevenue ? 'text-emerald-400' : 'text-indigo-400'}`} size={16} />
+                      <input type="text" inputMode="decimal" className={`w-full pl-12 pr-4 py-3 rounded-2xl border-2 ${isRevenue ? 'border-emerald-200 dark:border-emerald-900 focus:border-emerald-600 text-emerald-700 dark:text-emerald-300' : 'border-indigo-200 dark:border-indigo-900 focus:border-indigo-600 text-indigo-700 dark:text-indigo-300'} bg-white dark:bg-slate-950 text-xl font-black text-right outline-none transition-all`} value={strAmount} onChange={e => handleNumericChange(setStrAmount, e.target.value, 'amount')} />
                     </div>
                   </div>
                 </div>
@@ -184,19 +192,19 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
             </div>
           </div>
 
-          <div className="px-8 py-6 bg-slate-50 dark:bg-slate-800/80 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-3">
+          <div className="px-8 py-5 bg-slate-50 dark:bg-slate-800/80 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-3 shrink-0">
             <button 
               type="button"
               onClick={onClose} 
-              className="px-6 py-4 text-[11px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
+              className="px-6 py-3 text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
             >
               Cancelar
             </button>
             <button 
               type="submit"
-              className={`px-10 py-4 ${isRevenue ? 'bg-emerald-600 shadow-emerald-500/20' : 'bg-indigo-600 shadow-indigo-500/20'} text-white rounded-2xl text-[11px] font-black uppercase tracking-widest shadow-xl active:scale-95 transition-all flex items-center gap-2`}
+              className={`px-10 py-3.5 ${isRevenue ? 'bg-emerald-600 shadow-emerald-500/20' : 'bg-indigo-600 shadow-indigo-500/20'} text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl active:scale-95 transition-all flex items-center gap-2`}
             >
-              <Save size={18} /> {editingItem ? 'Salvar Alterações' : (isRevenue ? 'Registrar Receita' : 'Salvar Gasto')}
+              <Save size={16} /> {editingItem ? 'Salvar Alterações' : (isRevenue ? 'Registrar Receita' : 'Salvar Gasto')}
             </button>
           </div>
         </form>
