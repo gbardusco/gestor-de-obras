@@ -18,9 +18,19 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
   isOpen, onClose, onSave, editingItem, expenseType, itemType: initialItemType, categories
 }) => {
   const [activeItemType, setActiveItemType] = useState<ItemType>(initialItemType);
+  
+  // Função auxiliar para pegar a data local em formato YYYY-MM-DD
+  const getTodayStr = () => {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   const [formData, setFormData] = useState<Partial<ProjectExpense>>({
     description: '', parentId: null, unit: 'un', quantity: 1, unitPrice: 0, amount: 0, entityName: '', 
-    date: new Date().toISOString().split('T')[0],
+    date: getTodayStr(),
     paymentDate: ''
   });
 
@@ -51,7 +61,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
         description: '', parentId: null, 
         unit: expenseType === 'labor' ? 'h' : (expenseType === 'revenue' ? 'vb' : 'un'), 
         quantity: 1, unitPrice: 0, amount: 0, entityName: '', 
-        date: new Date().toISOString().split('T')[0],
+        date: getTodayStr(),
         paymentDate: ''
       });
       setActiveItemType(initialItemType);

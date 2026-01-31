@@ -306,7 +306,7 @@ const FinancialOverview = ({ stats }: { stats: any }) => (
         </div>
       </div>
       <div className="flex flex-col items-center justify-center py-6">
-        <div className="relative w-48 h-48 flex items-center justify-center">
+        <div className="relative w-48 h-48 flex items-center justify-center mb-8">
           <svg viewBox="0 0 100 100" className="w-full h-full transform -rotate-90">
             <circle cx="50" cy="50" r="40" fill="transparent" stroke="currentColor" strokeWidth="12" className="text-blue-500" strokeDasharray={`${stats.distribution.labor * 2.51} 251`} />
             <circle cx="50" cy="50" r="40" fill="transparent" stroke="currentColor" strokeWidth="12" className="text-indigo-600" strokeDasharray={`${stats.distribution.material * 2.51} 251`} strokeDashoffset={`${-stats.distribution.labor * 2.51}`} />
@@ -314,6 +314,24 @@ const FinancialOverview = ({ stats }: { stats: any }) => (
           <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
             <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Total Gasto</span>
             <span className="text-lg font-black dark:text-white">{financial.formatBRL(stats.totalOut)}</span>
+          </div>
+        </div>
+
+        {/* LEGENDA DE CORES ADICIONADA */}
+        <div className="flex flex-wrap justify-center gap-6 mt-2">
+          <div className="flex items-center gap-3">
+            <div className="w-3 h-3 rounded-full bg-blue-500 shadow-sm" />
+            <div className="flex flex-col">
+              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Mão de Obra</span>
+              <span className="text-[11px] font-bold text-slate-800 dark:text-slate-200">{stats.distribution.labor.toFixed(1)}%</span>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="w-3 h-3 rounded-full bg-indigo-600 shadow-sm" />
+            <div className="flex flex-col">
+              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Materiais / Insumos</span>
+              <span className="text-[11px] font-bold text-slate-800 dark:text-slate-200">{stats.distribution.material.toFixed(1)}%</span>
+            </div>
           </div>
         </div>
       </div>

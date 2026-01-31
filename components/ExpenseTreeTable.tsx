@@ -59,6 +59,9 @@ export const ExpenseTreeTable: React.FC<ExpenseTreeTableProps> = ({
     onReorder(sourceId, targetItem.id, 'after');
   };
 
+  const totalTable = financial.sum(data.filter(i => i.depth === 0).map(i => i.amount));
+  const isRevenueTable = data.some(d => d.type === 'revenue');
+
   return (
     <div className="overflow-x-auto border border-slate-200 dark:border-slate-800 rounded-3xl bg-white dark:bg-slate-900 shadow-xl">
       <DragDropContext onDragEnd={handleDragEnd}>
@@ -145,12 +148,12 @@ export const ExpenseTreeTable: React.FC<ExpenseTreeTableProps> = ({
                             <div className="flex flex-col gap-0.5">
                               <div className="flex items-center gap-1 text-[10px] text-slate-500 dark:text-slate-400">
                                 <Calendar size={10} className="shrink-0" /> 
-                                <span>Gasto: {new Date(item.date).toLocaleDateString('pt-BR')}</span>
+                                <span>Gasto: {financial.formatDate(item.date)}</span>
                               </div>
                               {item.paymentDate && (
                                 <div className="flex items-center gap-1 text-[9px] text-emerald-600 dark:text-emerald-500 font-bold">
                                   <Clock size={9} className="shrink-0" /> 
-                                  <span>Pgto: {new Date(item.paymentDate).toLocaleDateString('pt-BR')}</span>
+                                  <span>Pgto: {financial.formatDate(item.paymentDate)}</span>
                                 </div>
                               )}
                             </div>
@@ -190,6 +193,18 @@ export const ExpenseTreeTable: React.FC<ExpenseTreeTableProps> = ({
                   </Draggable>
                 ))}
                 {provided.placeholder}
+
+                <tr className="bg-slate-950 dark:bg-black text-white font-black text-xs sticky bottom-0 z-10 shadow-2xl">
+                  <td colSpan={5} className="p-4 text-right uppercase tracking-[0.2em] text-[10px] border-r border-white/10">
+                    Total Acumulado ({isRevenueTable ? 'Entradas' : 'Saídas'}):
+                  </td>
+                  <td colSpan={5} className="p-4 border-r border-white/10 opacity-30 italic text-[9px]">
+                    Soma de todos os grupos e itens desta categoria
+                  </td>
+                  <td className={`p-4 text-right text-base tracking-tighter ${isRevenueTable ? 'text-emerald-400' : 'text-rose-400'}`}>
+                    {financial.formatBRL(totalTable)}
+                  </td>
+                </tr>
               </tbody>
             )}
           </Droppable>
