@@ -63,6 +63,30 @@ export interface MeasurementSnapshot {
   };
 }
 
+export interface ProjectAsset {
+  id: string;
+  name: string;
+  fileType: string;
+  fileSize: number;
+  uploadDate: string;
+  data: string; 
+}
+
+export type ExpenseType = 'labor' | 'material';
+
+export interface ProjectExpense {
+  id: string;
+  type: ExpenseType;
+  date: string;
+  description: string; // Descrição do serviço ou material
+  entityName: string; // Nome do Profissional ou Fornecedor
+  unit: string;
+  quantity: number;
+  unitPrice: number;
+  amount: number; // Total (Qtd * UnitPrice)
+  linkedWorkItemId?: string;
+}
+
 export const DEFAULT_THEME: PDFTheme = {
   primary: '#2563eb',
   secondary: '#64748b',
@@ -73,6 +97,12 @@ export const DEFAULT_THEME: PDFTheme = {
   rowTotal: '#1e293b',
   border: '#e2e8f0'
 };
+
+export interface GlobalSettings {
+  defaultCompanyName: string;
+  userName: string;
+  language: 'pt-BR' | 'en-US';
+}
 
 export interface Project {
   id: string;
@@ -85,6 +115,8 @@ export interface Project {
   history: MeasurementSnapshot[];
   theme: PDFTheme;
   bdi: number;
+  assets: ProjectAsset[];
+  expenses: ProjectExpense[];
   config: {
     strict: boolean;
     printCards: boolean;

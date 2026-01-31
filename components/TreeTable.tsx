@@ -54,30 +54,25 @@ export const TreeTable: React.FC<TreeTableProps> = ({
 
   const handleDragEnd = (result: DropResult) => {
     if (!result.destination || isReadOnly) return;
-    
     const sourceId = result.draggableId;
     const targetIdx = result.destination.index;
     const targetItem = filteredData[targetIdx];
-    
     if (!targetItem) return;
-
-    // Lógica simplificada: Movemos para depois do alvo
-    // Em um SaaS real, poderíamos detectar a posição X do mouse para saber se é "inside" ou "after"
     onReorder(sourceId, targetItem.id, 'after');
   };
 
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center gap-2 no-print">
-        <button onClick={onExpandAll} className="flex items-center gap-2 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-blue-600 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg transition-all shadow-sm">
-          <Maximize2 size={12} /> Expandir Tudo
+        <button onClick={onExpandAll} className="flex items-center gap-2 px-3 py-1.5 text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-blue-600 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg transition-all shadow-sm">
+          <Maximize2 size={12} /> <span className="hidden xs:inline">Expandir</span>
         </button>
-        <button onClick={onCollapseAll} className="flex items-center gap-2 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-blue-600 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg transition-all shadow-sm">
-          <Minimize2 size={12} /> Recolher Tudo
+        <button onClick={onCollapseAll} className="flex items-center gap-2 px-3 py-1.5 text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-blue-600 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg transition-all shadow-sm">
+          <Minimize2 size={12} /> <span className="hidden xs:inline">Recolher</span>
         </button>
       </div>
 
-      <div className="overflow-x-auto border border-slate-200 dark:border-slate-800 rounded-3xl bg-white dark:bg-slate-900 shadow-2xl">
+      <div className="overflow-x-auto border border-slate-200 dark:border-slate-800 rounded-2xl sm:rounded-3xl bg-white dark:bg-slate-900 shadow-xl">
         <DragDropContext onDragEnd={handleDragEnd}>
           <table className="min-w-[1950px] w-full border-collapse text-[11px]">
             <thead className="bg-slate-900 dark:bg-black text-white sticky top-0 z-20">
@@ -121,25 +116,16 @@ export const TreeTable: React.FC<TreeTableProps> = ({
                   className="divide-y divide-slate-100 dark:divide-slate-800"
                 >
                   {filteredData.map((item, index) => (
-                    <Draggable 
-                      key={item.id} 
-                      draggableId={item.id} 
-                      index={index}
-                      isDragDisabled={isReadOnly}
-                    >
+                    <Draggable key={item.id} draggableId={item.id} index={index} isDragDisabled={isReadOnly}>
                       {(provided, snapshot) => (
-                        <tr 
-                          ref={provided.innerRef}
-                          {...provided.draggableProps}
-                          className={`group transition-all duration-150 ${item.type === 'category' ? 'bg-slate-50/80 dark:bg-slate-800/30 font-bold' : 'hover:bg-blue-50/40 dark:hover:bg-blue-900/5'} ${snapshot.isDragging ? 'dragging-row' : ''}`}
-                        >
+                        <tr ref={provided.innerRef} {...provided.draggableProps} className={`group transition-all duration-150 ${item.type === 'category' ? 'bg-slate-50/80 dark:bg-slate-800/30 font-bold' : 'hover:bg-blue-50/40 dark:hover:bg-blue-900/5'} ${snapshot.isDragging ? 'dragging-row' : ''}`}>
                           <td className="p-2 border-r border-slate-100 dark:border-slate-800 no-print text-center">
                             <div {...provided.dragHandleProps} className="inline-flex p-1.5 text-slate-300 hover:text-indigo-500 transition-colors cursor-grab active:cursor-grabbing">
                               <GripVertical size={16} />
                             </div>
                           </td>
                           <td className="p-2 border-r border-slate-100 dark:border-slate-800 no-print">
-                            <div className="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <div className="flex items-center justify-center gap-1 lg:opacity-0 group-hover:opacity-100 transition-opacity">
                               <button disabled={isReadOnly} onClick={() => onEdit(item)} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg disabled:opacity-20"><Edit3 size={14}/></button>
                               <button disabled={isReadOnly} onClick={() => onDelete(item.id)} className="p-1.5 text-rose-300 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-lg disabled:opacity-20"><Trash2 size={14}/></button>
                             </div>
@@ -157,7 +143,7 @@ export const TreeTable: React.FC<TreeTableProps> = ({
                                 {item.type === 'category' ? <Layers size={14} className="text-blue-500 flex-shrink-0" /> : <Package size={14} className="text-slate-300 flex-shrink-0" />}
                                 <span className={`truncate ${item.type === 'category' ? 'text-slate-900 dark:text-slate-100 uppercase text-[10px] font-black' : 'text-slate-600 dark:text-slate-300'}`}>{item.name}</span>
                                 {item.type === 'category' && !isReadOnly && (
-                                  <div className="ml-auto opacity-0 group-hover:opacity-100 flex items-center gap-1 transition-opacity">
+                                  <div className="ml-auto lg:opacity-0 group-hover:opacity-100 flex items-center gap-1 transition-opacity">
                                     <button onClick={() => onAddChild(item.id, 'category')} className="p-1 text-slate-400 hover:text-blue-600"><FolderPlus size={14} /></button>
                                     <button onClick={() => onAddChild(item.id, 'item')} className="p-1 text-slate-400 hover:text-emerald-600"><FilePlus size={14} /></button>
                                   </div>
@@ -199,8 +185,8 @@ export const TreeTable: React.FC<TreeTableProps> = ({
                   
                   {/* TOTAL GERAL FOOTER */}
                   <tr className="bg-slate-950 text-white font-black text-xs sticky bottom-0 z-10 shadow-2xl">
-                    <td colSpan={6} className="p-5 text-right uppercase tracking-[0.2em] text-[10px] border-r border-white/10">Consolidado da Obra:</td>
-                    <td colSpan={2} className="p-4 border-r border-white/10 opacity-30 italic">Preços Unitários Médios</td>
+                    <td colSpan={6} className="p-5 text-right uppercase tracking-[0.2em] text-[10px] border-r border-white/10">Consolidado:</td>
+                    <td colSpan={2} className="p-4 border-r border-white/10 opacity-30 italic">Preços Médios</td>
                     <td className="p-4 border-r border-white/10"></td>
                     <td className="p-4 border-r border-white/10 text-right text-base tracking-tighter">{financial.formatBRL(financial.sum(filteredData.filter(i => i.depth === 0).map(i => i.contractTotal)))}</td>
                     <td colSpan={2} className="p-4 border-r border-white/10 text-right opacity-50">{financial.formatBRL(financial.sum(filteredData.filter(i => i.depth === 0).map(i => i.previousTotal)))}</td>

@@ -1,34 +1,57 @@
 
 import { useState, useCallback, useEffect } from 'react';
-import { Project, WorkItem, MeasurementSnapshot } from '../types';
+import { Project, WorkItem, MeasurementSnapshot, DEFAULT_THEME, GlobalSettings } from '../types';
 import { treeService } from '../services/treeService';
 
 interface State {
   projects: Project[];
   activeProjectId: string | null;
+  globalSettings: GlobalSettings;
 }
+
+const INITIAL_SETTINGS: GlobalSettings = {
+  defaultCompanyName: 'Sua Empresa de Engenharia',
+  userName: 'Usuário ProMeasure',
+  language: 'pt-BR'
+};
 
 export const useProjectState = () => {
   const [past, setPast] = useState<State[]>([]);
   const [present, setPresent] = useState<State>(() => {
-    const saved = localStorage.getItem('promeasure_v4_projects');
-    const parsed = saved ? JSON.parse(saved) : [];
+    const saved = localStorage.getItem('promeasure_v4_data');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      return {
+        ...parsed,
+        projects: parsed.projects.map((p: any) => ({
+          ...p,
+          assets: p.assets || [],
+          expenses: p.expenses || []
+        })),
+        globalSettings: parsed.globalSettings || INITIAL_SETTINGS
+      };
+    }
+    
+    // Fallback para legado v4_projects se existir
+    const legacySaved = localStorage.getItem('promeasure_v4_projects');
+    const legacyParsed = legacySaved ? JSON.parse(legacySaved) : [];
     return {
-      projects: parsed,
-      activeProjectId: parsed.length > 0 ? parsed[0].id : null,
+      projects: legacyParsed,
+      activeProjectId: legacyParsed.length > 0 ? legacyParsed[0].id : null,
+      globalSettings: INITIAL_SETTINGS
     };
   });
   const [future, setFuture] = useState<State[]>([]);
 
   useEffect(() => {
-    localStorage.setItem('promeasure_v4_projects', JSON.stringify(present.projects));
+    localStorage.setItem('promeasure_v4_data', JSON.stringify(present));
   }, [present]);
 
   const canUndo = past.length > 0;
   const canRedo = future.length > 0;
 
   const saveHistory = useCallback((newState: State) => {
-    setPast(prev => [...prev, present]);
+    setPast(prev => [...prev, present].slice(-20)); // Limite de 20 níveis de undo
     setPresent(newState);
     setFuture([]);
   }, [present]);
@@ -55,6 +78,10 @@ export const useProjectState = () => {
     saveHistory({ ...present, projects: newProjects });
   }, [present, saveHistory]);
 
+  const setGlobalSettings = useCallback((settings: GlobalSettings) => {
+    saveHistory({ ...present, globalSettings: settings });
+  }, [present, saveHistory]);
+
   const setActiveProjectId = useCallback((id: string | null) => {
     setPresent(prev => ({ ...prev, activeProjectId: id }));
   }, []);
@@ -70,18 +97,16 @@ export const useProjectState = () => {
     const activeProject = present.projects.find(p => p.id === present.activeProjectId);
     if (!activeProject) return;
 
-    // CRITICAL: Devemos gerar a árvore processada para ter os totais corretos antes de salvar o snapshot
     const tree = treeService.buildTree(activeProject.items);
     const processedTree = tree.map((r, i) => treeService.processRecursive(r, '', i, activeProject.bdi));
     const stats = treeService.calculateBasicStats(activeProject.items, activeProject.bdi);
     
-    // Obter lista flat dos itens processados (com WBS e totais calculados)
     const processedItemsFlat = treeService.flattenTree(processedTree, new Set(activeProject.items.map(i => i.id)));
 
     const snapshot: MeasurementSnapshot = {
       measurementNumber: activeProject.measurementNumber,
       date: activeProject.referenceDate || new Date().toLocaleDateString('pt-BR'),
-      items: JSON.parse(JSON.stringify(processedItemsFlat)), // Salva versão calculada
+      items: JSON.parse(JSON.stringify(processedItemsFlat)),
       totals: {
         contract: stats.contract,
         period: stats.current,
@@ -90,13 +115,12 @@ export const useProjectState = () => {
       }
     };
 
-    // Preparar itens para o próximo período
     const nextPeriodItems = activeProject.items.map(item => {
       if (item.type === 'item') {
         return {
           ...item,
           previousQuantity: (item.previousQuantity || 0) + (item.currentQuantity || 0),
-          previousTotal: (item.previousTotal || 0) + (item.currentTotal || 0), // Este total será recalculado no próximo processamento se o BDI mudar
+          previousTotal: (item.previousTotal || 0) + (item.currentTotal || 0),
           currentQuantity: 0,
           currentTotal: 0,
           currentPercentage: 0
@@ -117,6 +141,8 @@ export const useProjectState = () => {
     projects: present.projects,
     activeProjectId: present.activeProjectId,
     activeProject: present.projects.find(p => p.id === present.activeProjectId) || null,
+    globalSettings: present.globalSettings,
+    setGlobalSettings,
     setActiveProjectId,
     updateActiveProject,
     updateProjects,

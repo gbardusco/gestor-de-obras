@@ -2,26 +2,20 @@
 import React, { useState, useEffect } from 'react';
 import { WorkItem, ItemType } from '../types';
 import { financial } from '../utils/math';
-import { X, Save, AlertCircle, Briefcase, Layers, Package, FolderTree, Percent } from 'lucide-react';
+import { X, Save, Layers, Package } from 'lucide-react';
 import { z } from 'zod';
 
-// Esquema de Validação Zod
 const WorkItemSchema = z.object({
-  name: z.string().min(3, "O nome deve ter pelo menos 3 caracteres").max(200, "Nome muito longo"),
+  name: z.string().min(3, "Mínimo 3 letras").max(200, "Muito longo"),
   type: z.enum(['category', 'item']),
   parentId: z.string().nullable().optional(),
   unit: z.string().optional(),
-  contractQuantity: z.number().min(0, "A quantidade não pode ser negativa"),
-  unitPriceNoBdi: z.number().min(0, "O preço não pode ser negativo"),
-  unitPrice: z.number().min(0, "O preço total não pode ser negativo"),
-  currentPercentage: z.number().min(0).max(100, "Porcentagem deve estar entre 0 e 100").optional(),
-}).refine((data) => {
-  if (data.type === 'item') {
-    return data.unit && data.unit.trim().length > 0;
-  }
-  return true;
-}, {
-  message: "Unidade é obrigatória para itens de serviço",
+  contractQuantity: z.number().min(0, "Mínimo 0"),
+  unitPriceNoBdi: z.number().min(0, "Mínimo 0"),
+  unitPrice: z.number().min(0, "Mínimo 0"),
+  currentPercentage: z.number().min(0).max(100).optional(),
+}).refine((data) => data.type === 'category' || (data.unit && data.unit.trim().length > 0), {
+  message: "Unidade obrigatória",
   path: ["unit"],
 });
 
@@ -36,292 +30,162 @@ interface WorkItemModalProps {
 }
 
 export const WorkItemModal: React.FC<WorkItemModalProps> = ({
-  isOpen,
-  onClose,
-  onSave,
-  editingItem,
-  type: initialType,
-  categories,
-  projectBdi
+  isOpen, onClose, onSave, editingItem, type: initialType, categories, projectBdi
 }) => {
   const [activeType, setActiveType] = useState<ItemType>(initialType);
   const [formData, setFormData] = useState<Partial<WorkItem>>({
-    name: '',
-    parentId: null,
-    unit: '',
-    contractQuantity: 0,
-    unitPrice: 0,
-    unitPriceNoBdi: 0,
-    cod: '',
-    fonte: 'Próprio'
+    name: '', parentId: null, unit: '', contractQuantity: 0, unitPrice: 0, unitPriceNoBdi: 0, cod: '', fonte: 'Próprio'
   });
-  
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [isTouched, setIsTouched] = useState<Record<string, boolean>>({});
+  
+  const [strQty, setStrQty] = useState('0');
+  const [strPriceNoBdi, setStrPriceNoBdi] = useState('0');
+  const [strPriceWithBdi, setStrPriceWithBdi] = useState('0');
 
   useEffect(() => {
     if (editingItem) {
       setFormData(editingItem);
       setActiveType(editingItem.type);
+      setStrQty(String(editingItem.contractQuantity || 0).replace('.', ','));
+      setStrPriceNoBdi(String(editingItem.unitPriceNoBdi || 0).replace('.', ','));
+      setStrPriceWithBdi(String(editingItem.unitPrice || 0).replace('.', ','));
     } else {
-      setFormData({
-        name: '',
-        parentId: null,
-        unit: initialType === 'item' ? 'un' : '',
-        contractQuantity: 0,
-        unitPrice: 0,
-        unitPriceNoBdi: 0,
-        cod: '',
-        fonte: 'Próprio'
-      });
+      setFormData({ name: '', parentId: null, unit: initialType === 'item' ? 'un' : '', contractQuantity: 0, unitPrice: 0, unitPriceNoBdi: 0, cod: '', fonte: 'Próprio' });
       setActiveType(initialType);
+      setStrQty('0'); setStrPriceNoBdi('0'); setStrPriceWithBdi('0');
     }
     setErrors({});
-    setIsTouched({});
   }, [editingItem, initialType, isOpen]);
 
-  // Validação em tempo real ao mudar campos
-  const validateField = (name: string, value: any) => {
-    const currentData = { ...formData, [name]: value, type: activeType };
-    const result = WorkItemSchema.safeParse(currentData);
-    
-    if (!result.success) {
-      const fieldError = result.error.issues.find(issue => issue.path.includes(name));
-      if (fieldError) {
-        setErrors(prev => ({ ...prev, [name]: fieldError.message }));
+  const parseInput = (val: string): number => {
+    // Substitui vírgula por ponto e parseia
+    const normalized = val.replace(',', '.');
+    const parsed = parseFloat(normalized);
+    return isNaN(parsed) ? 0 : parsed;
+  };
+
+  const handleNumericChange = (setter: (v: string) => void, val: string, field?: 'priceNoBdi' | 'priceWithBdi') => {
+    // Permite apenas números, ponto e vírgula
+    const sanitized = val.replace(/[^0-9.,]/g, '');
+    setter(sanitized);
+
+    if (field) {
+      const num = parseInput(sanitized);
+      if (field === 'priceNoBdi') {
+        setStrPriceWithBdi(String(financial.round(num * (1 + projectBdi/100))).replace('.', ','));
       } else {
-        setErrors(prev => {
-          const next = { ...prev };
-          delete next[name];
-          return next;
-        });
+        setStrPriceNoBdi(String(financial.round(num / (1 + projectBdi/100))).replace('.', ','));
       }
-    } else {
-      setErrors(prev => {
-        const next = { ...prev };
-        delete next[name];
-        return next;
-      });
     }
-  };
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value, type } = e.target;
-    let finalValue: any = value;
-
-    if (type === 'number') {
-      finalValue = value === '' ? 0 : parseFloat(value);
-    }
-    
-    // Tratamento crucial para garantir que a categoria pai seja salva corretamente como null quando selecionado "Raiz"
-    if (name === 'parentId') {
-      finalValue = value === "" ? null : value;
-    }
-
-    setFormData(prev => ({ ...prev, [name]: finalValue }));
-    if (isTouched[name]) {
-      validateField(name, finalValue);
-    }
-  };
-
-  const handleBlur = (e: React.FocusEvent<any>) => {
-    const { name } = e.target;
-    setIsTouched(prev => ({ ...prev, [name]: true }));
-    validateField(name, formData[name as keyof WorkItem]);
-  };
-
-  /**
-   * Atualiza Preço C/ BDI baseado no Preço S/ BDI
-   */
-  const handlePriceNoBdiChange = (val: number) => {
-    const priceWithBdi = financial.round(val * (1 + (projectBdi || 0) / 100));
-    const nextData = { ...formData, unitPriceNoBdi: val, unitPrice: priceWithBdi };
-    setFormData(nextData);
-    validateField('unitPriceNoBdi', val);
-  };
-
-  /**
-   * Atualiza Preço S/ BDI baseado no Preço C/ BDI (Cálculo Reverso)
-   */
-  const handlePriceWithBdiChange = (val: number) => {
-    const priceWithoutBdi = financial.round(val / (1 + (projectBdi || 0) / 100));
-    const nextData = { ...formData, unitPrice: val, unitPriceNoBdi: priceWithoutBdi };
-    setFormData(nextData);
-    validateField('unitPrice', val);
   };
 
   const handleSubmit = () => {
-    const result = WorkItemSchema.safeParse({ ...formData, type: activeType });
+    const finalData = {
+      ...formData,
+      type: activeType,
+      contractQuantity: parseInput(strQty),
+      unitPriceNoBdi: parseInput(strPriceNoBdi),
+      unitPrice: parseInput(strPriceWithBdi)
+    };
     
+    const result = WorkItemSchema.safeParse(finalData);
     if (result.success) {
-      onSave({ ...formData, type: activeType });
+      onSave(finalData);
       onClose();
     } else {
       const newErrors: Record<string, string> = {};
-      result.error.issues.forEach(issue => {
-        if (issue.path[0]) {
-          newErrors[issue.path[0].toString()] = issue.message;
-        }
-      });
+      result.error.issues.forEach(issue => { if (issue.path[0]) newErrors[issue.path[0].toString()] = issue.message; });
       setErrors(newErrors);
-      // Marcar todos como tocados para mostrar erros
-      const touched: Record<string, boolean> = {};
-      Object.keys(formData).forEach(key => touched[key] = true);
-      setIsTouched(touched);
     }
   };
 
   if (!isOpen) return null;
-
   const isCategory = activeType === 'category';
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-300">
-      <div className="bg-white dark:bg-slate-900 w-full max-w-2xl rounded-[40px] shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col">
-        {/* Header */}
-        <div className="px-10 pt-8 pb-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className={`p-3 rounded-2xl ${isCategory ? 'bg-blue-600' : 'bg-emerald-600'} text-white shadow-lg`}>
-              {isCategory ? <Layers size={24} /> : <Package size={24} />}
+    <div className="fixed inset-0 z-[150] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-300">
+      <div className="bg-white dark:bg-slate-900 w-full max-w-2xl sm:rounded-[3rem] shadow-2xl border-t sm:border border-slate-200 dark:border-slate-800 flex flex-col max-h-[95vh] overflow-hidden">
+        <div className="px-6 sm:px-10 pt-8 pb-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-3">
+            <div className={`p-3 rounded-2xl ${isCategory ? 'bg-indigo-600' : 'bg-emerald-600'} text-white`}>
+              {isCategory ? <Layers size={22} /> : <Package size={22} />}
             </div>
             <div>
-              <h2 className="text-xl font-black text-slate-800 dark:text-white tracking-tight">
-                {editingItem ? 'Editar Registro' : 'Novo Cadastro'}
-              </h2>
-              <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Painel de Controle EAP</p>
+              <h2 className="text-xl font-black dark:text-white tracking-tight">{editingItem ? 'Editar' : 'Adicionar'} {isCategory ? 'Grupo' : 'Serviço'}</h2>
+              <p className="text-[9px] text-slate-500 font-bold uppercase tracking-widest">Configuração da EAP</p>
             </div>
           </div>
-          <button onClick={onClose} className="p-3 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-2xl text-slate-400 transition-all">
-            <X size={24} />
-          </button>
+          <button onClick={onClose} className="p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-all"><X size={20} /></button>
         </div>
 
-        {/* Tipo de Registro (Switcher) */}
-        {!editingItem && (
-          <div className="px-10 pt-6">
+        <div className="p-6 sm:p-10 space-y-6 overflow-y-auto custom-scrollbar flex-1">
+          {!editingItem && (
             <div className="flex bg-slate-100 dark:bg-slate-800 p-1.5 rounded-2xl gap-2">
-              <button 
-                onClick={() => { setActiveType('category'); setErrors({}); }}
-                className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${activeType === 'category' ? 'bg-white dark:bg-slate-700 text-blue-600 shadow-sm' : 'text-slate-500'}`}
-              >
-                <FolderTree size={14} /> Categoria / Grupo
-              </button>
-              <button 
-                onClick={() => { setActiveType('item'); setErrors({}); }}
-                className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${activeType === 'item' ? 'bg-white dark:bg-slate-700 text-emerald-600 shadow-sm' : 'text-slate-500'}`}
-              >
-                <Package size={14} /> Item de Serviço
-              </button>
+              <button onClick={() => setActiveType('category')} className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeType === 'category' ? 'bg-white dark:bg-slate-700 text-indigo-600 shadow-md' : 'text-slate-500'}`}>Categoria/Grupo</button>
+              <button onClick={() => setActiveType('item')} className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeType === 'item' ? 'bg-white dark:bg-slate-700 text-emerald-600 shadow-md' : 'text-slate-500'}`}>Serviço/Item</button>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Body */}
-        <div className="p-10 space-y-6 overflow-y-auto max-h-[60vh] custom-scrollbar">
-          <div className="space-y-4">
-            <div className="col-span-2">
-              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Descrição do Elemento</label>
-              <textarea 
-                name="name"
-                rows={2}
-                className={`w-full px-6 py-4 rounded-2xl border bg-slate-50 dark:bg-slate-800 dark:text-white text-sm font-medium transition-all focus:ring-4 outline-none ${errors.name ? 'border-rose-500 ring-rose-500/20' : 'border-slate-200 dark:border-slate-700 focus:border-blue-500 focus:ring-blue-500/10'}`}
-                value={formData.name}
-                placeholder={isCategory ? "Ex: ESTRUTURAS DE CONCRETO" : "Ex: Viga Baldrame em Concreto Armado"}
-                onChange={handleInputChange}
-                onBlur={handleBlur}
-              />
-              {errors.name && <p className="text-[10px] text-rose-500 font-bold mt-2 ml-1 flex items-center gap-1 animate-in slide-in-from-top-1"><AlertCircle size={10}/> {errors.name}</p>}
+          <div className="grid grid-cols-1 gap-6">
+            <div>
+              <label className="text-[10px] font-black text-slate-400 uppercase mb-2 block tracking-widest">Descrição Completa</label>
+              <textarea autoFocus rows={3} className="w-full px-6 py-4 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 dark:text-white text-sm font-semibold outline-none focus:border-indigo-500 transition-all resize-none" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
+              {errors.name && <p className="text-[10px] text-rose-500 font-bold mt-2 uppercase">{errors.name}</p>}
             </div>
 
-            <div className="col-span-2">
-              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Vincular à Categoria Superior</label>
-              <div className="relative">
-                <Briefcase size={16} className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400" />
-                <select 
-                  name="parentId"
-                  className="w-full pl-14 pr-6 py-4 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 dark:text-white text-sm font-bold appearance-none cursor-pointer outline-none focus:border-blue-500"
-                  value={formData.parentId === null ? "" : formData.parentId}
-                  onChange={handleInputChange}
-                >
-                  <option value="">Raiz do Projeto (Nível 1)</option>
-                  {categories.filter(c => c.id !== editingItem?.id).map(cat => (
-                    <option key={cat.id} value={cat.id}>{cat.wbs} - {cat.name}</option>
-                  ))}
-                </select>
-              </div>
+            <div>
+              <label className="text-[10px] font-black text-slate-400 uppercase mb-2 block tracking-widest">Nível Hierárquico (Opcional)</label>
+              <select className="w-full px-6 py-4 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 dark:text-white text-xs font-bold outline-none focus:border-indigo-500 transition-all appearance-none" value={formData.parentId || ""} onChange={e => setFormData({...formData, parentId: e.target.value || null})}>
+                <option value="">Item Raiz (Nível 1)</option>
+                {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.wbs} - {cat.name}</option>)}
+              </select>
             </div>
 
             {!isCategory && (
-              <div className="grid grid-cols-2 gap-4 pt-2">
+              <div className="grid grid-cols-2 gap-4 animate-in slide-in-from-top-2">
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Unidade</label>
-                  <input 
-                    name="unit"
-                    className={`w-full px-6 py-4 rounded-2xl border bg-slate-50 dark:bg-slate-800 dark:text-white text-sm font-bold text-center outline-none transition-all ${errors.unit ? 'border-rose-500 ring-rose-500/10' : 'border-slate-200 dark:border-slate-700'}`}
-                    value={formData.unit}
-                    placeholder="m², m³, un..."
-                    onChange={handleInputChange}
-                    onBlur={handleBlur}
-                  />
-                  {errors.unit && <p className="text-[10px] text-rose-500 font-bold mt-1 text-center">{errors.unit}</p>}
+                  <label className="text-[10px] font-black text-slate-400 uppercase mb-2 block tracking-widest">Unidade</label>
+                  <input placeholder="m², un, kg..." className="w-full px-6 py-4 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 dark:text-white text-xs font-black uppercase text-center outline-none focus:border-indigo-500 transition-all" value={formData.unit} onChange={e => setFormData({...formData, unit: e.target.value})} />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Cód. Referência</label>
+                  <label className="text-[10px] font-black text-slate-400 uppercase mb-2 block tracking-widest">Quantidade</label>
                   <input 
-                    name="cod"
-                    className="w-full px-6 py-4 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 dark:text-white text-sm font-mono outline-none"
-                    value={formData.cod}
-                    placeholder="Ex: SINAPI-01"
-                    onChange={handleInputChange}
+                    type="text" 
+                    inputMode="decimal" 
+                    className="w-full px-6 py-4 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 dark:text-white text-xs font-black text-center outline-none focus:border-indigo-500 transition-all" 
+                    value={strQty} 
+                    onChange={e => handleNumericChange(setStrQty, e.target.value)} 
                   />
                 </div>
                 
-                <div className="col-span-2 space-y-4 bg-slate-50 dark:bg-slate-800/50 p-6 rounded-3xl border border-slate-100 dark:border-slate-700">
-                  <div className="grid grid-cols-2 gap-4">
+                <div className="col-span-2 p-6 bg-slate-50 dark:bg-slate-800/40 rounded-3xl border-2 border-slate-100 dark:border-slate-800 space-y-6">
+                  <div className="grid grid-cols-2 gap-6">
                     <div>
-                      <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Quantidade Contratual</label>
-                      <input 
-                        name="contractQuantity"
-                        type="number"
-                        step="any"
-                        className={`w-full px-6 py-4 rounded-2xl border bg-white dark:bg-slate-900 dark:text-white text-sm font-black text-center outline-none ${errors.contractQuantity ? 'border-rose-500 ring-4 ring-rose-500/5' : 'border-slate-200 dark:border-slate-700'}`}
-                        value={formData.contractQuantity}
-                        onChange={handleInputChange}
-                        onBlur={handleBlur}
-                      />
-                      {errors.contractQuantity && <p className="text-[10px] text-rose-500 font-bold mt-1 text-center">{errors.contractQuantity}</p>}
+                      <label className="text-[10px] font-black text-slate-400 uppercase mb-2 block tracking-widest">P. Unit S/ BDI</label>
+                      <div className="relative">
+                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-400">R$</span>
+                        <input 
+                          type="text" 
+                          inputMode="decimal" 
+                          className="w-full pl-10 pr-4 py-4 rounded-xl border-2 border-white dark:border-slate-800 bg-white dark:bg-slate-900 dark:text-white text-xs font-black text-right outline-none focus:border-indigo-500 transition-all" 
+                          value={strPriceNoBdi} 
+                          onChange={e => handleNumericChange(setStrPriceNoBdi, e.target.value, 'priceNoBdi')} 
+                        />
+                      </div>
                     </div>
                     <div>
-                      <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">P. Unitário S/ BDI (R$)</label>
-                      <input 
-                        name="unitPriceNoBdi"
-                        type="number"
-                        step="any"
-                        className={`w-full px-6 py-4 rounded-2xl border bg-white dark:bg-slate-900 dark:text-slate-600 text-sm font-black text-right outline-none ${errors.unitPriceNoBdi ? 'border-rose-500 ring-4 ring-rose-500/5' : 'border-slate-200 dark:border-slate-700'}`}
-                        value={formData.unitPriceNoBdi}
-                        onChange={(e) => handlePriceNoBdiChange(parseFloat(e.target.value) || 0)}
-                        onBlur={handleBlur}
-                      />
-                      {errors.unitPriceNoBdi && <p className="text-[10px] text-rose-500 font-bold mt-1 text-right mr-1">{errors.unitPriceNoBdi}</p>}
+                      <label className="text-[10px] font-black text-emerald-600 uppercase mb-2 block tracking-widest">P. Final C/ BDI</label>
+                      <div className="relative">
+                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-emerald-500/50">R$</span>
+                        <input 
+                          type="text" 
+                          inputMode="decimal" 
+                          className="w-full pl-10 pr-4 py-4 rounded-xl border-2 border-emerald-100 dark:border-emerald-900/20 bg-emerald-50/30 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400 text-xs font-black text-right outline-none focus:border-emerald-500 transition-all shadow-inner" 
+                          value={strPriceWithBdi} 
+                          onChange={e => handleNumericChange(setStrPriceWithBdi, e.target.value, 'priceWithBdi')} 
+                        />
+                      </div>
                     </div>
-                  </div>
-                  
-                  <div className="pt-2 border-t border-slate-200 dark:border-slate-700">
-                    <div className="flex items-center justify-between mb-2">
-                       <label className="text-[10px] font-black text-emerald-600 uppercase tracking-widest ml-1">Preço Final C/ BDI ({projectBdi}%)</label>
-                       <Percent size={12} className="text-emerald-500" />
-                    </div>
-                    <input 
-                      name="unitPrice"
-                      type="number"
-                      step="any"
-                      className={`w-full px-6 py-5 rounded-2xl border bg-emerald-50/50 dark:bg-emerald-900/20 dark:text-emerald-400 text-lg font-black text-right text-emerald-700 focus:ring-4 focus:ring-emerald-500/10 outline-none transition-all ${errors.unitPrice ? 'border-rose-500 ring-rose-500/20' : 'border-emerald-200 dark:border-emerald-800 focus:border-emerald-500'}`}
-                      value={formData.unitPrice}
-                      onChange={(e) => handlePriceWithBdiChange(parseFloat(e.target.value) || 0)}
-                      onBlur={handleBlur}
-                    />
-                    {errors.unitPrice && <p className="text-[10px] text-rose-500 font-bold mt-2 text-right mr-1">{errors.unitPrice}</p>}
-                    <p className="text-[8px] text-slate-400 font-bold mt-2 italic text-center uppercase tracking-widest">Base de cálculo: Valor sem BDI * {(1 + (projectBdi || 0)/100).toFixed(2)}</p>
                   </div>
                 </div>
               </div>
@@ -329,14 +193,10 @@ export const WorkItemModal: React.FC<WorkItemModalProps> = ({
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="px-10 py-8 bg-slate-50 dark:bg-slate-800/80 border-t border-slate-100 dark:border-slate-700 flex justify-end items-center gap-4">
-          <button onClick={onClose} className="px-8 py-3 text-xs font-black text-slate-500 hover:text-slate-800 dark:hover:text-white uppercase tracking-widest transition-all">Descartar</button>
-          <button 
-            onClick={handleSubmit}
-            className={`px-10 py-4 text-xs font-black text-white ${isCategory ? 'bg-blue-600 shadow-blue-500/20' : 'bg-emerald-600 shadow-emerald-500/20'} rounded-2xl shadow-xl transition-all flex items-center gap-2 active:scale-95`}
-          >
-            <Save size={16} /> Salvar Alterações
+        <div className="px-6 sm:px-10 py-6 sm:py-8 bg-slate-50 dark:bg-slate-800/80 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row justify-end items-stretch gap-4 shrink-0">
+          <button onClick={onClose} className="py-4 text-[11px] font-black text-slate-500 uppercase tracking-widest hover:text-slate-700 transition-colors">Cancelar</button>
+          <button onClick={handleSubmit} className={`py-5 px-10 text-[11px] font-black text-white ${isCategory ? 'bg-indigo-600 shadow-indigo-500/30' : 'bg-emerald-600 shadow-emerald-500/30'} rounded-2xl shadow-xl flex items-center justify-center gap-3 active:scale-95 transition-all uppercase tracking-[0.1em]`}>
+            <Save size={18} /> {editingItem ? 'Atualizar Registro' : 'Confirmar Inclusão'}
           </button>
         </div>
       </div>

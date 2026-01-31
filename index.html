@@ -3,7 +3,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>ProMeasure Pro - Gestão de Engenharia SaaS</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -18,6 +18,9 @@
               '3xl': '1.5rem',
               '4xl': '2rem',
             },
+            screens: {
+              'xs': '475px',
+            }
           },
         },
       }
@@ -37,14 +40,24 @@
         body { 
           font-family: 'Inter', sans-serif; 
           -webkit-font-smoothing: antialiased; 
-          overflow-x: hidden;
           background-color: #f8fafc;
+          touch-action: manipulation;
         }
 
-        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
         .dark ::-webkit-scrollbar-thumb { background: #334155; }
+
+        /* Estilo para garantir que o scroll horizontal de tabelas seja suave no mobile */
+        .table-container {
+          -webkit-overflow-scrolling: touch;
+          overflow-x: auto;
+          scrollbar-width: none; /* Firefox */
+        }
+        .table-container::-webkit-scrollbar {
+          display: none; /* Chrome/Safari */
+        }
 
         .dragging-row {
           background: white !important;
@@ -57,60 +70,16 @@
         
         .dark .dragging-row {
           background: #1e293b !important;
-          box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.5) !important;
         }
 
         .print-only { display: none; }
 
         @media print {
-          @page {
-            size: A4 landscape;
-            margin: 5mm;
-          }
-          
-          html, body {
-            background-color: #fff !important;
-            color: #000 !important;
-            height: auto !important;
-            overflow: visible !important;
-          }
-
+          @page { size: A4 landscape; margin: 5mm; }
           .no-print { display: none !important; }
           .print-only { display: block !important; }
-          
-          .print-table {
-            width: 100% !important;
-            border-collapse: collapse !important;
-            table-layout: fixed !important;
-          }
-
-          .print-table th, .print-table td {
-            border: 0.5pt solid #000 !important;
-            padding: 2pt !important;
-            word-break: break-word !important;
-            font-size: 7pt !important;
-          }
-
-          .print-table th {
-            background-color: #e5e7eb !important;
-            color: #000 !important;
-            -webkit-print-color-adjust: exact;
-          }
-
-          .print-header {
-            margin-bottom: 20px !important;
-            border-bottom: 2pt solid #000 !important;
-            padding-bottom: 10px !important;
-          }
-
-          .signature-box {
-            break-inside: avoid;
-          }
-          
-          * {
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
-          }
+          .print-table { width: 100% !important; border-collapse: collapse !important; table-layout: fixed !important; }
+          .print-table th, .print-table td { border: 0.5pt solid #000 !important; padding: 2pt !important; font-size: 7pt !important; }
         }
     </style>
 <script type="importmap">
