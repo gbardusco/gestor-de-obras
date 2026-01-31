@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { WorkItem, ItemType } from '../types';
 import { financial } from '../utils/math';
-import { X, Save, Layers, Package, Calculator } from 'lucide-react';
+import { X, Save, Layers, Package, Calculator, FolderTree } from 'lucide-react';
 import { z } from 'zod';
 
 const WorkItemSchema = z.object({
@@ -66,7 +66,10 @@ export const WorkItemModal: React.FC<WorkItemModalProps> = ({
   };
 
   const handleNumericChange = (setter: (v: string) => void, val: string, field?: 'qty' | 'priceNoBdi' | 'priceWithBdi' | 'totalWithBdi') => {
-    const sanitized = val.replace(/[^0-9.,]/g, '');
+    let sanitized = val.replace(/[^0-9.,]/g, '');
+    if (sanitized.length > 1 && sanitized.startsWith('0') && sanitized[1] !== ',' && sanitized[1] !== '.') {
+      sanitized = sanitized.substring(1);
+    }
     setter(sanitized);
 
     const num = parseInput(sanitized);
@@ -129,7 +132,7 @@ export const WorkItemModal: React.FC<WorkItemModalProps> = ({
             </div>
             <div>
               <h2 className="text-xl font-black dark:text-white tracking-tight">{editingItem ? 'Editar' : 'Adicionar'} {isCategory ? 'Grupo' : 'Serviço'}</h2>
-              <p className="text-[9px] text-slate-500 font-bold uppercase tracking-widest">Ajuste fino de valores e totais</p>
+              <p className="text-[9px] text-slate-500 font-bold uppercase tracking-widest">Nível de Hierarquia e Valores</p>
             </div>
           </div>
           <button onClick={onClose} className="p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-all"><X size={20} /></button>
@@ -144,8 +147,31 @@ export const WorkItemModal: React.FC<WorkItemModalProps> = ({
           )}
 
           <div className="grid grid-cols-1 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase mb-2 block tracking-widest">Pertence ao Grupo (Hierarquia)</label>
+                <div className="relative">
+                  <FolderTree className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+                  <select 
+                    className="w-full pl-11 pr-4 py-4 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 dark:text-white text-xs font-bold outline-none appearance-none focus:border-indigo-500 transition-all"
+                    value={formData.parentId || ''}
+                    onChange={e => setFormData({...formData, parentId: e.target.value || null})}
+                  >
+                    <option value="">Nível Raiz (Principal)</option>
+                    {categories.filter(c => c.id !== editingItem?.id).map(cat => (
+                      <option key={cat.id} value={cat.id}>{cat.wbs} - {cat.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase mb-2 block tracking-widest">Código Interno / Fonte</label>
+                <input className="w-full px-6 py-4 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 dark:text-white text-xs font-bold outline-none focus:border-indigo-500 transition-all" value={formData.cod} onChange={e => setFormData({...formData, cod: e.target.value})} placeholder="Ex: SINAPI-93358" />
+              </div>
+            </div>
+
             <div>
-              <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase mb-2 block tracking-widest">Descrição Completa</label>
+              <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase mb-2 block tracking-widest">Descrição do Serviço</label>
               <textarea autoFocus rows={3} className="w-full px-6 py-4 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 dark:text-white text-sm font-semibold outline-none focus:border-indigo-500 transition-all resize-none" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
               {errors.name && <p className="text-[10px] text-rose-500 font-bold mt-2 uppercase">{errors.name}</p>}
             </div>
@@ -157,14 +183,8 @@ export const WorkItemModal: React.FC<WorkItemModalProps> = ({
                   <input placeholder="m², un, kg..." className="w-full px-6 py-4 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 dark:text-white text-xs font-black uppercase text-center outline-none focus:border-indigo-500 transition-all" value={formData.unit} onChange={e => setFormData({...formData, unit: e.target.value})} />
                 </div>
                 <div>
-                  <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase mb-2 block tracking-widest">Quantidade Contratual</label>
-                  <input 
-                    type="text" 
-                    inputMode="decimal" 
-                    className="w-full px-6 py-4 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 dark:text-white text-xs font-black text-center outline-none focus:border-indigo-500 transition-all" 
-                    value={strQty} 
-                    onChange={e => handleNumericChange(setStrQty, e.target.value, 'qty')} 
-                  />
+                  <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase mb-2 block tracking-widest">Quantidade</label>
+                  <input type="text" inputMode="decimal" className="w-full px-6 py-4 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 dark:text-white text-xs font-black text-center outline-none focus:border-indigo-500 transition-all" value={strQty} onChange={e => handleNumericChange(setStrQty, e.target.value, 'qty')} />
                 </div>
                 
                 <div className="col-span-2 p-6 bg-slate-50 dark:bg-slate-800/40 rounded-3xl border-2 border-slate-100 dark:border-slate-800 space-y-6">
@@ -173,44 +193,24 @@ export const WorkItemModal: React.FC<WorkItemModalProps> = ({
                       <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase mb-2 block tracking-widest">P. Unit S/ BDI</label>
                       <div className="relative">
                         <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-400 dark:text-slate-600">R$</span>
-                        <input 
-                          type="text" 
-                          inputMode="decimal" 
-                          className="w-full pl-10 pr-4 py-4 rounded-xl border-2 border-white dark:border-slate-800 bg-white dark:bg-slate-950 dark:text-white text-xs font-black text-right outline-none focus:border-indigo-500 transition-all" 
-                          value={strPriceNoBdi} 
-                          onChange={e => handleNumericChange(setStrPriceNoBdi, e.target.value, 'priceNoBdi')} 
-                        />
+                        <input type="text" inputMode="decimal" className="w-full pl-10 pr-4 py-4 rounded-xl border-2 border-white dark:border-slate-800 bg-white dark:bg-slate-950 dark:text-white text-xs font-black text-right outline-none focus:border-indigo-500 transition-all" value={strPriceNoBdi} onChange={e => handleNumericChange(setStrPriceNoBdi, e.target.value, 'priceNoBdi')} />
                       </div>
                     </div>
                     <div>
                       <label className="text-[10px] font-black text-emerald-600 dark:text-emerald-500 uppercase mb-2 block tracking-widest">P. Unit C/ BDI</label>
                       <div className="relative">
                         <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-emerald-500/50">R$</span>
-                        <input 
-                          type="text" 
-                          inputMode="decimal" 
-                          className="w-full pl-10 pr-4 py-4 rounded-xl border-2 border-emerald-100 dark:border-emerald-900/20 bg-emerald-50/30 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400 text-xs font-black text-right outline-none focus:border-emerald-500 transition-all shadow-inner" 
-                          value={strPriceWithBdi} 
-                          onChange={e => handleNumericChange(setStrPriceWithBdi, e.target.value, 'priceWithBdi')} 
-                        />
+                        <input type="text" inputMode="decimal" className="w-full pl-10 pr-4 py-4 rounded-xl border-2 border-emerald-100 dark:border-emerald-900/20 bg-emerald-50/30 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400 text-xs font-black text-right outline-none focus:border-emerald-500 transition-all shadow-inner" value={strPriceWithBdi} onChange={e => handleNumericChange(setStrPriceWithBdi, e.target.value, 'priceWithBdi')} />
                       </div>
                     </div>
                   </div>
 
-                  {/* CAMPO DE TOTAL EDITÁVEL - O PULO DO GATO */}
                   <div className="pt-4 border-t border-slate-200 dark:border-slate-700">
-                    <label className="text-[10px] font-black text-indigo-600 dark:text-indigo-400 uppercase mb-2 block tracking-widest text-center">Valor Total Negociado (Item Fechado)</label>
+                    <label className="text-[10px] font-black text-indigo-600 dark:text-indigo-400 uppercase mb-2 block tracking-widest text-center">Valor Total Contratual</label>
                     <div className="relative max-w-sm mx-auto">
                       <Calculator className="absolute left-6 top-1/2 -translate-y-1/2 text-indigo-400" size={18} />
-                      <input 
-                        type="text" 
-                        inputMode="decimal" 
-                        className="w-full pl-14 pr-8 py-5 rounded-[2rem] border-2 border-indigo-200 dark:border-indigo-900 bg-white dark:bg-slate-950 text-indigo-600 dark:text-indigo-400 text-2xl font-black text-right outline-none focus:border-indigo-600 transition-all shadow-xl shadow-indigo-500/10" 
-                        value={strTotalWithBdi} 
-                        onChange={e => handleNumericChange(setStrTotalWithBdi, e.target.value, 'totalWithBdi')} 
-                      />
+                      <input type="text" inputMode="decimal" className="w-full pl-14 pr-8 py-5 rounded-[2rem] border-2 border-indigo-200 dark:border-indigo-900 bg-white dark:bg-slate-950 text-indigo-600 dark:text-indigo-400 text-2xl font-black text-right outline-none focus:border-indigo-600 transition-all shadow-xl shadow-indigo-500/10" value={strTotalWithBdi} onChange={e => handleNumericChange(setStrTotalWithBdi, e.target.value, 'totalWithBdi')} />
                     </div>
-                    <p className="text-[8px] text-slate-400 text-center mt-3 font-bold uppercase">Ao editar o total, os preços unitários são recalculados automaticamente</p>
                   </div>
                 </div>
               </div>

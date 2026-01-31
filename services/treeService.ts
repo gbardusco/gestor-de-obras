@@ -96,7 +96,6 @@ export const treeService = {
   flattenTree: <T extends { id: string; children?: T[] }>(nodes: T[], expandedIds: Set<string>, depth: number = 0, results: (T & { depth: number })[] = []): (T & { depth: number })[] => {
     nodes.forEach(node => {
       results.push({ ...node, depth });
-      // Verifica se é uma categoria (baseado no tipo de objeto que estamos tratando)
       const hasChildren = node.children && node.children.length > 0;
       if (hasChildren && expandedIds.has(node.id)) {
         treeService.flattenTree(node.children!, expandedIds, depth + 1, results);
@@ -116,6 +115,7 @@ export const treeService = {
 
     if (position === 'inside') {
       newParentId = targetItem.id;
+      // Coloca no final da lista de filhos do novo pai
       const children = items.filter(i => i.parentId === targetItem.id);
       newOrder = children.length;
     } else {

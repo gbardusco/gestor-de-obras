@@ -6,7 +6,6 @@ import { StatsView } from './StatsView';
 import { BrandingView } from './BrandingView';
 import { ExpenseManager } from './ExpenseManager';
 import { AssetManager } from './AssetManager';
-// Added missing import for financial utilities
 import { financial } from '../utils/math';
 import { 
   Layers, BarChart3, Coins, FileText, Sliders, 
@@ -40,7 +39,6 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
-      {/* HEADER DO WORKSPACE - Shell de Navegação */}
       <header className="min-h-24 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex flex-col md:flex-row items-stretch md:items-center justify-between px-6 md:px-10 py-4 md:py-0 shrink-0 z-40 gap-4">
         <div className="flex flex-col gap-1 overflow-hidden">
           <div className="hidden md:flex items-center gap-2 text-slate-400 text-[10px] font-black uppercase tracking-widest">
@@ -72,7 +70,6 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
         </div>
       </header>
 
-      {/* CONTEÚDO DINÂMICO - Delegação para sub-componentes especializados */}
       <div className="flex-1 overflow-y-auto custom-scrollbar p-4 sm:p-10 bg-slate-50 dark:bg-slate-950">
         <div className="max-w-[1600px] mx-auto">
           {tab === 'wbs' && (
@@ -96,7 +93,8 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
               onUpdate={(id, d) => onUpdateProject({ expenses: project.expenses.map(ex => ex.id === id ? {...ex, ...d} : ex) })} 
               onDelete={id => onUpdateProject({ expenses: project.expenses.filter(ex => ex.id !== id) })} 
               workItems={project.items} 
-              measuredValue={financial.sum(project.items.map(it => it.accumulatedTotal || 0))} 
+              measuredValue={financial.sum(project.items.map(it => it.accumulatedTotal || 0))}
+              onUpdateExpenses={newExpenses => onUpdateProject({ expenses: newExpenses })}
             />
           )}
 

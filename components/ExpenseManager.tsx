@@ -38,11 +38,12 @@ interface ExpenseManagerProps {
   onDelete: (id: string) => void;
   workItems: WorkItem[];
   measuredValue: number;
+  onUpdateExpenses: (expenses: ProjectExpense[]) => void;
   isReadOnly?: boolean;
 }
 
 export const ExpenseManager: React.FC<ExpenseManagerProps> = ({ 
-  project, expenses, onAdd, onAddMany, onUpdate, onDelete, workItems, measuredValue, isReadOnly 
+  project, expenses, onAdd, onAddMany, onUpdate, onDelete, workItems, measuredValue, onUpdateExpenses, isReadOnly 
 }) => {
   const [activeTab, setActiveTab] = useState<ExpenseType | 'overview'>('overview');
   const [searchQuery, setSearchQuery] = useState('');
@@ -123,14 +124,12 @@ export const ExpenseManager: React.FC<ExpenseManagerProps> = ({
     <div className="space-y-6 sm:space-y-8 max-w-[1600px] mx-auto pb-10">
       <input type="file" ref={fileInputRef} className="hidden" accept=".xlsx, .xls" onChange={handleImportExpenses} />
       
-      {/* KPIs FINANCEIROS REORGANIZADOS */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         <KpiSummary label="Receita Total" value={stats.revenue} icon={<ArrowRightLeft size={20}/>} color="emerald" subText="Entradas Confirmadas" />
         <KpiSummary label="Custo Total" value={stats.totalOut} icon={<TrendingDown size={20}/>} color="rose" subText="Comprometido MO+Mat" />
         <KpiSummary label="Valor Pago" value={stats.paidOut} icon={<CheckCircle2 size={20}/>} color="blue" subText="Liquidado" />
         <KpiSummary label="A Pagar" value={stats.unpaidOut} icon={<Clock size={20}/>} color="amber" subText="Pendente" />
         
-        {/* CARD DE LUCRO/MARGEM */}
         <div className={`p-6 rounded-[2rem] border shadow-xl transition-all flex flex-col justify-between ${stats.profit >= 0 ? 'bg-indigo-600 text-white' : 'bg-rose-600 text-white'}`}>
           <div className="flex justify-between items-start mb-4">
             <div className="p-2 bg-white/20 rounded-lg"><Wallet size={20}/></div>
@@ -143,7 +142,6 @@ export const ExpenseManager: React.FC<ExpenseManagerProps> = ({
         </div>
       </div>
 
-      {/* TOOLBAR FINANCEIRA */}
       <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-6 bg-white dark:bg-slate-900 p-4 sm:p-6 rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-sm">
         <div className="flex bg-slate-100 dark:bg-slate-800 p-1.5 rounded-2xl gap-2 overflow-x-auto no-scrollbar">
           <TabTrigger active={activeTab === 'overview'} onClick={() => setActiveTab('overview')} label="Panorama" icon={<BarChart3 size={14}/>} />
@@ -163,12 +161,7 @@ export const ExpenseManager: React.FC<ExpenseManagerProps> = ({
           <button onClick={() => excelService.downloadExpenseTemplate()} className="p-2.5 text-slate-400 hover:text-indigo-600 transition-colors" title="Template Excel">
             <FileSpreadsheet size={18}/>
           </button>
-          <button 
-            disabled={isReadOnly || isImporting}
-            onClick={() => fileInputRef.current?.click()} 
-            className="p-2.5 text-slate-400 hover:text-emerald-600 transition-colors disabled:opacity-30" 
-            title="Importar"
-          >
+          <button disabled={isReadOnly || isImporting} onClick={() => fileInputRef.current?.click()} className="p-2.5 text-slate-400 hover:text-emerald-600 transition-colors disabled:opacity-30" title="Importar">
             {isImporting ? <div className="w-4 h-4 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" /> : <UploadCloud size={18}/>}
           </button>
           {activeTab !== 'overview' && (
@@ -197,11 +190,11 @@ export const ExpenseManager: React.FC<ExpenseManagerProps> = ({
             const exp = expenses.find(e => e.id === id);
             if (exp) onUpdate(id, { isPaid: !exp.isPaid });
           }}
+          onReorder={(src, tgt, pos) => onUpdateExpenses(treeService.reorderItems(expenses, src, tgt, pos))}
           isReadOnly={isReadOnly}
         />
       )}
 
-      {/* MODAL DE REVISÃO DE IMPORTAÇÃO FINANCEIRA */}
       {importSummary && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-300">
           <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-[2.5rem] shadow-2xl border border-slate-200 dark:border-slate-800 flex flex-col overflow-hidden">
@@ -217,7 +210,6 @@ export const ExpenseManager: React.FC<ExpenseManagerProps> = ({
               </div>
               <button onClick={() => setImportSummary(null)} className="p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-all"><X size={20} /></button>
             </div>
-
             <div className="p-8 space-y-6">
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-slate-50 dark:bg-slate-800/50 p-6 rounded-3xl border border-slate-100 dark:border-slate-800 text-center">
@@ -231,30 +223,10 @@ export const ExpenseManager: React.FC<ExpenseManagerProps> = ({
                   <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">Lançamentos</p>
                 </div>
               </div>
-
-              {importSummary.errors.length > 0 && (
-                <div className="p-4 bg-rose-50 dark:bg-rose-950/20 border border-rose-100 dark:border-rose-900 rounded-2xl flex items-start gap-3">
-                  <AlertCircle className="text-rose-500 shrink-0" size={18} />
-                  <div>
-                    <p className="text-[10px] font-black text-rose-600 uppercase tracking-widest mb-1">Inconsistências</p>
-                    <ul className="text-[9px] font-bold text-rose-500 space-y-0.5">
-                      {importSummary.errors.map((err, i) => <li key={i}>• {err}</li>)}
-                    </ul>
-                  </div>
-                </div>
-              )}
-
-              <p className="text-xs text-slate-500 font-medium text-center px-4">
-                Estes registros serão anexados à sua lista de lançamentos atual. Verifique se os fornecedores e datas estão corretos.
-              </p>
             </div>
-
             <div className="px-8 py-6 bg-slate-50 dark:bg-slate-800/80 border-t border-slate-100 dark:border-slate-800 flex flex-col gap-3">
               <button onClick={confirmImport} className="w-full py-5 bg-indigo-600 text-white rounded-2xl text-[11px] font-black uppercase tracking-widest shadow-xl shadow-indigo-500/20 active:scale-95 transition-all flex items-center justify-center gap-2">
                 <CheckCircle2 size={18} /> Confirmar Lançamentos
-              </button>
-              <button onClick={() => setImportSummary(null)} className="w-full py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
-                Cancelar
               </button>
             </div>
           </div>
@@ -262,131 +234,70 @@ export const ExpenseManager: React.FC<ExpenseManagerProps> = ({
       )}
 
       <ExpenseModal 
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onSave={handleSaveExpense}
-        editingItem={editingExpense}
-        expenseType={activeTab === 'overview' ? 'material' : activeTab}
-        itemType={modalItemType}
-        categories={expenses.filter(e => e.type === (activeTab === 'overview' ? 'material' : activeTab) && e.itemType === 'category')}
+        isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSave={handleSaveExpense} editingItem={editingExpense} expenseType={activeTab === 'overview' ? 'material' : activeTab} itemType={modalItemType} categories={expenses.filter(e => e.type === (activeTab === 'overview' ? 'material' : activeTab) && e.itemType === 'category')}
       />
     </div>
   );
 };
 
-// COMPONENTE DE PANORAMA FINANCEIRO
-const FinancialOverview = ({ stats }: { stats: any }) => {
-  return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="bg-white dark:bg-slate-900 p-8 rounded-[3rem] border border-slate-200 dark:border-slate-800 shadow-sm">
-        <div className="flex items-center gap-3 mb-8">
-          <div className="p-3 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-2xl">
-            <PieChart size={20} />
-          </div>
-          <div>
-            <h3 className="text-sm font-black uppercase tracking-widest text-slate-800 dark:text-white">Distribuição de Custos</h3>
-            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Insumos vs Mão de Obra</p>
-          </div>
-        </div>
-
-        <div className="flex flex-col items-center justify-center py-6">
-          <div className="relative w-48 h-48 flex items-center justify-center">
-            {/* SVG DONUT CHART SIMPLIFICADO */}
-            <svg viewBox="0 0 100 100" className="w-full h-full transform -rotate-90">
-              <circle cx="50" cy="50" r="40" fill="transparent" stroke="currentColor" strokeWidth="12" className="text-blue-500" strokeDasharray={`${stats.distribution.labor * 2.51} 251`} />
-              <circle cx="50" cy="50" r="40" fill="transparent" stroke="currentColor" strokeWidth="12" className="text-indigo-600" strokeDasharray={`${stats.distribution.material * 2.51} 251`} strokeDashoffset={`${-stats.distribution.labor * 2.51}`} />
-            </svg>
-            <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Total Gasto</span>
-              <span className="text-lg font-black dark:text-white">{financial.formatBRL(stats.totalOut)}</span>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-8 mt-10 w-full">
-             <div className="flex items-center gap-3">
-                <div className="w-3 h-3 rounded-full bg-indigo-600" />
-                <div>
-                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Materiais</p>
-                  <p className="text-sm font-black dark:text-white">{stats.distribution.material.toFixed(1)}%</p>
-                </div>
-             </div>
-             <div className="flex items-center gap-3">
-                <div className="w-3 h-3 rounded-full bg-blue-500" />
-                <div>
-                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Mão de Obra</p>
-                  <p className="text-sm font-black dark:text-white">{stats.distribution.labor.toFixed(1)}%</p>
-                </div>
-             </div>
-          </div>
+const FinancialOverview = ({ stats }: { stats: any }) => (
+  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="bg-white dark:bg-slate-900 p-8 rounded-[3rem] border border-slate-200 dark:border-slate-800 shadow-sm">
+      <div className="flex items-center gap-3 mb-8">
+        <div className="p-3 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-2xl"><PieChart size={20} /></div>
+        <div>
+          <h3 className="text-sm font-black uppercase tracking-widest text-slate-800 dark:text-white">Distribuição de Custos</h3>
+          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Insumos vs Mão de Obra</p>
         </div>
       </div>
-
-      <div className="bg-white dark:bg-slate-900 p-8 rounded-[3rem] border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col">
-        <div className="flex items-center gap-3 mb-8">
-          <div className="p-3 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-2xl">
-            <BarChart3 size={20} />
+      <div className="flex flex-col items-center justify-center py-6">
+        <div className="relative w-48 h-48 flex items-center justify-center">
+          <svg viewBox="0 0 100 100" className="w-full h-full transform -rotate-90">
+            <circle cx="50" cy="50" r="40" fill="transparent" stroke="currentColor" strokeWidth="12" className="text-blue-500" strokeDasharray={`${stats.distribution.labor * 2.51} 251`} />
+            <circle cx="50" cy="50" r="40" fill="transparent" stroke="currentColor" strokeWidth="12" className="text-indigo-600" strokeDasharray={`${stats.distribution.material * 2.51} 251`} strokeDashoffset={`${-stats.distribution.labor * 2.51}`} />
+          </svg>
+          <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Total Gasto</span>
+            <span className="text-lg font-black dark:text-white">{financial.formatBRL(stats.totalOut)}</span>
           </div>
-          <div>
-            <h3 className="text-sm font-black uppercase tracking-widest text-slate-800 dark:text-white">Saúde Financeira</h3>
-            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Entradas vs Saídas</p>
-          </div>
-        </div>
-
-        <div className="flex-1 flex flex-col justify-center space-y-10">
-           <div className="space-y-4">
-              <div className="flex justify-between items-end">
-                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Total Recebido</span>
-                <span className="text-sm font-black text-emerald-600">{financial.formatBRL(stats.revenue)}</span>
-              </div>
-              <div className="h-3 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                <div className="h-full bg-emerald-500 w-full" />
-              </div>
-           </div>
-
-           <div className="space-y-4">
-              <div className="flex justify-between items-end">
-                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Custos Consolidados</span>
-                <span className="text-sm font-black text-rose-500">{financial.formatBRL(stats.totalOut)}</span>
-              </div>
-              <div className="h-3 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                <div className="h-full bg-rose-500" style={{ width: `${stats.revenue > 0 ? Math.min(100, (stats.totalOut / stats.revenue) * 100) : 0}%` }} />
-              </div>
-           </div>
-
-           <div className={`p-6 rounded-2xl border-2 border-dashed ${stats.profit >= 0 ? 'bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-900' : 'bg-rose-50/50 dark:bg-rose-950/20 border-rose-200 dark:border-rose-900'} text-center`}>
-              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Resultado Projetado</p>
-              <p className={`text-2xl font-black ${stats.profit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>{financial.formatBRL(stats.profit)}</p>
-           </div>
         </div>
       </div>
     </div>
-  );
-};
+    <div className="bg-white dark:bg-slate-900 p-8 rounded-[3rem] border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col">
+      <div className="flex items-center gap-3 mb-8">
+        <div className="p-3 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-2xl"><BarChart3 size={20} /></div>
+        <div>
+          <h3 className="text-sm font-black uppercase tracking-widest text-slate-800 dark:text-white">Saúde Financeira</h3>
+          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Entradas vs Saídas</p>
+        </div>
+      </div>
+      <div className="flex-1 flex flex-col justify-center space-y-10">
+         <div className="space-y-4">
+            <div className="flex justify-between items-end"><span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Total Recebido</span><span className="text-sm font-black text-emerald-600">{financial.formatBRL(stats.revenue)}</span></div>
+            <div className="h-3 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden"><div className="h-full bg-emerald-500 w-full" /></div>
+         </div>
+         <div className="space-y-4">
+            <div className="flex justify-between items-end"><span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Custos Consolidados</span><span className="text-sm font-black text-rose-500">{financial.formatBRL(stats.totalOut)}</span></div>
+            <div className="h-3 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden"><div className="h-full bg-rose-500" style={{ width: `${stats.revenue > 0 ? Math.min(100, (stats.totalOut / stats.revenue) * 100) : 0}%` }} /></div>
+         </div>
+      </div>
+    </div>
+  </div>
+);
 
 const TabTrigger = ({ active, onClick, label, icon }: any) => (
-  <button onClick={onClick} className={`flex items-center gap-2 px-6 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${active ? 'bg-white dark:bg-slate-700 text-indigo-600 shadow-md' : 'text-slate-500'}`}>
-    {icon} {label}
-  </button>
+  <button onClick={onClick} className={`flex items-center gap-2 px-6 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${active ? 'bg-white dark:bg-slate-700 text-indigo-600 shadow-md' : 'text-slate-500'}`}>{icon} {label}</button>
 );
 
 const KpiSummary = ({ label, value, icon, color, subText }: any) => {
-  const colors: any = { 
-    indigo: 'text-indigo-600 dark:text-indigo-400', 
-    emerald: 'text-emerald-600 dark:text-emerald-400', 
-    rose: 'text-rose-600 dark:text-rose-400', 
-    blue: 'text-blue-600 dark:text-blue-400',
-    amber: 'text-amber-600 dark:text-amber-400'
-  };
+  const colors: any = { indigo: 'text-indigo-600 dark:text-indigo-400', emerald: 'text-emerald-600 dark:text-emerald-400', rose: 'text-rose-600 dark:text-rose-400', blue: 'text-blue-600 dark:text-blue-400', amber: 'text-amber-600 dark:text-amber-400' };
   return (
     <div className="p-6 rounded-[2rem] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm flex flex-col justify-between">
       <div className="flex justify-between items-start mb-4">
         <div className="p-2 bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-500 rounded-lg">{icon}</div>
         <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">{label}</span>
       </div>
-      <div>
-        <p className={`text-xl font-black tracking-tighter ${colors[color]}`}>{financial.formatBRL(value)}</p>
-        <p className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase mt-1">{subText}</p>
-      </div>
+      <div><p className={`text-xl font-black tracking-tighter ${colors[color]}`}>{financial.formatBRL(value)}</p><p className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase mt-1">{subText}</p></div>
     </div>
   );
 };

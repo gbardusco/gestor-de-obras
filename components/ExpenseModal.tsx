@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { ProjectExpense, ItemType, ExpenseType } from '../types';
 import { financial } from '../utils/math';
-import { X, Save, Layers, Truck, Users, Calculator, ArrowRightLeft } from 'lucide-react';
+import { X, Save, Layers, Truck, Users, Calculator, ArrowRightLeft, FolderTree } from 'lucide-react';
 
 interface ExpenseModalProps {
   isOpen: boolean;
@@ -22,10 +22,17 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
     description: '', parentId: null, unit: 'un', quantity: 1, unitPrice: 0, amount: 0, entityName: '', date: new Date().toISOString().split('T')[0]
   });
 
+  const [strQty, setStrQty] = useState('1');
+  const [strPrice, setStrPrice] = useState('0');
+  const [strAmount, setStrAmount] = useState('0');
+
   useEffect(() => {
     if (editingItem) {
       setFormData(editingItem);
       setActiveItemType(editingItem.itemType);
+      setStrQty(String(editingItem.quantity || 0).replace('.', ','));
+      setStrPrice(String(editingItem.unitPrice || 0).replace('.', ','));
+      setStrAmount(String(editingItem.amount || 0).replace('.', ','));
     } else {
       setFormData({ 
         description: '', parentId: null, 
@@ -34,22 +41,39 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
         date: new Date().toISOString().split('T')[0] 
       });
       setActiveItemType(initialItemType);
+      setStrQty('1'); setStrPrice('0'); setStrAmount('0');
     }
   }, [editingItem, initialItemType, isOpen, expenseType]);
 
-  const updateCalculations = (field: 'qty' | 'price' | 'amount', value: number) => {
-    const updated = { ...formData };
-    if (field === 'qty') {
-      updated.quantity = value;
-      updated.amount = financial.round(value * (updated.unitPrice || 0));
-    } else if (field === 'price') {
-      updated.unitPrice = value;
-      updated.amount = financial.round((updated.quantity || 1) * value);
-    } else if (field === 'amount') {
-      updated.amount = value;
-      updated.unitPrice = financial.round(value / (updated.quantity || 1));
+  const parseInput = (val: string): number => {
+    const normalized = val.replace(',', '.');
+    const parsed = parseFloat(normalized);
+    return isNaN(parsed) ? 0 : parsed;
+  };
+
+  const handleNumericChange = (setter: (v: string) => void, val: string, field: 'qty' | 'price' | 'amount') => {
+    let sanitized = val.replace(/[^0-9.,]/g, '');
+    if (sanitized.length > 1 && sanitized.startsWith('0') && sanitized[1] !== ',' && sanitized[1] !== '.') {
+      sanitized = sanitized.substring(1);
     }
-    setFormData(updated);
+    setter(sanitized);
+    const num = parseInput(sanitized);
+
+    const currentQty = field === 'qty' ? num : parseInput(strQty);
+    const currentPrice = field === 'price' ? num : parseInput(strPrice);
+
+    if (field === 'qty') {
+      const total = financial.round(num * currentPrice);
+      setStrAmount(String(total).replace('.', ','));
+    } else if (field === 'price') {
+      const total = financial.round(num * currentQty);
+      setStrAmount(String(total).replace('.', ','));
+    } else if (field === 'amount') {
+      if (currentQty > 0) {
+        const up = financial.round(num / currentQty);
+        setStrPrice(String(up).replace('.', ','));
+      }
+    }
   };
 
   const handleSubmit = () => {
@@ -58,14 +82,15 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
       ...formData,
       itemType: activeItemType,
       type: expenseType,
-      amount: activeItemType === 'item' ? (formData.amount || 0) : 0
+      quantity: parseInput(strQty),
+      unitPrice: parseInput(strPrice),
+      amount: parseInput(strAmount)
     };
     onSave(finalData);
     onClose();
   };
 
   if (!isOpen) return null;
-
   const isRevenue = expenseType === 'revenue';
 
   return (
@@ -78,7 +103,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
             </div>
             <div>
               <h2 className="text-xl font-black dark:text-white tracking-tight">{editingItem ? 'Editar' : 'Novo'} {isRevenue ? 'Recebimento' : (expenseType === 'labor' ? 'Gasto de MO' : 'Gasto de Material')}</h2>
-              <p className="text-[9px] text-slate-500 font-bold uppercase tracking-widest">{isRevenue ? 'Fluxo de Entrada em Caixa' : 'Controle de Insumos e Descontos'}</p>
+              <p className="text-[9px] text-slate-500 font-bold uppercase tracking-widest">Controle de Fluxo Hierárquico</p>
             </div>
           </div>
           <button onClick={onClose} className="p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-all"><X size={20} /></button>
@@ -94,6 +119,23 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
 
           <div className="space-y-4">
             <div>
+              <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase mb-2 block tracking-widest">Grupo Pai (Vinculação)</label>
+              <div className="relative">
+                <FolderTree className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+                <select 
+                  className="w-full pl-11 pr-4 py-4 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 dark:text-white text-xs font-bold outline-none appearance-none focus:border-indigo-500 transition-all"
+                  value={formData.parentId || ''}
+                  onChange={e => setFormData({...formData, parentId: e.target.value || null})}
+                >
+                  <option value="">Raiz do Financeiro</option>
+                  {categories.filter(c => c.id !== editingItem?.id).map(cat => (
+                    <option key={cat.id} value={cat.id}>{cat.wbs} - {cat.description}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div>
               <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase mb-2 block tracking-widest">Descrição / Título</label>
               <input className="w-full px-6 py-4 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 dark:text-white text-sm font-semibold outline-none focus:border-indigo-500 transition-all" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} />
             </div>
@@ -105,26 +147,22 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
                   <input className="w-full px-6 py-4 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 dark:text-white text-xs font-bold outline-none focus:border-indigo-500 transition-all" value={formData.entityName} onChange={e => setFormData({...formData, entityName: e.target.value})} />
                 </div>
                 <div>
+                  <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase mb-2 block tracking-widest">Unidade</label>
+                  <input className="w-full px-6 py-4 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 dark:text-white text-xs font-bold text-center outline-none focus:border-indigo-500 transition-all" value={formData.unit} onChange={e => setFormData({...formData, unit: e.target.value})} placeholder="un, vb, h..." />
+                </div>
+                <div>
                   <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase mb-2 block tracking-widest">Quantidade</label>
-                  <input type="number" step="any" className="w-full px-6 py-4 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 dark:text-white text-xs font-bold text-center outline-none focus:border-indigo-500 transition-all" value={formData.quantity} onChange={e => updateCalculations('qty', parseFloat(e.target.value) || 0)} />
+                  <input type="text" inputMode="decimal" className="w-full px-6 py-4 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 dark:text-white text-xs font-bold text-center outline-none focus:border-indigo-500 transition-all" value={strQty} onChange={e => handleNumericChange(setStrQty, e.target.value, 'qty')} />
                 </div>
                 <div>
                   <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase mb-2 block tracking-widest">Preço Unitário</label>
-                  <input type="number" step="any" className="w-full px-6 py-4 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 dark:text-white text-xs font-bold text-right outline-none focus:border-indigo-500 transition-all" value={formData.unitPrice} onChange={e => updateCalculations('price', parseFloat(e.target.value) || 0)} />
+                  <input type="text" inputMode="decimal" className="w-full px-6 py-4 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 dark:text-white text-xs font-bold text-right outline-none focus:border-indigo-500 transition-all" value={strPrice} onChange={e => handleNumericChange(setStrPrice, e.target.value, 'price')} />
                 </div>
-                
-                {/* CAMPO DE VALOR TOTAL EDITÁVEL */}
                 <div className={`col-span-2 pt-4 p-6 rounded-3xl border-2 border-dashed ${isRevenue ? 'bg-emerald-50/50 dark:bg-emerald-900/10 border-emerald-200 dark:border-emerald-800' : 'bg-indigo-50/50 dark:bg-indigo-900/10 border-indigo-200 dark:border-indigo-800'}`}>
-                  <label className={`text-[10px] font-black ${isRevenue ? 'text-emerald-600 dark:text-emerald-400' : 'text-indigo-600 dark:text-indigo-400'} uppercase mb-2 block tracking-widest text-center`}>{isRevenue ? 'Valor Líquido Recebido' : 'Valor Total Pago (Com Desconto)'}</label>
+                  <label className={`text-[10px] font-black ${isRevenue ? 'text-emerald-600 dark:text-emerald-400' : 'text-indigo-600 dark:text-indigo-400'} uppercase mb-2 block tracking-widest text-center`}>Valor Total Liquidado</label>
                   <div className="relative">
                     <Calculator className={`absolute left-4 top-1/2 -translate-y-1/2 ${isRevenue ? 'text-emerald-400' : 'text-indigo-400'}`} size={18} />
-                    <input 
-                      type="number" 
-                      step="any"
-                      className={`w-full pl-12 pr-4 py-4 rounded-2xl border-2 ${isRevenue ? 'border-emerald-200 dark:border-emerald-900 focus:border-emerald-600 text-emerald-700 dark:text-emerald-300' : 'border-indigo-200 dark:border-indigo-900 focus:border-indigo-600 text-indigo-700 dark:text-indigo-300'} bg-white dark:bg-slate-950 text-xl font-black text-right outline-none transition-all`} 
-                      value={formData.amount} 
-                      onChange={e => updateCalculations('amount', parseFloat(e.target.value) || 0)} 
-                    />
+                    <input type="text" inputMode="decimal" className={`w-full pl-12 pr-4 py-4 rounded-2xl border-2 ${isRevenue ? 'border-emerald-200 dark:border-emerald-900 focus:border-emerald-600 text-emerald-700 dark:text-emerald-300' : 'border-indigo-200 dark:border-indigo-900 focus:border-indigo-600 text-indigo-700 dark:text-indigo-300'} bg-white dark:bg-slate-950 text-xl font-black text-right outline-none transition-all`} value={strAmount} onChange={e => handleNumericChange(setStrAmount, e.target.value, 'amount')} />
                   </div>
                 </div>
               </div>

@@ -57,8 +57,19 @@ export const TreeTable: React.FC<TreeTableProps> = ({
     : data;
 
   const handleDragEnd = (result: DropResult) => {
-    if (!result.destination || isReadOnly) return;
+    if (isReadOnly) return;
     const sourceId = result.draggableId;
+
+    if (result.combine) {
+      const targetId = result.combine.draggableId;
+      const targetItem = filteredData.find(d => d.id === targetId);
+      if (targetItem && targetItem.type === 'category') {
+        onReorder(sourceId, targetId, 'inside');
+      }
+      return;
+    }
+
+    if (!result.destination) return;
     const targetIdx = result.destination.index;
     const targetItem = filteredData[targetIdx];
     if (!targetItem) return;
@@ -113,7 +124,7 @@ export const TreeTable: React.FC<TreeTableProps> = ({
               </tr>
             </thead>
             
-            <Droppable droppableId="wbs-tree" direction="vertical">
+            <Droppable droppableId="wbs-tree" direction="vertical" isCombineEnabled={!isReadOnly}>
               {(provided) => (
                 <tbody 
                   {...provided.droppableProps} 
@@ -123,7 +134,7 @@ export const TreeTable: React.FC<TreeTableProps> = ({
                   {filteredData.map((item, index) => (
                     <Draggable key={item.id} draggableId={item.id} index={index} isDragDisabled={isReadOnly}>
                       {(provided, snapshot) => (
-                        <tr ref={provided.innerRef} {...provided.draggableProps} className={`group transition-all duration-150 ${item.type === 'category' ? 'bg-slate-50/80 dark:bg-slate-800/40 font-bold' : 'hover:bg-blue-50/40 dark:hover:bg-blue-900/10'} ${snapshot.isDragging ? 'dragging-row' : ''}`}>
+                        <tr ref={provided.innerRef} {...provided.draggableProps} className={`group transition-all duration-150 ${item.type === 'category' ? 'bg-slate-50/80 dark:bg-slate-800/40 font-bold' : 'hover:bg-blue-50/40 dark:hover:bg-blue-900/10'} ${snapshot.isDragging ? 'dragging-row' : ''} ${snapshot.combineWith ? 'bg-blue-100 dark:bg-blue-900/50' : ''}`}>
                           <td className="p-2 border-r border-slate-100 dark:border-slate-800 no-print text-center">
                             <div {...provided.dragHandleProps} className="inline-flex p-1.5 text-slate-300 hover:text-indigo-500 transition-colors cursor-grab active:cursor-grabbing">
                               <GripVertical size={16} />
@@ -161,7 +172,6 @@ export const TreeTable: React.FC<TreeTableProps> = ({
                           <td className="p-2 text-right border-r border-slate-100 dark:border-slate-800 font-mono font-bold text-slate-700 dark:text-slate-300">{item.type === 'item' ? financial.formatBRL(item.unitPrice) : '-'}</td>
                           <td className="p-2 text-center border-r border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-900/40 text-slate-500 dark:text-slate-400 font-mono">{item.type === 'item' ? item.contractQuantity : '-'}</td>
                           
-                          {/* TOTAL CONTRATADO EDITÁVEL */}
                           <td className="p-2 text-right border-r border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-900/40">
                              {item.type === 'item' ? (
                                <input 
@@ -190,7 +200,6 @@ export const TreeTable: React.FC<TreeTableProps> = ({
                             ) : '-'}
                           </td>
 
-                          {/* TOTAL PERÍODO EDITÁVEL */}
                           <td className="p-2 text-right border-r border-slate-100 dark:border-slate-800 bg-blue-50/40 dark:bg-blue-900/20">
                              {item.type === 'item' ? (
                                <input 
@@ -215,7 +224,6 @@ export const TreeTable: React.FC<TreeTableProps> = ({
                   ))}
                   {provided.placeholder}
                   
-                  {/* TOTAL GERAL FOOTER */}
                   <tr className="bg-slate-950 dark:bg-black text-white font-black text-xs sticky bottom-0 z-10 shadow-2xl">
                     <td colSpan={6} className="p-5 text-right uppercase tracking-[0.2em] text-[10px] border-r border-white/10">Consolidado:</td>
                     <td colSpan={2} className="p-4 border-r border-white/10 opacity-30 italic">Preços Médios</td>
