@@ -9,6 +9,7 @@ export const financial = {
 
   /**
    * Truncagem financeira (2 casas decimais) - evita arredondar para cima.
+   * Crucial para cálculos de BDI onde o valor não pode extrapolar o contrato.
    */
   truncate: (value: number): number => {
     return Math.floor((value + Number.EPSILON) * 100) / 100;
@@ -34,7 +35,7 @@ export const financial = {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
     }).format(value);
-    return `${symbol} ${formatted}`;
+    return symbol ? `${symbol} ${formatted}` : formatted;
   },
 
   /**

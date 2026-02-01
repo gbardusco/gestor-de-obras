@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Project, WorkItem, ItemType } from '../types';
 import { treeService } from '../services/treeService';
@@ -144,8 +145,9 @@ export const WbsView: React.FC<WbsViewProps> = ({
             onUpdateProject({ 
               items: project.items.map(it => {
                 if (it.id === id && it.contractQuantity > 0) {
-                  const newUnitPrice = financial.round(total / it.contractQuantity);
-                  const newUnitPriceNoBdi = financial.round(newUnitPrice / (1 + project.bdi/100));
+                  // USANDO TRUNCATE NO RECÁLCULO DO UNITÁRIO
+                  const newUnitPrice = financial.truncate(total / it.contractQuantity);
+                  const newUnitPriceNoBdi = financial.truncate(newUnitPrice / (1 + project.bdi/100));
                   return { ...it, unitPrice: newUnitPrice, unitPriceNoBdi: newUnitPriceNoBdi };
                 }
                 return it;
@@ -157,8 +159,8 @@ export const WbsView: React.FC<WbsViewProps> = ({
             onUpdateProject({ 
               items: project.items.map(it => {
                 if (it.id === id && it.currentQuantity > 0) {
-                  const newUnitPrice = financial.round(total / it.currentQuantity);
-                  const newUnitPriceNoBdi = financial.round(newUnitPrice / (1 + project.bdi/100));
+                  const newUnitPrice = financial.truncate(total / it.currentQuantity);
+                  const newUnitPriceNoBdi = financial.truncate(newUnitPrice / (1 + project.bdi/100));
                   return { ...it, unitPrice: newUnitPrice, unitPriceNoBdi: newUnitPriceNoBdi };
                 }
                 return it;
@@ -175,7 +177,6 @@ export const WbsView: React.FC<WbsViewProps> = ({
         />
       </div>
 
-      {/* MODAL DE CONFIRMAÇÃO DE IMPORTAÇÃO */}
       {importSummary && (
         <div 
           className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-300"
