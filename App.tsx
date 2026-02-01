@@ -23,8 +23,10 @@ const App: React.FC = () => {
   } = useProjectState();
 
   // Configurações com fallback seguro
+  // Fix: Adicionado companyCnpj que estava faltando e causava erro de tipagem com a interface GlobalSettings
   const safeGlobalSettings = globalSettings || {
     defaultCompanyName: 'Sua Empresa de Engenharia',
+    companyCnpj: '',
     userName: 'Usuário ProMeasure',
     language: 'pt-BR',
     certificates: []
@@ -129,7 +131,7 @@ const App: React.FC = () => {
         {/* VIEW: CONFIGURAÇÕES DO SISTEMA */}
         {viewMode === 'system-settings' && (
           <SettingsView 
-            settings={safeGlobalSettings} 
+            settings={safeGlobalSettings as any} 
             onUpdate={setGlobalSettings} 
             projectCount={projects.length} 
           />
@@ -139,7 +141,7 @@ const App: React.FC = () => {
         {viewMode === 'project-workspace' && activeProject && (
           <ProjectWorkspace 
             project={activeProject}
-            globalSettings={safeGlobalSettings}
+            globalSettings={safeGlobalSettings as any}
             onUpdateProject={updateActiveProject}
             onCloseMeasurement={() => {}} // Reservado para versão futura de status de medição
             canUndo={false} 

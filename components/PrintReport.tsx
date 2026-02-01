@@ -6,7 +6,8 @@ import { HardHat, Ruler } from 'lucide-react';
 
 interface PrintReportProps {
   project: Project;
-  companyName: string; // Nome vindo do GlobalSettings
+  companyName: string; 
+  companyCnpj: string;
   data: (WorkItem & { depth: number })[];
   expenses: ProjectExpense[];
   stats: {
@@ -18,10 +19,10 @@ interface PrintReportProps {
   };
 }
 
-export const PrintReport: React.FC<PrintReportProps> = ({ project, companyName, data, stats }) => {
+export const PrintReport: React.FC<PrintReportProps> = ({ project, companyName, companyCnpj, data, stats }) => {
   return (
     <div className="print-report-area bg-white text-black p-0 leading-tight">
-      {/* CABEÇALHO INSTITUCIONAL - Usando companyName dos Ajustes Globais */}
+      {/* CABEÇALHO INSTITUCIONAL */}
       <div className="flex items-center justify-between border-b-2 border-black pb-3 mb-4">
         <div className="flex items-center gap-4">
           {project.logo ? (
@@ -33,14 +34,16 @@ export const PrintReport: React.FC<PrintReportProps> = ({ project, companyName, 
           )}
           <div>
             <h1 className="text-xl font-black uppercase tracking-tight leading-none">{companyName || project.companyName}</h1>
-            <p className="text-[8px] font-bold text-slate-600 uppercase tracking-widest mt-1">Gestão Integrada de Medição de Obras</p>
+            <p className="text-[8px] font-bold text-slate-600 uppercase tracking-widest mt-1">
+              {companyCnpj ? `CNPJ: ${companyCnpj}` : 'Gestão Integrada de Medição de Obras'}
+            </p>
           </div>
         </div>
         <div className="text-right">
           <h2 className="text-lg font-black uppercase">Planilha de Medição</h2>
           <div className="text-[9px] font-bold">
             <span className="bg-black text-white px-2 py-0.5 rounded mr-2 uppercase">Medição Nº {project.measurementNumber}</span>
-            <span className="text-slate-500 uppercase">Data: {project.referenceDate}</span>
+            <span className="text-slate-500 uppercase">Local: {project.location || '—'}</span>
           </div>
         </div>
       </div>
@@ -52,8 +55,8 @@ export const PrintReport: React.FC<PrintReportProps> = ({ project, companyName, 
           <span className="font-bold uppercase">{project.name}</span>
         </div>
         <div className="text-center">
-          <label className="block text-[7px] font-black text-slate-400 uppercase">Data de Referência</label>
-          <span className="font-bold">{project.referenceDate}</span>
+          <label className="block text-[7px] font-black text-slate-400 uppercase">Local da Obra</label>
+          <span className="font-bold uppercase">{project.location || project.referenceDate}</span>
         </div>
         <div className="text-right">
           <label className="block text-[7px] font-black text-slate-400 uppercase">Status Físico Global</label>
@@ -102,7 +105,7 @@ export const PrintReport: React.FC<PrintReportProps> = ({ project, companyName, 
                 <td className="border border-black p-1 font-mono text-[7px]">{item.wbs}</td>
                 <td className="border border-black p-1">{item.cod || '-'}</td>
                 <td className="border border-black p-1 uppercase">{item.fonte || '-'}</td>
-                <td className="border border-black p-1 text-left uppercase" style={{ paddingLeft: `${item.depth * 8 + 4}px` }}>
+                <td className="border border-black p-1 text-left uppercase">
                   {item.name}
                 </td>
                 <td className="border border-black p-1 font-bold">{item.unit || '-'}</td>

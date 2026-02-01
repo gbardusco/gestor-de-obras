@@ -197,6 +197,7 @@ export const DEFAULT_THEME: PDFTheme = {
 
 export interface GlobalSettings {
   defaultCompanyName: string;
+  companyCnpj: string;
   userName: string;
   language: 'pt-BR' | 'en-US';
   certificates: CompanyCertificate[];
@@ -215,6 +216,7 @@ export interface Project {
   groupId: string | null;
   name: string;
   companyName: string;
+  location: string;
   measurementNumber: number;
   referenceDate: string;
   logo: string | null;

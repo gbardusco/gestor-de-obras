@@ -43,6 +43,15 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ settings, onUpdate, 
                 />
               </div>
               <div>
+                <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase mb-2 block tracking-widest ml-1">CNPJ da Construtora</label>
+                <input 
+                  className="w-full px-6 py-4 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-white text-sm font-black focus:border-indigo-500 outline-none transition-all"
+                  value={settings.companyCnpj}
+                  onChange={(e) => onUpdate({ ...settings, companyCnpj: e.target.value })}
+                  placeholder="00.000.000/0000-00"
+                />
+              </div>
+              <div>
                 <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase mb-2 block tracking-widest ml-1">Idioma / Região</label>
                 <select 
                   className="w-full px-6 py-4 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-white text-sm font-black outline-none appearance-none"

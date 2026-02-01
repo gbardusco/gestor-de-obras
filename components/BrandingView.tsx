@@ -2,7 +2,7 @@
 import React from 'react';
 import { Project, PDFTheme } from '../types';
 import { ThemeEditor } from './ThemeEditor';
-import { Percent, Sliders, AlertTriangle, ShieldCheck } from 'lucide-react';
+import { Percent, Sliders, AlertTriangle, ShieldCheck, MapPin } from 'lucide-react';
 
 interface BrandingViewProps {
   project: Project;
@@ -24,6 +24,30 @@ export const BrandingView: React.FC<BrandingViewProps> = ({
       </header>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-6xl mx-auto">
+        {/* CONFIGURAÇÃO DE LOCALIZAÇÃO */}
+        <div className="bg-white dark:bg-slate-900 p-8 rounded-[3rem] border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col">
+          <div className="flex items-center gap-4 mb-8">
+            <div className="p-3 bg-indigo-600 rounded-xl text-white shadow-lg"><MapPin size={20} /></div>
+            <div>
+              <h3 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-widest">Logística e Localização</h3>
+              <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">Endereço de execução do projeto</p>
+            </div>
+          </div>
+          <div className="flex-1 flex flex-col justify-center">
+            <div className="relative">
+              <input 
+                disabled={isReadOnly}
+                type="text" 
+                className="w-full px-6 py-5 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-sm font-black focus:border-indigo-500 outline-none dark:text-slate-100 transition-all disabled:opacity-50" 
+                value={project.location} 
+                placeholder="Ex: São Paulo - SP / Rua Exemplo, 123"
+                onChange={(e) => onUpdateProject({ location: e.target.value })} 
+              />
+            </div>
+            <p className="text-[10px] font-bold text-slate-400 mt-4 text-center uppercase tracking-widest italic">Este local substituirá a data de referência no cabeçalho do PDF.</p>
+          </div>
+        </div>
+
         {/* CONFIGURAÇÃO DE BDI */}
         <div className="bg-white dark:bg-slate-900 p-8 rounded-[3rem] border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col">
           <div className="flex items-center gap-4 mb-8">
@@ -48,7 +72,9 @@ export const BrandingView: React.FC<BrandingViewProps> = ({
             <p className="text-[10px] font-bold text-slate-400 mt-4 text-center uppercase tracking-widest">Fator Multiplicador Atual: <span className="text-indigo-600">{(1 + project.bdi/100).toFixed(4)}x</span></p>
           </div>
         </div>
+      </div>
 
+      <div className="max-w-6xl mx-auto">
         {/* SENSIBILIDADE DO DIÁRIO */}
         <div className="bg-white dark:bg-slate-900 p-8 rounded-[3rem] border border-slate-200 dark:border-slate-800 shadow-sm">
           <div className="flex items-center gap-4 mb-8">

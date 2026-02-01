@@ -14,6 +14,7 @@ export const projectService = {
     groupId,
     name: name.trim() || 'Novo Empreendimento',
     companyName: companyName.trim() || 'Empresa Padrão',
+    location: '',
     measurementNumber: 1,
     referenceDate: new Date().toLocaleDateString('pt-BR'),
     logo: null,

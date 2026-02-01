@@ -177,6 +177,7 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
       <PrintReport 
         project={project} 
         companyName={globalSettings.defaultCompanyName}
+        companyCnpj={globalSettings.companyCnpj}
         data={printData.flattened} 
         expenses={project.expenses} 
         stats={printData.stats as any} 
@@ -190,13 +191,30 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
             if (editingItem) {
               handleUpdateItemsWithCleanup(project.items.map(it => it.id === editingItem.id ? { ...it, ...data } : it));
             } else {
+              // FIX: Adicionando spread de ...data para capturar fonte, cod e demais campos do modal
               const newItem: WorkItem = {
-                id: crypto.randomUUID(), parentId: targetParentId, name: data.name || 'Novo Registro', 
-                type: data.type || modalType, wbs: '', order: project.items.filter(i => i.parentId === targetParentId).length,
-                unit: data.unit || 'un', contractQuantity: data.contractQuantity || 0, unitPrice: 0, 
-                unitPriceNoBdi: data.unitPriceNoBdi || 0, contractTotal: 0,
-                previousQuantity: 0, previousTotal: 0, currentQuantity: 0, currentTotal: 0, currentPercentage: 0,
-                accumulatedQuantity: 0, accumulatedTotal: 0, accumulatedPercentage: 0, balanceQuantity: 0, balanceTotal: 0
+                id: crypto.randomUUID(), 
+                parentId: targetParentId, 
+                name: data.name || 'Novo Registro', 
+                type: data.type || modalType, 
+                wbs: '', 
+                order: project.items.filter(i => i.parentId === targetParentId).length,
+                unit: data.unit || 'un', 
+                contractQuantity: data.contractQuantity || 0, 
+                unitPrice: 0, 
+                unitPriceNoBdi: data.unitPriceNoBdi || 0, 
+                contractTotal: 0,
+                previousQuantity: 0, 
+                previousTotal: 0, 
+                currentQuantity: 0, 
+                currentTotal: 0, 
+                currentPercentage: 0,
+                accumulatedQuantity: 0, 
+                accumulatedTotal: 0, 
+                accumulatedPercentage: 0, 
+                balanceQuantity: 0, 
+                balanceTotal: 0,
+                ...data // Garante que campos como 'fonte' e 'cod' sejam incluídos
               };
               handleUpdateItemsWithCleanup([...project.items, newItem]);
             }

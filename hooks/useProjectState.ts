@@ -1,3 +1,4 @@
+
 import { useState, useCallback, useEffect } from 'react';
 import { Project, ProjectGroup, MeasurementSnapshot, GlobalSettings, ProjectPlanning, ProjectJournal, WorkItem, ProjectExpense, BiddingProcess, CompanyCertificate } from '../types';
 import { treeService } from '../services/treeService';
@@ -15,6 +16,7 @@ interface State {
 
 const INITIAL_SETTINGS: GlobalSettings = {
   defaultCompanyName: 'Sua Empresa de Engenharia',
+  companyCnpj: '',
   userName: 'Usuário ProMeasure',
   language: 'pt-BR',
   certificates: []
@@ -40,6 +42,7 @@ export const useProjectState = () => {
         ...parsed,
         projects: (parsed.projects || []).map((p: any) => ({
           ...p,
+          location: p.location || '',
           planning: p.planning || { ...INITIAL_PLANNING },
           journal: p.journal || { ...INITIAL_JOURNAL }
         })),

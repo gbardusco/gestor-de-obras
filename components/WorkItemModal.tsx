@@ -155,9 +155,16 @@ export const WorkItemModal: React.FC<WorkItemModalProps> = ({
                     </select>
                   </div>
                 </div>
-                <div>
-                  <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase mb-2 block tracking-widest">Código Interno / Fonte</label>
-                  <input className="w-full px-6 py-3.5 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 dark:text-white text-xs font-bold outline-none focus:border-indigo-500 transition-all" value={formData.cod} onChange={e => setFormData({...formData, cod: e.target.value})} placeholder="Ex: SINAPI-93358" />
+                
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase mb-2 block tracking-widest">Cód. Interno</label>
+                    <input className="w-full px-4 py-3.5 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 dark:text-white text-xs font-bold outline-none focus:border-indigo-500 transition-all" value={formData.cod} onChange={e => setFormData({...formData, cod: e.target.value})} placeholder="SINAPI..." />
+                  </div>
+                  <div>
+                    <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase mb-2 block tracking-widest">Fonte</label>
+                    <input className="w-full px-4 py-3.5 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 dark:text-white text-xs font-bold outline-none focus:border-indigo-500 transition-all" value={formData.fonte} onChange={e => setFormData({...formData, fonte: e.target.value})} placeholder="Ex: Próprio" />
+                  </div>
                 </div>
               </div>
 
