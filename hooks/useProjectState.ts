@@ -14,11 +14,13 @@ interface State {
   globalSettings: GlobalSettings;
 }
 
+// Added missing currencySymbol property to satisfy GlobalSettings interface
 const INITIAL_SETTINGS: GlobalSettings = {
   defaultCompanyName: 'Sua Empresa de Engenharia',
   companyCnpj: '',
   userName: 'Usuário ProMeasure',
   language: 'pt-BR',
+  currencySymbol: 'R$',
   certificates: []
 };
 

@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -39,11 +40,17 @@
             margin: 0 !important; 
           }
 
-          /* Reset de containers: anula h-screen e backgrounds do modo web */
-          html, body, #root, #root > div, main {
-            background: white !important;
+          /* Reset universal: NADA deve ter fundo escuro ou altura fixa ao imprimir */
+          * {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+            background-color: transparent !important;
+            background-image: none !important;
+            box-shadow: none !important;
+          }
+
+          html, body {
             background-color: white !important;
-            color: black !important;
             height: auto !important;
             min-height: 0 !important;
             margin: 0 !important;
@@ -51,26 +58,34 @@
             overflow: visible !important;
           }
 
-          /* Oculta interface do sistema */
-          aside, nav, header.no-print, .no-print, button {
-            display: none !important;
-          }
-
-          /* Garante que o container do App não herde classes de layout da web */
-          #root > div {
+          #root, #root > div, main {
+            background-color: white !important;
             display: block !important;
             height: auto !important;
-            background: white !important;
+            min-height: 0 !important;
+            overflow: visible !important;
+            position: static !important;
+          }
+
+          /* Oculta interface do sistema com prioridade máxima */
+          aside, nav, header, footer, .no-print, button, .lucide {
+            display: none !important;
+            height: 0 !important;
+            width: 0 !important;
+            visibility: hidden !important;
+            position: absolute !important;
           }
 
           .print-report-area {
             display: block !important;
             visibility: visible !important;
             width: 297mm !important;
-            background: white !important;
+            background-color: white !important;
             padding: 10mm !important;
             box-sizing: border-box !important;
             position: relative !important;
+            z-index: 9999 !important;
+            margin: 0 !important;
           }
         }
 
@@ -84,12 +99,12 @@
     "react": "https://esm.sh/react@18.3.1",
     "react/": "https://esm.sh/react@18.3.1/",
     "react-dom": "https://esm.sh/react-dom@18.3.1",
-    "react-dom/": "https://esm.sh/react-dom@18.3.1/",
     "react-dom/client": "https://esm.sh/react-dom@18.3.1/client",
     "lucide-react": "https://esm.sh/lucide-react@0.460.0?external=react,react-dom",
     "xlsx": "https://esm.sh/xlsx@0.18.5",
     "zod": "https://esm.sh/zod@3.23.8",
-    "@hello-pangea/dnd": "https://esm.sh/@hello-pangea/dnd@17.0.0?external=react,react-dom"
+    "@hello-pangea/dnd": "https://esm.sh/@hello-pangea/dnd@17.0.0?external=react,react-dom",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.4/"
   }
 }
 </script>

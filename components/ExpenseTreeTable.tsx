@@ -186,15 +186,15 @@ export const ExpenseTreeTable: React.FC<ExpenseTreeTableProps> = ({
                               type="text" 
                               className="w-full bg-transparent text-right font-mono outline-none focus:ring-1 focus:ring-indigo-500 rounded px-1" 
                               key={`${item.id}-up-${item.unitPrice}`}
-                              defaultValue={item.unitPrice.toFixed(2).replace('.', ',')} 
-                              onBlur={(e) => onUpdateUnitPrice(item.id, parseFloat(e.target.value.replace(/\./g, '').replace(',', '.')) || 0)} 
+                              defaultValue={financial.formatVisual(item.unitPrice).replace('R$ ', '')} 
+                              onBlur={(e) => onUpdateUnitPrice(item.id, financial.parseLocaleNumber(e.target.value))} 
                             />
                           ) : '-'}
                         </td>
                         <td className="p-2 text-right border-r border-slate-100 dark:border-slate-800 font-mono text-rose-500/80">
                           {item.itemType === 'item' && item.discountValue ? (
                             <div className="flex flex-col items-end">
-                              <span className="font-bold">-{financial.formatBRL(item.discountValue).replace('R$', '')}</span>
+                              <span className="font-bold">-{financial.formatVisual(item.discountValue).replace('R$ ', '')}</span>
                               <span className="text-[8px] font-black">{item.discountPercentage}% OFF</span>
                             </div>
                           ) : '-'}
@@ -206,10 +206,10 @@ export const ExpenseTreeTable: React.FC<ExpenseTreeTableProps> = ({
                                type="text" 
                                className={`w-full bg-transparent text-right font-black outline-none focus:ring-1 focus:ring-indigo-500 rounded px-1 ${isRevenueTable ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-800 dark:text-slate-100'}`} 
                                key={`${item.id}-amt-${item.amount}`}
-                               defaultValue={item.amount.toFixed(2).replace('.', ',')} 
-                               onBlur={(e) => onUpdateTotal(item.id, parseFloat(e.target.value.replace(/\./g, '').replace(',', '.')) || 0)} 
+                               defaultValue={financial.formatVisual(item.amount).replace('R$ ', '')} 
+                               onBlur={(e) => onUpdateTotal(item.id, financial.parseLocaleNumber(e.target.value))} 
                              />
-                           ) : <span className={`font-black ${isRevenueTable ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-800 dark:text-slate-100'}`}>{financial.formatBRL(item.amount)}</span>}
+                           ) : <span className={`font-black ${isRevenueTable ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-800 dark:text-slate-100'}`}>{financial.formatVisual(item.amount)}</span>}
                         </td>
                       </tr>
                     )}
@@ -225,7 +225,7 @@ export const ExpenseTreeTable: React.FC<ExpenseTreeTableProps> = ({
                     Soma líquida consolidada (considerando abatimentos e descontos)
                   </td>
                   <td className={`p-4 text-right text-base tracking-tighter ${isRevenueTable ? 'text-emerald-400' : 'text-rose-400'}`}>
-                    {financial.formatBRL(totalTable)}
+                    {financial.formatVisual(totalTable)}
                   </td>
                 </tr>
               </tbody>

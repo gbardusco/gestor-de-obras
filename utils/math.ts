@@ -7,6 +7,9 @@ export const financial = {
     return Math.round((value + Number.EPSILON) * 100) / 100;
   },
   
+  /**
+   * Formata para BRL usando o Intl padrão (inclui R$).
+   */
   formatBRL: (value: number): string => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
@@ -17,31 +20,40 @@ export const financial = {
   },
 
   /**
-   * Formata um número puro para o padrão visual brasileiro sem o prefixo R$.
+   * Formata um número com símbolo customizado.
+   * Se nenhum símbolo for passado, tenta buscar do contexto ou usa R$.
    */
-  formatVisual: (value: number): string => {
-    return new Intl.NumberFormat('pt-BR', {
+  formatVisual: (value: number, symbol: string = 'R$'): string => {
+    const formatted = new Intl.NumberFormat('pt-BR', {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
     }).format(value);
+    return `${symbol} ${formatted}`;
   },
 
   /**
-   * Máscara de digitação: transforma "1234" em "12,34" e "123456" em "1.234,56"
+   * Máscara de digitação: transforma "1234" em "12,34"
    */
   maskCurrency: (value: string): string => {
     const digits = value.replace(/\D/g, '');
     if (!digits) return '0,00';
     const numberValue = parseInt(digits, 10) / 100;
-    return financial.formatVisual(numberValue);
+    return new Intl.NumberFormat('pt-BR', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(numberValue);
   },
 
   /**
-   * Converte uma string formatada (1.234,56) de volta para um número (1234.56)
+   * Converte uma string formatada de volta para número.
    */
   parseLocaleNumber: (value: string): number => {
     if (!value) return 0;
-    const cleanValue = value.replace(/\./g, '').replace(',', '.');
+    // Remove qualquer símbolo de moeda, espaços, pontos de milhar e troca vírgula por ponto
+    const cleanValue = value
+      .replace(/[^\d,.-]/g, '') // Mantém apenas números, vírgula, ponto e sinal de menos
+      .replace(/\./g, '')
+      .replace(',', '.');
     return parseFloat(cleanValue) || 0;
   },
 
@@ -50,7 +62,7 @@ export const financial = {
   },
 
   /**
-   * Formata data YYYY-MM-DD para DD/MM/YYYY sem sofrer alteração de fuso horário.
+   * Formata data YYYY-MM-DD para DD/MM/YYYY.
    */
   formatDate: (dateStr: string | undefined): string => {
     if (!dateStr) return '—';

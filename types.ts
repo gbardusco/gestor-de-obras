@@ -51,6 +51,7 @@ export interface PDFTheme {
   accent: string;  // Cor das colunas de medição (era azul)
   accentText: string;
   border: string;
+  currencySymbol: string;
   header: PDFBoxTheme;
   category: PDFBoxTheme;
   footer: PDFBoxTheme;
@@ -196,6 +197,7 @@ export const DEFAULT_THEME: PDFTheme = {
   accent: '#2563eb', // Azul padrão
   accentText: '#ffffff',
   border: '#000000',
+  currencySymbol: 'R$',
   header: { bg: '#0f172a', text: '#ffffff' },
   category: { bg: '#f1f5f9', text: '#000000' },
   footer: { bg: '#0f172a', text: '#ffffff' },
@@ -207,6 +209,7 @@ export interface GlobalSettings {
   companyCnpj: string;
   userName: string;
   language: 'pt-BR' | 'en-US';
+  currencySymbol: string;
   certificates: CompanyCertificate[];
 }
 

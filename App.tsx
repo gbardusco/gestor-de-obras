@@ -22,12 +22,13 @@ const App: React.FC = () => {
     updateActiveProject, updateProjects, updateGroups, updateBiddings, updateCertificates, bulkUpdate
   } = useProjectState();
 
-  // Configurações com fallback seguro
+  // Configurações com fallback seguro - added missing currencySymbol to match GlobalSettings
   const safeGlobalSettings = globalSettings || {
     defaultCompanyName: 'Sua Empresa de Engenharia',
     companyCnpj: '',
     userName: 'Usuário ProMeasure',
     language: 'pt-BR',
+    currencySymbol: 'R$',
     certificates: []
   };
 

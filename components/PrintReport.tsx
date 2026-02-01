@@ -19,7 +19,7 @@ interface PrintReportProps {
 }
 
 export const PrintReport: React.FC<PrintReportProps> = ({ project, companyName, companyCnpj, data, stats }) => {
-  // Mesclagem segura do tema atual com os padrões
+  // Mesclagem segura do tema atual com os padrões para aplicação dinâmica
   const theme = {
     ...DEFAULT_THEME,
     ...project.theme,
@@ -36,14 +36,18 @@ export const PrintReport: React.FC<PrintReportProps> = ({ project, companyName, 
       font-family: '${theme.fontFamily}', sans-serif !important;
       color: #000 !important;
       background-color: white !important;
+      margin: 0 !important;
+      padding: 10mm !important;
+      height: auto !important;
+      min-height: 0 !important;
     }
 
     .report-master-container {
       width: ${REPORT_WIDTH} !important;
       margin: 0 auto !important;
       background: white !important;
-      /* Impede que qualquer cor de fundo vaze após o último elemento */
-      padding-bottom: 2pt !important; 
+      padding-bottom: 0 !important;
+      height: auto !important;
     }
 
     .report-table {
@@ -166,7 +170,7 @@ export const PrintReport: React.FC<PrintReportProps> = ({ project, companyName, 
           </div>
         </div>
 
-        {/* TABELA */}
+        {/* TABELA - Onde financial.formatVisual agora retorna R$ automaticamente */}
         <table className="report-table">
           <thead>
             <tr>
@@ -245,19 +249,19 @@ export const PrintReport: React.FC<PrintReportProps> = ({ project, companyName, 
         <div className="grid grid-cols-4 gap-4 mt-6">
           <div className="kpi-box p-3 text-center rounded bg-slate-50">
             <div className="text-[4.5pt] text-slate-400 uppercase font-bold">Valor Contrato</div>
-            <div className="text-[10pt] font-black">{financial.formatBRL(stats.contract)}</div>
+            <div className="text-[10pt] font-black">{financial.formatVisual(stats.contract)}</div>
           </div>
           <div className="kpi-accent p-3 text-center rounded bg-white">
             <div className="text-[4.5pt] uppercase font-bold">Líquido Medição Período</div>
-            <div className="text-[10pt] font-black">{financial.formatBRL(stats.current)}</div>
+            <div className="text-[10pt] font-black">{financial.formatVisual(stats.current)}</div>
           </div>
           <div className="kpi-box p-3 text-center rounded">
             <div className="text-[4.5pt] text-slate-400 uppercase font-bold">Acumulado Atual</div>
-            <div className="text-[10pt] font-black">{financial.formatBRL(stats.accumulated)}</div>
+            <div className="text-[10pt] font-black">{financial.formatVisual(stats.accumulated)}</div>
           </div>
           <div className="kpi-box p-3 text-center rounded">
             <div className="text-[4.5pt] text-slate-400 uppercase font-bold">Saldo a Executar</div>
-            <div className="text-[10pt] font-black">{financial.formatBRL(stats.balance)}</div>
+            <div className="text-[10pt] font-black">{financial.formatVisual(stats.balance)}</div>
           </div>
         </div>
 

@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { WorkItem } from '../types';
 import { financial } from '../utils/math';
@@ -169,8 +170,8 @@ export const TreeTable: React.FC<TreeTableProps> = ({
                             </div>
                           </td>
                           <td className="p-2 text-center border-r border-slate-100 dark:border-slate-800 font-black text-slate-400 uppercase text-[9px]">{item.unit || '-'}</td>
-                          <td className="p-2 text-right border-r border-slate-100 dark:border-slate-800 text-slate-400 dark:text-slate-500 font-mono text-[10px]">{item.type === 'item' ? financial.formatBRL(item.unitPriceNoBdi) : '-'}</td>
-                          <td className="p-2 text-right border-r border-slate-100 dark:border-slate-800 font-mono font-bold text-slate-700 dark:text-slate-300">{item.type === 'item' ? financial.formatBRL(item.unitPrice) : '-'}</td>
+                          <td className="p-2 text-right border-r border-slate-100 dark:border-slate-800 text-slate-400 dark:text-slate-500 font-mono text-[10px]">{item.type === 'item' ? financial.formatVisual(item.unitPriceNoBdi) : '-'}</td>
+                          <td className="p-2 text-right border-r border-slate-100 dark:border-slate-800 font-mono font-bold text-slate-700 dark:text-slate-300">{item.type === 'item' ? financial.formatVisual(item.unitPrice) : '-'}</td>
                           <td className="p-2 text-center border-r border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-900/40 text-slate-500 dark:text-slate-400 font-mono">{item.type === 'item' ? item.contractQuantity : '-'}</td>
                           
                           <td className="p-2 text-right border-r border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-900/40">
@@ -179,14 +180,14 @@ export const TreeTable: React.FC<TreeTableProps> = ({
                                  disabled={isReadOnly} 
                                  type="text" 
                                  className="w-full bg-transparent text-right font-bold text-slate-900 dark:text-slate-100 outline-none focus:ring-1 focus:ring-indigo-500 rounded px-1" 
-                                 defaultValue={item.contractTotal.toFixed(2).replace('.', ',')} 
-                                 onBlur={(e) => onUpdateTotal(item.id, parseFloat(e.target.value.replace(',', '.')) || 0)} 
+                                 defaultValue={financial.formatVisual(item.contractTotal).replace('R$ ', '')} 
+                                 onBlur={(e) => onUpdateTotal(item.id, financial.parseLocaleNumber(e.target.value))} 
                                />
-                             ) : <span className="font-bold text-slate-900 dark:text-slate-100">{financial.formatBRL(item.contractTotal)}</span>}
+                             ) : <span className="font-bold text-slate-900 dark:text-slate-100">{financial.formatVisual(item.contractTotal)}</span>}
                           </td>
 
                           <td className="p-2 text-center border-r border-slate-100 dark:border-slate-800 bg-amber-50/10 dark:bg-amber-900/10 text-slate-400 dark:text-slate-500 font-mono">{item.type === 'item' ? item.previousQuantity : '-'}</td>
-                          <td className="p-2 text-right border-r border-slate-100 dark:border-slate-800 bg-amber-50/10 dark:bg-amber-900/10 text-slate-400 dark:text-slate-500">{financial.formatBRL(item.previousTotal)}</td>
+                          <td className="p-2 text-right border-r border-slate-100 dark:border-slate-800 bg-amber-50/10 dark:bg-amber-900/10 text-slate-400 dark:text-slate-500">{financial.formatVisual(item.previousTotal)}</td>
                           <td className="p-2 text-center border-r border-slate-100 dark:border-slate-800 bg-blue-50/20 dark:bg-blue-900/10">
                             {item.type === 'item' ? (
                               <div className="flex items-center justify-center gap-1">
@@ -207,17 +208,17 @@ export const TreeTable: React.FC<TreeTableProps> = ({
                                  disabled={isReadOnly} 
                                  type="text" 
                                  className="w-full bg-transparent text-right font-black text-blue-700 dark:text-blue-300 outline-none focus:ring-1 focus:ring-blue-500 rounded px-1" 
-                                 defaultValue={item.currentTotal.toFixed(2).replace('.', ',')} 
-                                 onBlur={(e) => onUpdateCurrentTotal(item.id, parseFloat(e.target.value.replace(',', '.')) || 0)} 
+                                 defaultValue={financial.formatVisual(item.currentTotal).replace('R$ ', '')} 
+                                 onBlur={(e) => onUpdateCurrentTotal(item.id, financial.parseLocaleNumber(e.target.value))} 
                                />
-                             ) : <span className="font-black text-blue-700 dark:text-blue-300">{financial.formatBRL(item.currentTotal)}</span>}
+                             ) : <span className="font-black text-blue-700 dark:text-blue-300">{financial.formatVisual(item.currentTotal)}</span>}
                           </td>
 
                           <td className="p-2 text-center border-r border-slate-100 dark:border-slate-800 bg-emerald-50/10 dark:bg-emerald-900/10 font-bold text-slate-500 dark:text-slate-400 font-mono">{item.type === 'item' ? item.accumulatedQuantity : '-'}</td>
-                          <td className="p-2 text-right border-r border-slate-100 dark:border-slate-800 bg-emerald-50/10 dark:bg-emerald-900/10 font-black text-emerald-700 dark:text-emerald-400">{financial.formatBRL(item.accumulatedTotal)}</td>
+                          <td className="p-2 text-right border-r border-slate-100 dark:border-slate-800 bg-emerald-50/10 dark:bg-emerald-900/10 font-black text-emerald-700 dark:text-emerald-400">{financial.formatVisual(item.accumulatedTotal)}</td>
                           <td className="p-2 text-center border-r border-slate-100 dark:border-slate-800 bg-emerald-50/30 dark:bg-emerald-900/20 font-black text-emerald-800 dark:text-emerald-100 text-[10px]">{item.accumulatedPercentage}%</td>
                           <td className="p-2 text-center border-r border-slate-100 dark:border-slate-800 bg-rose-50/10 dark:bg-rose-900/10 font-bold text-rose-600/60 dark:text-rose-400/60 font-mono">{item.type === 'item' ? item.balanceQuantity : '-'}</td>
-                          <td className="p-2 text-right bg-rose-50/20 dark:bg-rose-900/10 font-black text-rose-800 dark:text-rose-300">{financial.formatBRL(item.balanceTotal)}</td>
+                          <td className="p-2 text-right bg-rose-50/20 dark:bg-rose-900/10 font-black text-rose-800 dark:text-rose-300">{financial.formatVisual(item.balanceTotal)}</td>
                           <td className="p-2 text-center font-black text-slate-700 dark:text-slate-200">{item.accumulatedPercentage}%</td>
                         </tr>
                       )}
@@ -229,15 +230,15 @@ export const TreeTable: React.FC<TreeTableProps> = ({
                     <td colSpan={7} className="p-5 text-right uppercase tracking-[0.2em] text-[10px] border-r border-white/10">Consolidado:</td>
                     <td colSpan={2} className="p-4 border-r border-white/10 opacity-30 italic">Preços Médios</td>
                     <td className="p-4 border-r border-white/10"></td>
-                    <td className="p-4 border-r border-white/10 text-right text-base tracking-tighter">{financial.formatBRL(financial.sum(filteredData.filter(i => i.depth === 0).map(i => i.contractTotal)))}</td>
-                    <td colSpan={2} className="p-4 border-r border-white/10 text-right opacity-50">{financial.formatBRL(financial.sum(filteredData.filter(i => i.depth === 0).map(i => i.previousTotal)))}</td>
+                    <td className="p-4 border-r border-white/10 text-right text-base tracking-tighter">{financial.formatVisual(financial.sum(filteredData.filter(i => i.depth === 0).map(i => i.contractTotal)))}</td>
+                    <td colSpan={2} className="p-4 border-r border-white/10 text-right opacity-50">{financial.formatVisual(financial.sum(filteredData.filter(i => i.depth === 0).map(i => i.previousTotal)))}</td>
                     <td colSpan={2} className="p-4 border-r border-white/10"></td>
-                    <td className="p-4 border-r border-white/10 text-right text-blue-400 text-base tracking-tighter">{financial.formatBRL(financial.sum(filteredData.filter(i => i.depth === 0).map(i => i.currentTotal)))}</td>
+                    <td className="p-4 border-r border-white/10 text-right text-blue-400 text-base tracking-tighter">{financial.formatVisual(financial.sum(filteredData.filter(i => i.depth === 0).map(i => i.currentTotal)))}</td>
                     <td className="p-4 border-r border-white/10"></td>
-                    <td className="p-4 border-r border-white/10 text-right text-emerald-400 text-base tracking-tighter">{financial.formatBRL(financial.sum(filteredData.filter(i => i.depth === 0).map(i => i.accumulatedTotal)))}</td>
+                    <td className="p-4 border-r border-white/10 text-right text-emerald-400 text-base tracking-tighter">{financial.formatVisual(financial.sum(filteredData.filter(i => i.depth === 0).map(i => i.accumulatedTotal)))}</td>
                     <td className="p-4 border-r border-white/10"></td>
                     <td className="p-4 border-r border-white/10"></td>
-                    <td className="p-4 border-r border-white/10 text-right text-rose-400 text-base tracking-tighter">{financial.formatBRL(financial.sum(filteredData.filter(i => i.depth === 0).map(i => i.balanceTotal)))}</td>
+                    <td className="p-4 border-r border-white/10 text-right text-rose-400 text-base tracking-tighter">{financial.formatVisual(financial.sum(filteredData.filter(i => i.depth === 0).map(i => i.balanceTotal)))}</td>
                     <td className="p-4 text-center">100%</td>
                   </tr>
                 </tbody>
