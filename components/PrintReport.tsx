@@ -106,7 +106,7 @@ export const PrintReport: React.FC<PrintReportProps> = ({ project, companyName, 
                 <td className="border border-black p-1">{item.cod || '-'}</td>
                 <td className="border border-black p-1 uppercase">{item.fonte || '-'}</td>
                 <td className="border border-black p-1 text-left uppercase">
-                  {item.name}
+                  {item.name.trim()}
                 </td>
                 <td className="border border-black p-1 font-bold">{item.unit || '-'}</td>
                 

@@ -10,6 +10,8 @@ const WorkItemSchema = z.object({
   type: z.enum(['category', 'item']),
   parentId: z.string().nullable().optional(),
   unit: z.string().optional(),
+  cod: z.string().optional(),
+  fonte: z.string().optional(),
   contractQuantity: z.number().min(0, "Mínimo 0"),
   unitPriceNoBdi: z.number().min(0, "Mínimo 0"),
   unitPrice: z.number().min(0, "Mínimo 0"),
@@ -102,7 +104,8 @@ export const WorkItemModal: React.FC<WorkItemModalProps> = ({
     
     const result = WorkItemSchema.safeParse(finalData);
     if (result.success) {
-      onSave(finalData);
+      // Passamos result.data que agora inclui cod e fonte garantidos pelo schema
+      onSave(result.data);
       onClose();
     } else {
       const newErrors: Record<string, string> = {};

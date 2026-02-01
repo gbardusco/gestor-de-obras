@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Home, Cog, PlusCircle, Briefcase, Sun, Moon, Menu, HardHat, X, Folder, ChevronRight, ChevronDown, Landmark, AlertCircle } from 'lucide-react';
+import { Home, Cog, PlusCircle, Briefcase, Sun, Moon, Menu, HardHat, X, Folder, ChevronRight, ChevronLeft, ChevronDown, Landmark, AlertCircle } from 'lucide-react';
 import { Project, ProjectGroup, CompanyCertificate } from '../types';
 import { biddingService } from '../services/biddingService';
 
@@ -73,12 +73,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
   return (
     <>
       {mobileOpen && <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-[100] lg:hidden" onClick={() => setMobileOpen(false)} />}
-      <aside className={`fixed inset-y-0 left-0 z-[110] lg:relative lg:translate-x-0 transition-transform duration-300 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col ${isOpen ? 'w-72' : 'w-20'} ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-        <div className="h-20 flex items-center justify-between px-6 border-b border-slate-100 dark:border-slate-800 shrink-0">
-          <div className="flex items-center gap-3">
+      <aside className={`fixed inset-y-0 left-0 z-[110] lg:relative lg:translate-x-0 transition-all duration-300 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col ${isOpen ? 'w-72' : 'w-20'} ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+        
+        {/* HEADER COM BOTÃO DE COLAPSO CORRIGIDO */}
+        <div className={`h-20 flex items-center border-b border-slate-100 dark:border-slate-800 shrink-0 px-4 ${isOpen ? 'justify-between' : 'justify-center'}`}>
+          <div className={`flex items-center gap-3 ${isOpen ? '' : 'hidden'}`}>
             <div className="w-9 h-9 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg"><HardHat size={20} /></div>
-            {isOpen && <span className="text-sm font-black tracking-tighter uppercase">ProMeasure</span>}
+            <span className="text-sm font-black tracking-tighter uppercase">ProMeasure</span>
           </div>
+          
+          <button 
+            onClick={() => setIsOpen(!isOpen)} 
+            className={`p-2.5 text-slate-400 hover:text-indigo-600 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl transition-all ${!isOpen ? 'bg-slate-50 dark:bg-slate-800' : ''}`}
+            title={isOpen ? "Recolher Sidebar" : "Expandir Sidebar"}
+          >
+            {isOpen ? <ChevronLeft size={20}/> : <Menu size={20}/>}
+          </button>
         </div>
 
         <nav className="flex-1 p-4 space-y-1 overflow-y-auto custom-scrollbar">
@@ -88,13 +98,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
           
           <div className="py-6 px-3 flex items-center justify-between">
             {isOpen && <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Obras Ativas</h3>}
-            <button onClick={() => onCreateProject()} className="text-indigo-500 hover:scale-110 transition-transform"><PlusCircle size={16}/></button>
+            <button onClick={() => onCreateProject()} className={`text-indigo-500 hover:scale-110 transition-transform ${!isOpen && 'mx-auto'}`}><PlusCircle size={16}/></button>
           </div>
 
           <div className="space-y-1">
             {groups.filter(g => !g.parentId).map(g => <GroupTreeItem key={g.id} group={g} depth={0} />)}
             {projects.filter(p => !p.groupId).map(p => (
-              <button key={p.id} onClick={() => onOpenProject(p.id)} className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all ${activeProjectId === p.id && viewMode === 'project-workspace' ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 font-bold' : 'text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800'}`}>
+              <button key={p.id} onClick={() => onOpenProject(p.id)} className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all ${activeProjectId === p.id && viewMode === 'project-workspace' ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 font-bold' : 'text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800'} ${!isOpen && 'justify-center'}`}>
                 <Briefcase size={16} className="shrink-0" />
                 {isOpen && <span className="text-xs truncate text-left">{p.name}</span>}
               </button>
@@ -103,7 +113,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </nav>
 
         <div className="p-4 border-t border-slate-100 dark:border-slate-800 flex flex-col gap-2">
-          <button onClick={toggleDarkMode} className="w-full flex items-center gap-3 p-3 text-slate-500 hover:bg-slate-50 rounded-xl">
+          <button onClick={toggleDarkMode} className={`w-full flex items-center gap-3 p-3 text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl ${!isOpen && 'justify-center'}`}>
             {isDarkMode ? <Sun size={18}/> : <Moon size={18}/>}
             {isOpen && <span className="text-xs font-bold uppercase tracking-widest">{isDarkMode ? 'Claro' : 'Escuro'}</span>}
           </button>

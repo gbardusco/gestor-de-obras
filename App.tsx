@@ -23,7 +23,6 @@ const App: React.FC = () => {
   } = useProjectState();
 
   // Configurações com fallback seguro
-  // Fix: Adicionado companyCnpj que estava faltando e causava erro de tipagem com a interface GlobalSettings
   const safeGlobalSettings = globalSettings || {
     defaultCompanyName: 'Sua Empresa de Engenharia',
     companyCnpj: '',
@@ -50,6 +49,19 @@ const App: React.FC = () => {
     setViewMode('project-workspace');
     setMobileMenuOpen(false);
   }, [setActiveProjectId]);
+
+  // Ação de Fechamento de Medição (Chamada pelo Modal no Workspace)
+  const handleCloseMeasurement = useCallback(() => {
+    if (!activeProject) return;
+    
+    // Executa a lógica de negócio de rotação de período
+    const updated = projectService.closeMeasurement(activeProject);
+    
+    // Atualiza o estado global e persiste
+    updateActiveProject(updated);
+    
+    // Feedback visual opcional pode ser adicionado aqui
+  }, [activeProject, updateActiveProject]);
 
   // Navegação: Criar Obra do zero ou vinculada a uma pasta
   const handleCreateProject = useCallback((groupId?: string | null) => {
@@ -143,7 +155,7 @@ const App: React.FC = () => {
             project={activeProject}
             globalSettings={safeGlobalSettings as any}
             onUpdateProject={updateActiveProject}
-            onCloseMeasurement={() => {}} // Reservado para versão futura de status de medição
+            onCloseMeasurement={handleCloseMeasurement}
             canUndo={false} 
             canRedo={false} 
             onUndo={() => {}} 

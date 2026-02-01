@@ -1,5 +1,6 @@
 
-import { Project, ProjectGroup, DEFAULT_THEME } from '../types';
+import { Project, ProjectGroup, DEFAULT_THEME, MeasurementSnapshot } from '../types';
+import { treeService } from './treeService';
 
 /**
  * ProjectService
@@ -29,7 +30,6 @@ export const projectService = {
       forecasts: [],
       milestones: []
     },
-    // Inicialização do Diário
     journal: {
       entries: []
     },
@@ -47,6 +47,65 @@ export const projectService = {
     order,
     children: []
   }),
+
+  /**
+   * closeMeasurement
+   * Realiza a "virada" de mês/período.
+   */
+  closeMeasurement: (project: Project): Project => {
+    try {
+      // 1. Snapshot do estado ATUAL para o histórico
+      const stats = treeService.calculateBasicStats(project.items, project.bdi);
+      const snapshot: MeasurementSnapshot = {
+        measurementNumber: project.measurementNumber,
+        date: new Date().toLocaleDateString('pt-BR'),
+        items: JSON.parse(JSON.stringify(project.items)), // Cópia profunda
+        totals: {
+          contract: stats.contract,
+          period: stats.current,
+          accumulated: stats.accumulated,
+          progress: stats.progress
+        }
+      };
+
+      // 2. Rotação Financeira: O que foi medido agora vira saldo anterior para a próxima
+      const rotatedItems = project.items.map(item => {
+        if (item.type === 'category') {
+          return { 
+            ...item,
+            currentTotal: 0,
+            currentPercentage: 0
+          };
+        }
+        
+        // Novo Anterior = O que era anterior + o que mediu agora
+        const newPreviousQuantity = (item.previousQuantity || 0) + (item.currentQuantity || 0);
+        const newPreviousTotal = (item.previousTotal || 0) + (item.currentTotal || 0);
+
+        return {
+          ...item,
+          previousQuantity: newPreviousQuantity,
+          previousTotal: newPreviousTotal,
+          // Zera a medição para o novo período (N+1)
+          currentQuantity: 0,
+          currentTotal: 0,
+          currentPercentage: 0
+        };
+      });
+
+      // 3. Incrementa o número da medição e persiste histórico
+      return {
+        ...project,
+        measurementNumber: project.measurementNumber + 1,
+        items: rotatedItems,
+        history: [snapshot, ...(project.history || [])],
+        referenceDate: new Date().toLocaleDateString('pt-BR')
+      };
+    } catch (error) {
+      console.error("Erro crítico ao rotacionar medição:", error);
+      throw error;
+    }
+  },
 
   getReassignedItems: (groupId: string, groups: ProjectGroup[], projects: Project[]) => {
     const targetGroup = groups.find(g => g.id === groupId);
