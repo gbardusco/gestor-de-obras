@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Home, Cog, PlusCircle, Briefcase, Sun, Moon, Menu, HardHat, X, Folder, ChevronRight, ChevronDown, Landmark, AlertCircle } from 'lucide-react';
 import { Project, ProjectGroup, CompanyCertificate } from '../types';
@@ -18,7 +17,7 @@ interface SidebarProps {
   onCreateProject: (groupId?: string | null) => void;
   isDarkMode: boolean;
   toggleDarkMode: () => void;
-  certificates: CompanyCertificate[];
+  certificates?: CompanyCertificate[];
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -27,7 +26,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
 
-  const hasAlerts = biddingService.hasGlobalAlerts(certificates);
+  const hasAlerts = biddingService.hasGlobalAlerts(certificates || []);
 
   const NavItem = ({ active, onClick, icon, label, badge }: any) => (
     <button onClick={onClick} className={`w-full flex items-center gap-4 p-3.5 rounded-2xl transition-all relative ${active ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'}`}>

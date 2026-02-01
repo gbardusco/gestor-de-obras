@@ -1,4 +1,3 @@
-
 import { BiddingProcess, Project, CompanyCertificate, DEFAULT_THEME } from '../types';
 import { projectService } from './projectService';
 import { financial } from '../utils/math';
@@ -56,7 +55,8 @@ export const biddingService = {
     return 'valid';
   },
 
-  hasGlobalAlerts: (certificates: CompanyCertificate[]): boolean => {
+  hasGlobalAlerts: (certificates: CompanyCertificate[] | undefined): boolean => {
+    if (!certificates || !Array.isArray(certificates)) return false;
     return certificates.some(c => biddingService.checkCertificateStatus(c) !== 'valid');
   }
 };
