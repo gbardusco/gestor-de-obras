@@ -1,71 +1,63 @@
+# ProMeasure Pro v0.4
+### High-Precision Engineering Measurement & Lifecycle Management Platform
 
-# ProMeasure Pro - Gestão Profissional de Medições de Obras
+O **ProMeasure Pro** é uma plataforma de classe empresarial (SaaS-ready) projetada para suprir a lacuna entre o orçamento teórico e a execução física em obras de infraestrutura e edificações de alta complexidade. 
 
-O **ProMeasure Pro** é uma aplicação de nível SaaS desenvolvida para engenheiros e gestores de obras que necessitam de rigor matemático, controle hierárquico (EAP/WBS) e relatórios institucionais. O sistema permite o acompanhamento físico-financeiro detalhado, desde a importação do orçamento até a geração de boletins de medição para assinatura.
-
-## 🚀 Funcionalidades Principais
-
-- **Hierarquia EAP Dinâmica:** Estrutura de árvore multinível com renumeração automática de WBS (ex: 1.1, 1.1.1, 1.2).
-- **Rollups Financeiros Recursivos:** Cálculos automáticos de totais que fluem dos itens de serviço para as categorias superiores em tempo real.
-- **Drag-and-Drop Hierárquico:** Reorganização intuitiva da estrutura da obra mantendo a integridade dos cálculos.
-- **Gestão de BDI:** Aplicação de taxas de Benefícios e Despesas Indiretas com cálculo reverso e atualização em cascata.
-- **Importação/Exportação Excel:** Motor de processamento robusto para migração de dados via planilhas XLSX.
-- **Histórico de Medições (Snapshots):** Sistema de congelamento de períodos para auditoria e acompanhamento de evolução física.
-- **Impressão Profissional:** Layout otimizado para papel A4 em modo paisagem, incluindo cabeçalhos institucionais e campos de assinatura.
-- **Interface SaaS Moderna:** Suporte nativo a Modo Escuro (Dark Mode) e design responsivo.
-
-## 🛠️ Stack Tecnológica
-
-- **Core:** [React 18](https://reactjs.org/) + [TypeScript](https://www.typescriptlang.org/) (Strict Mode)
-- **Styling:** [Tailwind CSS](https://tailwindcss.com/)
-- **Ícones:** [Lucide React](https://lucide.dev/)
-- **Processamento de Dados:** [SheetJS (XLSX)](https://sheetjs.com/)
-- **Validação:** [Zod](https://zod.dev/)
-- **Interatividade:** [@hello-pangea/dnd](https://github.com/hello-pangea/dnd) (Drag and Drop)
-
-## 📂 Arquitetura do Sistema
-
-O projeto segue princípios de **Clean Architecture** e separação de responsabilidades:
-
-- `/services`: Lógica de negócio pesada (Serviço de Árvore e Excel).
-- `/components`: Componentes de UI modulares e reutilizáveis.
-- `/hooks`: Gerenciamento de estado complexo e persistência (Undo/Redo, LocalStorage).
-- `/utils`: Utilitários matemáticos para precisão financeira (evitando erros de ponto flutuante).
-
-## 📥 Instalação e Execução
-
-Como o projeto utiliza módulos ES6 nativos e importmaps para máxima compatibilidade e performance sem a necessidade de um bundler complexo no desenvolvimento inicial, siga os passos abaixo:
-
-### Requisitos
-- Um servidor web local (devido às restrições de CORS para módulos ES6).
-
-### Passo a Passo
-
-1. **Clonar/Baixar o projeto:**
-   Certifique-se de que todos os arquivos (`index.html`, `index.tsx`, `App.tsx`, etc.) estejam na mesma pasta raiz.
-
-2. **Executar um servidor local:**
-   Você pode usar qualquer servidor estático. Exemplos comuns:
-
-   **Usando Node.js (npx):**
-   ```bash
-   npx serve .
-   ```
-   **Usando Python:**
-   ```bash
-   python -m http.server 8000
-   ```
-   **Usando VS Code:**
-   Instale a extensão "Live Server" e clique em "Go Live".
-
-3. **Acessar a aplicação:**
-   Abra o navegador e acesse `http://localhost:3000` (ou a porta indicada pelo seu servidor).
-
-## 📝 Notas de Uso
-
-1. **Importação:** Para importar dados, use o botão "Template" para baixar o modelo correto. O sistema possui uma heurística que tenta identificar colunas mesmo em planilhas customizadas.
-2. **Persistência:** Os dados são salvos automaticamente no `localStorage` do navegador. Para produção, recomenda-se a integração com o banco de dados PostgreSQL conforme sugerido no `architecture.md`.
-3. **Impressão:** Use o atalho `Ctrl + P` ou o ícone de impressora na interface. O sistema ocultará automaticamente os elementos de UI e formatará a tabela para o padrão A4 de engenharia.
+Diferente de planilhas convencionais, o sistema implementa um **Motor de Cálculo Hierárquico Relacional**, garantindo integridade matemática absoluta em estruturas analíticas (EAP) multiníveis.
 
 ---
-**Desenvolvido com foco em alta performance e experiência do usuário (DX/UX).**
+
+## 🏗️ Core Pillars & Business Logic
+
+### 1. Motor de EAP Dinâmico (WBS Engine)
+*   **Hierarquia Recursiva:** Implementação de árvore virtual que gera automaticamente a numeração de itens (ex: 1.1.2.1) e propaga alterações de ordem via Drag-and-Drop sem perda de referência.
+*   **Column Focus:** Recentemente otimizado para o padrão brasileiro de orçamentação, utilizando a nomenclatura de coluna `ITEM` (antigo WBS) e rastreabilidade de procedência via coluna `FONTE` (SINAPI, SBC, Próprio, etc).
+
+### 2. Rollups Financeiros de Alta Precisão
+*   **Cascateamento Automático:** Valores medidos na "folha" (item de serviço) são somados recursivamente para as categorias superiores em tempo real.
+*   **Gestão de BDI (Benefícios e Despesas Indiretas):** Aplicação de taxas customizáveis por projeto com recálculo instantâneo de preços unitários e totais contratuais.
+*   **Prevenção de Erros de Ponto Flutuante:** Utilização de utilitários de arredondamento financeiro (`DecimalSafe`) para garantir que 0.1 + 0.2 seja exatamente 0.3 no fechamento da medição.
+
+### 3. Compliance & Governança (Auditoria)
+*   **Snapshots de Medição:** Sistema de "Time Machine" que congela o estado da obra em cada fechamento, permitindo auditoria retroativa de qualquer período anterior.
+*   **Diário de Obra Automatizado:** Engine de logs que gera registros de auditoria automáticos quando itens atingem 100% ou quando gastos superam limites críticos de sensibilidade financeira.
+
+### 4. Ciclo de Vida de Licitações (Bidding)
+*   **Pipeline de Propostas:** Gestão de editais desde a prospecção até a conversão em obra ativa.
+*   **Compliance Documental:** Monitoramento de validade de certidões negativas e documentos de habilitação com alertas visuais de criticidade.
+
+---
+
+## 🛠️ Stack Tecnológica & Arquitetura
+
+*   **Frontend:** React 18+ com **TypeScript Strict Mode** para eliminação de erros em tempo de compilação.
+*   **State Management:** Hooks customizados com persistência em `localStorage` (Arquitetura orientada a migração rápida para API REST/PostgreSQL).
+*   **Data Processing:** Engine [SheetJS](https://sheetjs.com/) para parsing heurístico de planilhas Excel.
+*   **UI/UX:** Tailwind CSS com suporte a **Institutional Dark Mode** e layout de impressão otimizado para normas de engenharia (A4 Paisagem).
+
+---
+
+## 📐 Decisões de Engenharia (Architect's Note)
+
+O sistema utiliza uma **Representação Flattened** no armazenamento para performance de escrita, mas reconstrói uma **Virtual Tree** em memória para todos os cálculos de rollup. Isso permite que a interface renderize milhares de itens com performance O(n) enquanto mantém a lógica de negócio complexa isolada na camada de serviço (`treeService.ts`).
+
+### Estrutura de Pastas (Clean Architecture)
+*   `/services`: Single Source of Truth para lógica de negócio (EAP, Finanças, Excel).
+*   `/hooks`: Abstração de persistência e estados globais.
+*   `/utils`: Utilitários matemáticos e formatadores de locale.
+*   `/components`: UI Components atômicos e Views complexas.
+
+---
+
+## 🚀 Deployment & Instalação
+
+A aplicação foi desenhada para ser executada como um módulo ES6 nativo, eliminando a necessidade de builders complexos para prototipagem rápida, mas mantendo total compatibilidade com ambientes de CI/CD modernos.
+
+1.  Clone o repositório.
+2.  Inicie um servidor estático na raiz (ex: `npx serve .` ou Live Server).
+3.  Acesse `http://localhost:3000`.
+
+*Para produção, consulte o arquivo `deployment.md` para configurações de Docker e instâncias gerenciadas de banco de dados.*
+
+---
+**Desenvolvido com rigor técnico para profissionais que não aceitam margem de erro.**
