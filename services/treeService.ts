@@ -42,6 +42,8 @@ export const treeService = {
           treeService.processRecursive(child, wbs, idx, projectBdi)
         );
         
+        // REGRA 3: total_planilha = truncar(soma(total_item); 2)
+        // Como cada total_item já vem truncado, a soma final apenas garante que não haja drift binário.
         node.contractTotal = financial.sum(node.children.map(c => c.contractTotal || 0));
         node.previousTotal = financial.sum(node.children.map(c => c.previousTotal || 0));
         node.currentTotal = financial.sum(node.children.map(c => c.currentTotal || 0));
@@ -55,17 +57,22 @@ export const treeService = {
         node.contractTotal = node.currentTotal = node.accumulatedTotal = node.balanceTotal = node.accumulatedPercentage = 0;
       }
     } else {
-      // Cálculo de precisão unitária
-      node.unitPrice = financial.round((node.unitPriceNoBdi || 0) * (1 + (projectBdi || 0) / 100));
-      node.contractTotal = financial.round((node.contractQuantity || 0) * node.unitPrice);
-      node.previousTotal = financial.round((node.previousQuantity || 0) * node.unitPrice);
-      node.currentTotal = financial.round((node.currentQuantity || 0) * node.unitPrice);
+      // REGRA 1: com_BDI = truncar(sem_BDI * (1 + BDI); 2)
+      const bdiFactor = 1 + (projectBdi / 100);
+      node.unitPrice = financial.truncate((node.unitPriceNoBdi || 0) * bdiFactor);
+      
+      // REGRA 2: total_item = truncar(com_BDI * qtd_contratada; 2)
+      node.contractTotal = financial.truncate(node.unitPrice * (node.contractQuantity || 0));
+      
+      // Aplica a mesma truncagem estrita para os valores de medição para manter paridade
+      node.previousTotal = financial.truncate((node.previousQuantity || 0) * node.unitPrice);
+      node.currentTotal = financial.truncate((node.currentQuantity || 0) * node.unitPrice);
       
       node.accumulatedQuantity = financial.round((node.previousQuantity || 0) + (node.currentQuantity || 0));
-      node.accumulatedTotal = financial.round(node.accumulatedQuantity * node.unitPrice);
+      node.accumulatedTotal = financial.truncate(node.accumulatedQuantity * node.unitPrice);
       
       node.balanceQuantity = financial.round((node.contractQuantity || 0) - node.accumulatedQuantity);
-      node.balanceTotal = financial.round(node.balanceQuantity * node.unitPrice);
+      node.balanceTotal = financial.truncate(node.balanceQuantity * node.unitPrice);
       
       node.currentPercentage = (node.contractQuantity || 0) > 0 
         ? financial.round(((node.currentQuantity || 0) / node.contractQuantity) * 100) 
@@ -77,7 +84,6 @@ export const treeService = {
     return node;
   },
 
-  // Fix for missing processExpensesRecursive
   processExpensesRecursive: (node: ProjectExpense, prefix: string = '', index: number = 0): ProjectExpense => {
     const currentPos = index + 1;
     const wbs = prefix ? `${prefix}.${currentPos}` : `${currentPos}`;
@@ -100,7 +106,7 @@ export const treeService = {
     const tree = treeService.buildTree(items);
     const processed = tree.map((r, i) => treeService.processRecursive(r, '', i, bdi));
     
-    // Calcula totais reais da planilha
+    // Calcula totais reais da planilha com truncagem final
     const rawTotals = {
       contract: financial.sum(processed.map(n => n.contractTotal || 0)),
       current: financial.sum(processed.map(n => n.currentTotal || 0)),
@@ -108,12 +114,10 @@ export const treeService = {
       balance: financial.sum(processed.map(n => n.balanceTotal || 0)),
     };
 
-    // Aplica os Overrides (Ajustes manuais do rodapé) para garantir conformidade com o PDF
+    // Respeita overrides manuais se existirem (para forçar valores específicos de contrato)
     const contract = project?.contractTotalOverride ?? rawTotals.contract;
     const current = project?.currentTotalOverride ?? rawTotals.current;
-    
-    // O saldo é a diferença entre o contrato forçado e o acumulado real
-    const balance = financial.round(contract - rawTotals.accumulated);
+    const balance = financial.truncate(contract - rawTotals.accumulated);
 
     return {
       contract,
@@ -164,7 +168,6 @@ export const treeService = {
     });
   },
 
-  // Fix for missing moveInSiblings
   moveInSiblings: <T extends { id: string; parentId: string | null; order: number }>(items: T[], id: string, direction: 'up' | 'down'): T[] => {
     const item = items.find(i => i.id === id);
     if (!item) return items;

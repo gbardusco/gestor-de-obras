@@ -8,10 +8,14 @@ export const financial = {
   },
 
   /**
-   * Truncagem financeira (2 casas decimais).
+   * Truncagem rigorosa de 2 casas decimais (Excel TRUNCAR).
+   * Adiciona um epsilon de 1e-9 para corrigir imprecisões de ponto flutuante do JS
+   * antes de realizar o corte das casas decimais.
    */
   truncate: (value: number): number => {
-    return Math.floor((value + Number.EPSILON) * 100) / 100;
+    const factor = 100;
+    // O 0.0000000001 (1e-10) serve para garantir que 5.9999999999 seja 6.00 antes do trunc
+    return Math.floor((value + 0.0000000001) * factor) / factor;
   },
   
   /**
@@ -64,12 +68,11 @@ export const financial = {
   },
 
   /**
-   * Soma de precisão: evita perdas decimais. 
-   * Usamos round aqui para satisfazer a regra "não pode ficar abaixo".
+   * Soma de precisão: Soma os valores e trunca o resultado final.
    */
   sum: (values: number[]): number => {
     const total = values.reduce((acc, val) => acc + (val || 0), 0);
-    return financial.round(total);
+    return financial.truncate(total);
   },
 
   /**
