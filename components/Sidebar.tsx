@@ -36,7 +36,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
     </button>
   );
 
-  const GroupTreeItem = ({ group, depth }: { group: ProjectGroup, depth: number }) => {
+  interface GroupTreeItemProps {
+    group: ProjectGroup;
+    depth: number;
+  }
+
+  const GroupTreeItem: React.FC<GroupTreeItemProps> = ({ group, depth }) => {
     const isExpanded = expandedGroups.has(group.id);
     const subGroups = groups.filter(g => g.parentId === group.id);
     const groupProjects = projects.filter(p => p.groupId === group.id);
@@ -87,7 +92,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
           
           <div className="py-6 px-3 flex items-center justify-between">
             {isOpen && <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Obras Ativas</h3>}
-            <button onClick={() => onCreateProject()} className="text-indigo-500 hover:scale-110 transition-transform"><PlusCircle size={16}/></button>
+            <button 
+              onClick={() => {
+                if (typeof onCreateProject === 'function') {
+                  onCreateProject(null);
+                } else {
+                  console.error('onCreateProject is not a function:', onCreateProject);
+                }
+              }} 
+              className="text-indigo-500 hover:scale-110 transition-transform"
+            >
+              <PlusCircle size={16}/>
+            </button>
           </div>
 
           <div className="space-y-1">

@@ -80,14 +80,21 @@ export const useProjectState = () => {
     });
   }, []);
 
-  const updateProjects = (projects: Project[]) => bulkUpdate({ projects });
+  const updateProjects = useCallback((projects: Project[]) => {
+    bulkUpdate({ projects });
+  }, [bulkUpdate]);
   
-  const updateGroups = (groups: ProjectGroup[]) => bulkUpdate({ groups });
+  const updateGroups = useCallback((groups: ProjectGroup[]) => {
+    bulkUpdate({ groups });
+  }, [bulkUpdate]);
   
-  const updateBiddings = (biddings: BiddingProcess[]) => bulkUpdate({ biddings });
+  const updateBiddings = useCallback((biddings: BiddingProcess[]) => {
+    bulkUpdate({ biddings });
+  }, [bulkUpdate]);
   
-  const updateCertificates = (certs: CompanyCertificate[]) => 
+  const updateCertificates = useCallback((certs: CompanyCertificate[]) => {
     bulkUpdate(prev => ({ globalSettings: { ...prev.globalSettings, certificates: certs } }));
+  }, [bulkUpdate]);
 
   return {
     ...present,
