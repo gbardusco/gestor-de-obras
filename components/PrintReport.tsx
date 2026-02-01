@@ -78,12 +78,13 @@ export const PrintReport: React.FC<PrintReportProps> = ({ project, companyName, 
     }
 
     .report-table thead th {
-      background-color: ${theme.header.bg};
+      background-color: ${theme.header.bg} !important;
       color: ${theme.header.text} !important;
       font-weight: 900;
       text-align: center;
     }
 
+    /* HEADER DA COLUNA DE MEDIÇÃO COM COR DE DESTAQUE INTEGRAL */
     .bg-medi-period {
       background-color: ${theme.accent} !important;
       color: ${theme.accentText} !important;
@@ -93,34 +94,32 @@ export const PrintReport: React.FC<PrintReportProps> = ({ project, companyName, 
     .row-category {
       background-color: ${theme.category.bg} !important;
       color: ${theme.category.text} !important;
-      font-weight: 900 !important;
     }
     
     .row-category td {
-      font-weight: 900 !important;
+      font-weight: 700 !important; /* CATEGORIAS SEMPRE BOLD */
     }
 
     .row-item td {
-      font-weight: 300 !important; /* FONTE FINA PARA ITENS */
+      font-weight: 400 !important; /* ITENS COM FONTE FINA (400/NORMAL) */
     }
 
-    /* BACKGROUNDS DINÂMICOS NA COLUNA DE MEDIÇÃO */
+    /* BACKGROUNDS DINÂMICOS NA COLUNA DE MEDIÇÃO COM OPACIDADES HEXADECIMAIS */
+    /* Categorias: Accent + 1A (~10% opacidade) */
     .row-category .cell-medi-period {
-      background-color: ${theme.accent}1A !important; /* ~10% OPACIDADE */
-      color: ${theme.accent} !important;
-      font-weight: 900 !important;
+      background-color: ${theme.accent}1A !important; 
     }
 
+    /* Itens: Accent + 06 (~4% opacidade - ainda mais clara) */
     .row-item .cell-medi-period {
-      background-color: ${theme.accent}0A !important; /* ~4% OPACIDADE (AINDA MAIS CLARA) */
+      background-color: ${theme.accent}0A !important; 
       color: ${theme.accent} !important;
-      font-weight: 400 !important;
     }
 
     .footer-total-row {
       background-color: ${theme.footer.bg} !important;
       color: ${theme.footer.text} !important;
-      font-weight: 900;
+      font-weight: 700;
       text-align: right;
     }
 
@@ -242,8 +241,8 @@ export const PrintReport: React.FC<PrintReportProps> = ({ project, companyName, 
                   <td className="text-right">{financial.formatVisual(item.contractTotal, currencySymbol)}</td>
                   <td className="text-center">{!isCat ? item.previousQuantity : '-'}</td>
                   <td className="text-right">{financial.formatVisual(item.previousTotal, currencySymbol)}</td>
-                  <td className="text-center">{!isCat ? (item.currentQuantity || '-') : '-'}</td>
-                  <td className="text-right">{financial.formatVisual(item.currentTotal, currencySymbol)}</td>
+                  <td className="text-center cell-medi-period">{!isCat ? (item.currentQuantity || '-') : '-'}</td>
+                  <td className="text-right cell-medi-period">{financial.formatVisual(item.currentTotal, currencySymbol)}</td>
                   <td className="text-center">{!isCat ? item.accumulatedQuantity : '-'}</td>
                   <td className="text-right">{financial.formatVisual(item.accumulatedTotal, currencySymbol)}</td>
                   <td className="text-center">{!isCat ? item.balanceQuantity : '-'}</td>
