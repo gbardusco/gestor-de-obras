@@ -1,4 +1,3 @@
-
 export type ItemType = 'category' | 'item';
 
 export interface WorkItem {
@@ -40,15 +39,21 @@ export interface WorkItem {
   children?: WorkItem[];
 }
 
+export type PDFBoxTheme = {
+  bg: string;
+  text: string;
+};
+
 export interface PDFTheme {
-  primary: string;
-  secondary: string;
-  headerBg: string;
-  headerText: string;
-  rowCategory: string;
-  rowItem: string;
-  rowTotal: string;
+  fontFamily: 'Inter' | 'Roboto' | 'JetBrains Mono' | 'Merriweather';
+  primary: string; // Cor de destaque principal (títulos)
+  accent: string;  // Cor das colunas de medição
+  accentText: string;
   border: string;
+  header: PDFBoxTheme;
+  category: PDFBoxTheme;
+  footer: PDFBoxTheme;
+  kpiHighlight: PDFBoxTheme;
 }
 
 export interface MeasurementSnapshot {
@@ -153,46 +158,16 @@ export interface ProjectJournal {
   entries: JournalEntry[];
 }
 
-// --- NOVO MÓDULO: LICITAÇÕES (BIDDING) ---
-
-export type BiddingStatus = 'PROSPECTING' | 'DRAFTING' | 'SUBMITTED' | 'WON' | 'LOST';
-
-export interface BiddingProcess {
-  id: string;
-  tenderNumber: string; // Número do Edital
-  clientName: string;   // Órgão ou Cliente
-  object: string;       // Descrição do objeto
-  openingDate: string;  // Abertura
-  visitDate?: string;   // Visita Técnica
-  expirationDate: string; // Validade da Proposta
-  estimatedValue: number; // Valor Edital
-  ourProposalValue: number; // Valor Calculado
-  status: BiddingStatus;
-  items: WorkItem[];    // Orçamento da Proposta
-  assets: ProjectAsset[]; // Documentos do Edital
-  bdi: number;
-}
-
-export interface CompanyCertificate {
-  id: string;
-  name: string;
-  issuer: string;
-  expirationDate: string;
-  fileData?: string;
-  status: 'valid' | 'warning' | 'expired';
-}
-
-// --- FIM LICITAÇÕES ---
-
 export const DEFAULT_THEME: PDFTheme = {
-  primary: '#2563eb',
-  secondary: '#64748b',
-  headerBg: '#0f172a',
-  headerText: '#ffffff',
-  rowCategory: '#f8fafc',
-  rowItem: '#ffffff',
-  rowTotal: '#1e293b',
-  border: '#e2e8f0'
+  fontFamily: 'Inter',
+  primary: '#000000',
+  accent: '#2563eb', 
+  accentText: '#ffffff',
+  border: '#000000',
+  header: { bg: '#0f172a', text: '#ffffff' },
+  category: { bg: '#f1f5f9', text: '#000000' },
+  footer: { bg: '#0f172a', text: '#ffffff' },
+  kpiHighlight: { bg: '#eff6ff', text: '#1d4ed8' }
 };
 
 export interface GlobalSettings {
@@ -233,4 +208,31 @@ export interface Project {
     printCards: boolean;
     printSubtotals: boolean;
   };
+}
+
+export interface CompanyCertificate {
+  id: string;
+  name: string;
+  issuer: string;
+  expirationDate: string;
+  fileData?: string;
+  status: 'valid' | 'warning' | 'expired';
+}
+
+export type BiddingStatus = 'PROSPECTING' | 'DRAFTING' | 'SUBMITTED' | 'WON' | 'LOST';
+
+export interface BiddingProcess {
+  id: string;
+  tenderNumber: string; 
+  clientName: string;   
+  object: string;       
+  openingDate: string;  
+  visitDate?: string;   
+  expirationDate: string; 
+  estimatedValue: number; 
+  ourProposalValue: number; 
+  status: BiddingStatus;
+  items: WorkItem[];    
+  assets: ProjectAsset[]; 
+  bdi: number;
 }

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Project, WorkItem, ProjectExpense } from '../types';
 import { financial } from '../utils/math';
-import { HardHat, Ruler } from 'lucide-react';
+import { HardHat } from 'lucide-react';
 
 interface PrintReportProps {
   project: Project;
@@ -19,146 +19,212 @@ interface PrintReportProps {
 }
 
 export const PrintReport: React.FC<PrintReportProps> = ({ project, companyName, companyCnpj, data, stats }) => {
+  const theme = project.theme;
+
+  // CSS Dinâmico Injetado para o Relatório
+  const dynamicStyles = `
+    .print-report-area {
+      font-family: '${theme.fontFamily}', sans-serif !important;
+      color: ${theme.primary} !important;
+    }
+    
+    .print-header-bg { 
+      background-color: ${theme.header.bg} !important; 
+      color: ${theme.header.text} !important; 
+    }
+    
+    .print-border { 
+      border-color: ${theme.border} !important; 
+    }
+    
+    .print-primary-text { 
+      color: ${theme.primary} !important; 
+    }
+    
+    .print-primary-border { 
+      border-color: ${theme.primary} !important; 
+    }
+
+    .print-accent-bg { 
+      background-color: ${theme.accent} !important; 
+      color: ${theme.accentText} !important; 
+    }
+    
+    .print-accent-text { 
+      color: ${theme.accent} !important; 
+    }
+
+    /* Variação suave da cor de destaque para as linhas da tabela */
+    .print-accent-row-bg { 
+      background-color: ${theme.accent}10 !important; 
+    }
+
+    .print-category-bg { 
+      background-color: ${theme.category.bg} !important; 
+      color: ${theme.category.text} !important; 
+    }
+    
+    .print-footer-bg { 
+      background-color: ${theme.footer.bg} !important; 
+      color: ${theme.footer.text} !important; 
+    }
+
+    .kpi-highlight-border { 
+      border-color: ${theme.accent} !important; 
+    }
+    
+    .kpi-highlight-bg { 
+      background-color: ${theme.accent}05 !important; 
+    }
+    
+    .kpi-highlight-text { 
+      color: ${theme.accent} !important; 
+    }
+
+    /* Garante que itens não sejam cortados entre páginas */
+    table tr { page-break-inside: avoid !important; }
+    .no-break { page-break-inside: avoid !important; break-inside: avoid !important; }
+  `;
+
   return (
     <div className="print-report-area bg-white text-black p-0 leading-tight">
+      <style dangerouslySetInnerHTML={{ __html: dynamicStyles }} />
+      
       {/* CABEÇALHO INSTITUCIONAL */}
-      <div className="flex items-center justify-between border-b-2 border-black pb-3 mb-4">
+      <div className="flex items-center justify-between border-b-2 print-primary-border pb-3 mb-4">
         <div className="flex items-center gap-4">
           {project.logo ? (
-            <img src={project.logo} className="w-16 h-16 object-contain" />
+            <img src={project.logo} className="w-24 h-16 object-contain" alt="Logo Empresa" />
           ) : (
-            <div className="w-12 h-12 bg-black text-white flex items-center justify-center rounded">
+            <div className="w-12 h-12 bg-black text-white flex items-center justify-center rounded print-header-bg">
               <HardHat size={32} />
             </div>
           )}
           <div>
-            <h1 className="text-xl font-black uppercase tracking-tight leading-none">{companyName || project.companyName}</h1>
+            <h1 className="text-xl font-black uppercase tracking-tight leading-none print-primary-text">
+              {companyName || project.companyName}
+            </h1>
             <p className="text-[8px] font-bold text-slate-600 uppercase tracking-widest mt-1">
               {companyCnpj ? `CNPJ: ${companyCnpj}` : 'Gestão Integrada de Medição de Obras'}
             </p>
           </div>
         </div>
         <div className="text-right">
-          <h2 className="text-lg font-black uppercase">Planilha de Medição</h2>
+          <h2 className="text-lg font-black uppercase print-primary-text">Planilha de Medição</h2>
           <div className="text-[9px] font-bold">
-            <span className="bg-black text-white px-2 py-0.5 rounded mr-2 uppercase">Medição Nº {project.measurementNumber}</span>
+            <span className="px-2 py-0.5 rounded mr-2 uppercase print-accent-bg">
+              Medição Nº {project.measurementNumber}
+            </span>
             <span className="text-slate-500 uppercase">Data: {project.referenceDate || '—'}</span>
           </div>
         </div>
       </div>
 
       {/* DADOS DO EMPREENDIMENTO */}
-      <div className="grid grid-cols-3 gap-2 mb-4 text-[9px] border border-black p-2 bg-slate-50 rounded">
+      <div className="grid grid-cols-3 gap-2 mb-4 text-[9px] border print-border p-2 bg-slate-50 rounded no-break">
         <div>
           <label className="block text-[7px] font-black text-slate-400 uppercase">Obra</label>
           <span className="font-bold uppercase">{project.name}</span>
         </div>
         <div className="text-center">
-          <label className="block text-[7px] font-black text-slate-400 uppercase">Local da Obra</label>
+          <label className="block text-[7px] font-black text-slate-400 uppercase">Localização / Endereço</label>
           <span className="font-bold uppercase">{project.location || '-'}</span>
         </div>
         <div className="text-right">
-          <label className="block text-[7px] font-black text-slate-400 uppercase">Status Físico Global</label>
-          <span className="font-black text-blue-700">{stats.progress.toFixed(2)}% Concluído</span>
+          <label className="block text-[7px] font-black text-slate-400 uppercase">Avanço Físico Global</label>
+          <span className="font-black print-accent-text">{stats.progress.toFixed(2)}% Concluído</span>
         </div>
       </div>
 
       {/* TABELA DE MEDIÇÃO PADRÃO ANEXO */}
-      <table className="w-full text-[6.5px] border-collapse border border-black mb-6">
+      <table className="w-full text-[6.5px] border-collapse border print-border mb-6">
         <thead>
-          <tr className="bg-slate-900 text-white font-black uppercase text-center">
-            <th rowSpan={2} className="border border-black p-1 w-8">ITEM</th>
-            <th rowSpan={2} className="border border-black p-1 w-10">Cód</th>
-            <th rowSpan={2} className="border border-black p-1 w-10">Fonte</th>
-            <th rowSpan={2} className="border border-black p-1 text-left min-w-[150px]">Descrição</th>
-            <th rowSpan={2} className="border border-black p-1 w-8">Und</th>
-            <th colSpan={2} className="border border-black p-1">Unitário (R$)</th>
-            <th rowSpan={2} className="border border-black p-1 w-12">Qtd. Contratado</th>
-            <th rowSpan={2} className="border border-black p-1 w-20">Total (R$) Contratado</th>
-            <th colSpan={2} className="border border-black p-1 bg-slate-800">Acum. Anterior</th>
-            <th colSpan={2} className="border border-black p-1 bg-blue-600">Medição do Período</th>
-            <th colSpan={2} className="border border-black p-1 bg-slate-800">Acum. Total</th>
-            <th colSpan={2} className="border border-black p-1 bg-slate-800">Saldo a Realizar</th>
-            <th rowSpan={2} className="border border-black p-1 w-8">% Exec..</th>
+          <tr className="font-black uppercase text-center print-header-bg">
+            <th rowSpan={2} className="border print-border p-1 w-8">ITEM</th>
+            <th rowSpan={2} className="border print-border p-1 w-10">Cód</th>
+            <th rowSpan={2} className="border print-border p-1 w-10">Fonte</th>
+            <th rowSpan={2} className="border print-border p-1 text-left min-w-[150px]">Descrição</th>
+            <th rowSpan={2} className="border print-border p-1 w-8">Und</th>
+            <th colSpan={2} className="border print-border p-1">Unitário (R$)</th>
+            <th rowSpan={2} className="border print-border p-1 w-12">Qtd. Contr.</th>
+            <th rowSpan={2} className="border print-border p-1 w-20">Total Contr. (R$)</th>
+            <th colSpan={2} className="border print-border p-1">Acum. Anterior</th>
+            <th colSpan={2} className="border print-border p-1">Medição Período</th>
+            <th colSpan={2} className="border print-border p-1">Acum. Total</th>
+            <th colSpan={2} className="border print-border p-1">Saldo Reman.</th>
+            <th rowSpan={2} className="border print-border p-1 w-8">% Exec..</th>
           </tr>
-          <tr className="bg-slate-800 text-white font-bold text-[6px] uppercase">
-            <th className="border border-black p-0.5 w-14">S/ BDI</th>
-            <th className="border border-black p-0.5 w-14">C/ BDI</th>
-            <th className="border border-black p-0.5 w-10">Quant.</th>
-            <th className="border border-black p-0.5 w-16">Total (R$)</th>
-            <th className="border border-black p-0.5 w-10 bg-blue-500">Quant.</th>
-            <th className="border border-black p-0.5 w-16 bg-blue-500">Total (R$)</th>
-            <th className="border border-black p-0.5 w-10">Quant.</th>
-            <th className="border border-black p-0.5 w-16">Total (R$)</th>
-            <th className="border border-black p-0.5 w-10">Quant.</th>
-            <th className="border border-black p-0.5 w-16">Total (R$)</th>
+          <tr className="font-bold text-[6px] uppercase print-header-bg" style={{ filter: 'brightness(90%)' }}>
+            <th className="border print-border p-0.5 w-14">S/ BDI</th>
+            <th className="border print-border p-0.5 w-14">C/ BDI</th>
+            <th className="border print-border p-0.5 w-10">Quant.</th>
+            <th className="border print-border p-0.5 w-16">Total (R$)</th>
+            <th className="border print-border p-0.5 w-10">Quant.</th>
+            <th className="border print-border p-0.5 w-16">Total (R$)</th>
+            <th className="border print-border p-0.5 w-10">Quant.</th>
+            <th className="border print-border p-0.5 w-16">Total (R$)</th>
+            <th className="border print-border p-0.5 w-10">Quant.</th>
+            <th className="border print-border p-0.5 w-16">Total (R$)</th>
           </tr>
         </thead>
         <tbody>
           {data.map((item) => {
             const isCategory = item.type === 'category';
-            const rowClass = isCategory ? 'bg-slate-100 font-bold' : '';
 
             return (
-              <tr key={item.id} className={`${rowClass} border-b border-black text-center`}>
-                <td className="border border-black p-1 font-mono text-[7px]">{item.wbs}</td>
-                <td className="border border-black p-1">{item.cod || '-'}</td>
-                <td className="border border-black p-1 uppercase">{item.fonte || '-'}</td>
-                <td className="border border-black p-1 text-left uppercase">
+              <tr key={item.id} className={`${isCategory ? 'print-category-bg font-bold' : ''} border-b print-border text-center`}>
+                <td className="border print-border p-1 font-mono text-[7px]">{item.wbs}</td>
+                <td className="border print-border p-1">{item.cod || '-'}</td>
+                <td className="border print-border p-1 uppercase">{item.fonte || '-'}</td>
+                <td className="border print-border p-1 text-left uppercase">
                   {item.name.trim()}
                 </td>
-                <td className="border border-black p-1 font-bold">{item.unit || '-'}</td>
+                <td className="border print-border p-1 font-bold">{item.unit || '-'}</td>
                 
-                {/* PREÇOS UNITÁRIOS */}
-                <td className="border border-black p-1 text-right">
+                <td className="border print-border p-1 text-right">
                   {!isCategory ? financial.formatVisual(item.unitPriceNoBdi) : '-'}
                 </td>
-                <td className="border border-black p-1 text-right font-bold">
+                <td className="border print-border p-1 text-right font-bold">
                   {!isCategory ? financial.formatVisual(item.unitPrice) : '-'}
                 </td>
 
-                {/* CONTRATO */}
-                <td className="border border-black p-1">
+                <td className="border print-border p-1">
                   {!isCategory ? item.contractQuantity : '-'}
                 </td>
-                <td className="border border-black p-1 text-right font-bold">
+                <td className="border print-border p-1 text-right font-bold">
                   {financial.formatVisual(item.contractTotal)}
                 </td>
 
-                {/* ANTERIOR */}
-                <td className="border border-black p-1 bg-slate-50">
+                <td className="border print-border p-1 bg-slate-50/50">
                   {!isCategory ? item.previousQuantity : '-'}
                 </td>
-                <td className="border border-black p-1 text-right bg-slate-50">
+                <td className="border print-border p-1 text-right bg-slate-50/50">
                   {financial.formatVisual(item.previousTotal)}
                 </td>
 
-                {/* PERÍODO CORRENTE (Destaque Azul) */}
-                <td className="border border-black p-1 bg-blue-50 font-black text-blue-700">
+                {/* COLUNAS DE MEDIÇÃO DO PERÍODO - REALCE DINÂMICO */}
+                <td className="border print-border p-1 print-accent-row-bg print-accent-text font-black">
                   {!isCategory ? item.currentQuantity : '-'}
                 </td>
-                <td className="border border-black p-1 text-right bg-blue-50 font-black text-blue-700">
+                <td className="border print-border p-1 text-right print-accent-row-bg print-accent-text font-black">
                   {financial.formatVisual(item.currentTotal)}
                 </td>
 
-                {/* ACUMULADO TOTAL */}
-                <td className="border border-black p-1 bg-slate-50 font-bold">
+                <td className="border print-border p-1 bg-slate-50/50 font-bold">
                   {!isCategory ? item.accumulatedQuantity : '-'}
                 </td>
-                <td className="border border-black p-1 text-right bg-slate-50 font-bold">
+                <td className="border print-border p-1 text-right bg-slate-50/50 font-bold">
                   {financial.formatVisual(item.accumulatedTotal)}
                 </td>
 
-                {/* SALDO A REALIZAR */}
-                <td className="border border-black p-1">
+                <td className="border print-border p-1">
                   {!isCategory ? item.balanceQuantity : '-'}
                 </td>
-                <td className="border border-black p-1 text-right">
+                <td className="border print-border p-1 text-right">
                   {financial.formatVisual(item.balanceTotal)}
                 </td>
 
-                {/* % EXEC */}
-                <td className="border border-black p-1 font-black">
+                <td className="border print-border p-1 font-black">
                   {item.accumulatedPercentage.toFixed(1)}%
                 </td>
               </tr>
@@ -166,38 +232,38 @@ export const PrintReport: React.FC<PrintReportProps> = ({ project, companyName, 
           })}
         </tbody>
         <tfoot>
-          <tr className="bg-slate-900 text-white font-black uppercase text-[8px]">
-            <td colSpan={8} className="border border-black p-2 text-right">Totais Gerais da Medição</td>
-            <td className="border border-black p-2 text-right">{financial.formatVisual(stats.contract)}</td>
-            <td className="border border-black p-2"></td>
-            <td className="border border-black p-2 text-right">{financial.formatVisual(stats.accumulated - stats.current)}</td>
-            <td className="border border-black p-2 bg-blue-700"></td>
-            <td className="border border-black p-2 text-right bg-blue-700">{financial.formatVisual(stats.current)}</td>
-            <td className="border border-black p-2"></td>
-            <td className="border border-black p-2 text-right">{financial.formatVisual(stats.accumulated)}</td>
-            <td className="border border-black p-2"></td>
-            <td className="border border-black p-2 text-right">{financial.formatVisual(stats.balance)}</td>
-            <td className="border border-black p-2 text-center">{stats.progress.toFixed(1)}%</td>
+          <tr className="font-black uppercase text-[8px] print-footer-bg no-break">
+            <td colSpan={8} className="border print-border p-2 text-right">Totais Gerais da Medição</td>
+            <td className="border print-border p-2 text-right">{financial.formatVisual(stats.contract)}</td>
+            <td className="border print-border p-2"></td>
+            <td className="border print-border p-2 text-right">{financial.formatVisual(stats.accumulated - stats.current)}</td>
+            <td className="border print-border p-2" style={{ backgroundColor: 'rgba(255,255,255,0.05)' }}></td>
+            <td className="border print-border p-2 text-right" style={{ backgroundColor: 'rgba(255,255,255,0.05)' }}>{financial.formatVisual(stats.current)}</td>
+            <td className="border print-border p-2"></td>
+            <td className="border print-border p-2 text-right">{financial.formatVisual(stats.accumulated)}</td>
+            <td className="border print-border p-2"></td>
+            <td className="border print-border p-2 text-right">{financial.formatVisual(stats.balance)}</td>
+            <td className="border print-border p-2 text-center">{stats.progress.toFixed(1)}%</td>
           </tr>
         </tfoot>
       </table>
 
       {/* DASHBOARD DE KPI RESUMIDO NO RODAPÉ */}
       <div className="grid grid-cols-4 gap-4 mb-8 no-break">
-        <div className="p-3 border border-black rounded flex flex-col items-center">
-          <span className="text-[7px] font-black uppercase opacity-60">Valor Total Contrato</span>
+        <div className="p-3 border print-border rounded flex flex-col items-center">
+          <span className="text-[7px] font-black uppercase opacity-60">Valor Contratado</span>
           <span className="text-xs font-black">{financial.formatBRL(stats.contract)}</span>
         </div>
-        <div className="p-3 border-2 border-blue-600 bg-blue-50 rounded flex flex-col items-center">
-          <span className="text-[7px] font-black uppercase text-blue-600">Medição do Período</span>
-          <span className="text-xs font-black text-blue-700">{financial.formatBRL(stats.current)}</span>
+        <div className="p-3 border-2 kpi-highlight-border kpi-highlight-bg rounded flex flex-col items-center">
+          <span className="text-[7px] font-black uppercase kpi-highlight-text">Medição do Período</span>
+          <span className="text-xs font-black kpi-highlight-text">{financial.formatBRL(stats.current)}</span>
         </div>
-        <div className="p-3 border border-black rounded flex flex-col items-center">
+        <div className="p-3 border print-border rounded flex flex-col items-center">
           <span className="text-[7px] font-black uppercase opacity-60">Acumulado Atual</span>
           <span className="text-xs font-black">{financial.formatBRL(stats.accumulated)}</span>
         </div>
-        <div className="p-3 border border-black rounded flex flex-col items-center">
-          <span className="text-[7px] font-black uppercase opacity-60">Saldo a Executar</span>
+        <div className="p-3 border print-border rounded flex flex-col items-center">
+          <span className="text-[7px] font-black uppercase opacity-60">Saldo Remanescente</span>
           <span className="text-xs font-black">{financial.formatBRL(stats.balance)}</span>
         </div>
       </div>
@@ -205,19 +271,19 @@ export const PrintReport: React.FC<PrintReportProps> = ({ project, companyName, 
       {/* CAMPOS DE ASSINATURA */}
       <div className="mt-12 grid grid-cols-3 gap-8 text-center no-break">
         <div className="space-y-1">
-          <div className="border-t border-black w-48 mx-auto"></div>
+          <div className="border-t print-border w-48 mx-auto"></div>
           <p className="text-[8px] font-black uppercase">Responsável Técnico</p>
           <p className="text-[7px] font-bold text-slate-500 tracking-tighter">CREA/CAU: __________________</p>
         </div>
         <div className="space-y-1">
-          <div className="border-t border-black w-48 mx-auto"></div>
-          <p className="text-[8px] font-black uppercase">Fiscalização</p>
+          <div className="border-t print-border w-48 mx-auto"></div>
+          <p className="text-[8px] font-black uppercase">Fiscalização / Município</p>
           <p className="text-[7px] font-bold text-slate-500 tracking-tighter">Assinatura e Carimbo</p>
         </div>
         <div className="space-y-1">
-          <div className="border-t border-black w-48 mx-auto"></div>
-          <p className="text-[8px] font-black uppercase">Gestor do Contrato</p>
-          <p className="text-[7px] font-bold text-slate-500 tracking-tighter">Liberação Financeira</p>
+          <div className="border-t print-border w-48 mx-auto"></div>
+          <p className="text-[8px] font-black uppercase">Gestão de Contrato</p>
+          <p className="text-[7px] font-bold text-slate-500 tracking-tighter">Conformidade Financeira</p>
         </div>
       </div>
     </div>
