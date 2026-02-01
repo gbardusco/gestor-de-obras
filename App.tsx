@@ -14,11 +14,22 @@ import { Menu } from 'lucide-react';
 type ViewMode = 'global-dashboard' | 'project-workspace' | 'system-settings' | 'bidding-view';
 
 const App: React.FC = () => {
+  const hookResult = useProjectState();
+  
+  // DEBUG: Log para verificar o estado retornado do hook
+  if (typeof hookResult.updateProjects !== 'function') {
+    console.error('ERRO CRÍTICO: updateProjects não é uma função!', {
+      type: typeof hookResult.updateProjects,
+      value: hookResult.updateProjects,
+      hookResult
+    });
+  }
+  
   const { 
     projects, biddings, groups, activeProject, activeProjectId, setActiveProjectId, 
     globalSettings, setGlobalSettings,
     updateActiveProject, updateProjects, updateGroups, updateBiddings, updateCertificates, bulkUpdate
-  } = useProjectState();
+  } = hookResult;
 
   // Garantir que globalSettings sempre existe com valores padrão
   const safeGlobalSettings = globalSettings || {
