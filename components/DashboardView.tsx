@@ -6,20 +6,18 @@ import {
 } from 'lucide-react';
 import { treeService } from '../services/treeService';
 import { projectService } from '../services/projectService';
-// 1. Importe o hook
-import { useProjectState } from '../hooks/useProjectState';
 
 interface DashboardViewProps {
   projects: Project[];
   groups: ProjectGroup[];
   onOpenProject: (id: string) => void;
   onCreateProject: (groupId?: string | null) => void;
+  onUpdateProject: (p: Project[]) => void;
+  onUpdateGroups: (g: ProjectGroup[]) => void;
+  onBulkUpdate: (updates: { projects?: Project[], groups?: ProjectGroup[] }) => void;
 }
 
 export const DashboardView: React.FC<DashboardViewProps> = (props) => {
-  // 2. Pegue as funções de atualização do seu hook
-  const { updateProjects, updateGroups, bulkUpdate } = useProjectState();
-  
   const [currentGroupId, setCurrentGroupId] = useState<string | null>(null);
   const [editingGroup, setEditingGroup] = useState<ProjectGroup | null>(null);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
@@ -45,48 +43,35 @@ export const DashboardView: React.FC<DashboardViewProps> = (props) => {
 
   const handleCreateFolder = () => {
     const newGroup = projectService.createGroup('Nova Pasta', currentGroupId, currentGroups.length);
-    updateGroups([...props.groups, newGroup]);
+    props.onUpdateGroups([...props.groups, newGroup]);
   };
 
   const handleConfirmRename = () => {
     if (!newName.trim()) return;
     if (editingGroup) {
-      const updatedGroups = props.groups.map(g => g.id === editingGroup.id ? { ...g, name: newName.trim() } : g);
-      updateGroups(updatedGroups);
+      props.onUpdateGroups(props.groups.map(g => g.id === editingGroup.id ? { ...g, name: newName.trim() } : g));
       setEditingGroup(null);
     } else if (editingProject) {
-      const updatedProjects = props.projects.map(p => p.id === editingProject.id ? { ...p, name: newName.trim() } : p);
-      updateProjects(updatedProjects);
+      props.onUpdateProject(props.projects.map(p => p.id === editingProject.id ? { ...p, name: newName.trim() } : p));
       setEditingProject(null);
     }
   };
 
   const handleConfirmDelete = () => {
-  if (!isDeleting) return;
+    if (!isDeleting) return;
 
-  if (isDeleting.type === 'group') {
-    const { updatedGroups, updatedProjects, newParentId } = projectService.getReassignedItems(isDeleting.id, props.groups, props.projects);
-    
-    // Atualiza o estado persistente
-    bulkUpdate({ groups: updatedGroups, projects: updatedProjects });
-    
-    // IMPORTANTE: Se o seu App.tsx depende de props, você precisa 
-    // garantir que o estado do App seja sincronizado.
-    if (currentGroupId === isDeleting.id) setCurrentGroupId(newParentId);
-  } else {
-    // Filtra a lista removendo o projeto selecionado
-    const updatedProjectsList = props.projects.filter(p => p.id !== isDeleting.id);
-    
-    // Chama a função de atualização do seu hook
-    updateProjects(updatedProjectsList);
-  }
-
-  // Fecha o estado de deleção do modal
-  setIsDeleting(null);
-  
-  // DICA: Como você está usando localStorage, force uma atualização se necessário
-  // ou verifique se o componente App.tsx está re-renderizando ao mudar o localStorage.
-};
+    if (isDeleting.type === 'group') {
+      const { updatedGroups, updatedProjects, newParentId } = projectService.getReassignedItems(isDeleting.id, props.groups, props.projects);
+      // ✅ Chama o bulkUpdate do PAI (App.tsx)
+      props.onBulkUpdate({ groups: updatedGroups, projects: updatedProjects });
+      if (currentGroupId === isDeleting.id) setCurrentGroupId(newParentId);
+    } else {
+      // ✅ Filtra e manda a lista atualizada para o PAI (App.tsx)
+      const updatedList = props.projects.filter(p => p.id !== isDeleting.id);
+      props.onUpdateProject(updatedList);
+    }
+    setIsDeleting(null);
+  };
 
   const filteredItems = useMemo(() => {
     if (!searchQuery.trim()) return null;
@@ -97,12 +82,9 @@ export const DashboardView: React.FC<DashboardViewProps> = (props) => {
     };
   }, [searchQuery, props.groups, props.projects]);
 
-  // ... O restante do componente (JSX e Sub-components) permanece o mesmo que você já tem
-
   return (
     <div className="flex-1 overflow-y-auto p-6 sm:p-12 animate-in fade-in duration-500 bg-slate-50 dark:bg-slate-950 custom-scrollbar">
       <div className="max-w-6xl mx-auto space-y-8">
-        {/* TOP ACTION BAR */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <header>
             <h1 className="text-3xl font-black tracking-tight text-slate-800 dark:text-white">Central de Obras</h1>
@@ -127,7 +109,6 @@ export const DashboardView: React.FC<DashboardViewProps> = (props) => {
           </div>
         </div>
 
-        {/* BREADCRUMBS NAVIGATION */}
         {!searchQuery && (
           <nav className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400 overflow-x-auto no-scrollbar py-2">
             <button onClick={() => setCurrentGroupId(null)} className={`flex items-center gap-1 hover:text-indigo-600 transition-colors ${!currentGroupId ? 'text-indigo-600' : ''}`}>
@@ -142,10 +123,8 @@ export const DashboardView: React.FC<DashboardViewProps> = (props) => {
           </nav>
         )}
 
-        {/* MAIN GRID AREA */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {searchQuery ? (
-            /* SEARCH VIEW */
             <>
               {filteredItems?.groups.map(g => (
                 <FolderCard key={g.id} group={g} onOpen={() => { setCurrentGroupId(g.id); setSearchQuery(''); }} onRename={() => { setEditingGroup(g); setNewName(g.name); }} onDelete={() => setIsDeleting({ type: 'group', id: g.id })} />
@@ -155,7 +134,6 @@ export const DashboardView: React.FC<DashboardViewProps> = (props) => {
               ))}
             </>
           ) : (
-            /* BROWSE VIEW */
             <>
               {currentGroupId && (
                 <button onClick={() => setCurrentGroupId(breadcrumbs[breadcrumbs.length - 2]?.id || null)} className="bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-800 border-dashed rounded-[2rem] p-6 flex items-center justify-center text-slate-400 hover:text-indigo-600 transition-all hover:bg-slate-50 group">
@@ -175,7 +153,6 @@ export const DashboardView: React.FC<DashboardViewProps> = (props) => {
         </div>
       </div>
 
-      {/* MODALS OVERLAY */}
       {(editingGroup || editingProject) && (
         <RenameDialog 
           name={newName} 
@@ -212,7 +189,7 @@ const FolderCard = ({ group, onOpen, onRename, onDelete }: any) => (
 );
 
 const ProjectCard = ({ project, onOpen, onRename, onDelete }: any) => {
-  const stats = treeService.calculateBasicStats(project.items, project.bdi);
+  const stats = treeService.calculateBasicStats(project.items, project.settings?.bdi || 0);
   return (
     <div onClick={onOpen} className="group bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[2rem] p-6 shadow-sm hover:shadow-xl transition-all cursor-pointer relative overflow-hidden">
       <div className="flex justify-between items-start mb-8">
@@ -239,7 +216,7 @@ const ProjectCard = ({ project, onOpen, onRename, onDelete }: any) => {
 const RenameDialog = ({ name, setName, title, onCancel, onConfirm }: any) => (
   <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in" onClick={onCancel}>
     <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-[2.5rem] p-8 border border-slate-200 dark:border-slate-800 shadow-2xl" onClick={e => e.stopPropagation()}>
-      <h2 className="text-xl font-black mb-6">Renomear {title}</h2>
+      <h2 className="text-xl font-black mb-6 text-slate-800 dark:text-white">Renomear {title}</h2>
       <input autoFocus className="w-full px-6 py-4 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-sm font-black focus:border-indigo-500 outline-none transition-all mb-6" value={name} onChange={e => setName(e.target.value)} onKeyDown={e => e.key === 'Enter' && onConfirm()} />
       <button onClick={onConfirm} className="w-full py-4 bg-indigo-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-indigo-500/20 active:scale-95 transition-all"><Save size={16} className="inline mr-2" /> Salvar</button>
     </div>
@@ -250,7 +227,7 @@ const DeleteConfirmDialog = ({ onCancel, onConfirm }: any) => (
   <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in" onClick={onCancel}>
     <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-[2.5rem] p-10 border border-slate-200 dark:border-slate-800 shadow-2xl text-center" onClick={e => e.stopPropagation()}>
       <div className="w-20 h-20 bg-rose-100 text-rose-600 rounded-3xl flex items-center justify-center mx-auto mb-6"><AlertTriangle size={40} /></div>
-      <h2 className="text-2xl font-black mb-3">Remover Item?</h2>
+      <h2 className="text-2xl font-black mb-3 text-slate-800 dark:text-white">Remover Item?</h2>
       <p className="text-slate-500 text-sm mb-10 leading-relaxed">Esta ação não pode ser desfeita. Para pastas, as obras internas serão preservadas e movidas para o nível superior.</p>
       <div className="flex gap-4">
         <button onClick={onCancel} className="flex-1 py-4 text-slate-400 font-black uppercase text-[10px] tracking-widest hover:bg-slate-50 rounded-2xl">Cancelar</button>
