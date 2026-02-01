@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { treeService } from '../services/treeService';
 import { projectService } from '../services/projectService';
-// 1. Importe o hook de estado global
+// 1. Importe o hook
 import { useProjectState } from '../hooks/useProjectState';
 
 interface DashboardViewProps {
@@ -14,12 +14,11 @@ interface DashboardViewProps {
   groups: ProjectGroup[];
   onOpenProject: (id: string) => void;
   onCreateProject: (groupId?: string | null) => void;
-  // Note que onUpdateProject e outros podem ser removidos das props se você usar o dispatch direto
 }
 
 export const DashboardView: React.FC<DashboardViewProps> = (props) => {
-  // 2. Acesse o dispatch global
-  const { dispatch } = useProjectState();
+  // 2. Pegue as funções de atualização do seu hook
+  const { updateProjects, updateGroups, bulkUpdate } = useProjectState();
   
   const [currentGroupId, setCurrentGroupId] = useState<string | null>(null);
   const [editingGroup, setEditingGroup] = useState<ProjectGroup | null>(null);
@@ -46,20 +45,18 @@ export const DashboardView: React.FC<DashboardViewProps> = (props) => {
 
   const handleCreateFolder = () => {
     const newGroup = projectService.createGroup('Nova Pasta', currentGroupId, currentGroups.length);
-    // 3. Use dispatch para atualizar grupos
-    dispatch({ type: 'SET_GROUPS', payload: [...props.groups, newGroup] });
+    updateGroups([...props.groups, newGroup]);
   };
 
   const handleConfirmRename = () => {
     if (!newName.trim()) return;
     if (editingGroup) {
       const updatedGroups = props.groups.map(g => g.id === editingGroup.id ? { ...g, name: newName.trim() } : g);
-      dispatch({ type: 'SET_GROUPS', payload: updatedGroups });
+      updateGroups(updatedGroups);
       setEditingGroup(null);
     } else if (editingProject) {
       const updatedProjects = props.projects.map(p => p.id === editingProject.id ? { ...p, name: newName.trim() } : p);
-      // 4. Use dispatch para atualizar projetos
-      dispatch({ type: 'SET_PROJECTS', payload: updatedProjects });
+      updateProjects(updatedProjects);
       setEditingProject(null);
     }
   };
@@ -70,14 +67,14 @@ export const DashboardView: React.FC<DashboardViewProps> = (props) => {
     if (isDeleting.type === 'group') {
       const { updatedGroups, updatedProjects, newParentId } = projectService.getReassignedItems(isDeleting.id, props.groups, props.projects);
       
-      // 5. Atualização em massa via dispatch
-      dispatch({ type: 'SET_GROUPS', payload: updatedGroups });
-      dispatch({ type: 'SET_PROJECTS', payload: updatedProjects });
+      // Usa o bulkUpdate do seu hook para atualizar as duas listas de uma vez
+      bulkUpdate({ groups: updatedGroups, projects: updatedProjects });
       
       if (currentGroupId === isDeleting.id) setCurrentGroupId(newParentId);
     } else {
-      // 6. Exclusão de projeto individual via dispatch
-      dispatch({ type: 'DELETE_PROJECT', payload: isDeleting.id });
+      // Exclui o projeto filtrando a lista atual
+      const updatedProjects = props.projects.filter(p => p.id !== isDeleting.id);
+      updateProjects(updatedProjects);
     }
     setIsDeleting(null);
   };
@@ -90,6 +87,8 @@ export const DashboardView: React.FC<DashboardViewProps> = (props) => {
       projects: props.projects.filter(p => p.name.toLowerCase().includes(q))
     };
   }, [searchQuery, props.groups, props.projects]);
+
+  // ... O restante do componente (JSX e Sub-components) permanece o mesmo que você já tem
 
   return (
     <div className="flex-1 overflow-y-auto p-6 sm:p-12 animate-in fade-in duration-500 bg-slate-50 dark:bg-slate-950 custom-scrollbar">
