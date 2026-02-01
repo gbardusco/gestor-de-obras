@@ -184,7 +184,7 @@ export const PrintReport: React.FC<PrintReportProps> = ({ project, companyName, 
 
       {/* DASHBOARD DE KPI RESUMIDO NO RODAPÉ */}
       <div className="grid grid-cols-4 gap-4 mb-8 no-break">
-        <div className="p-3 border-2 border-black rounded flex flex-col items-center">
+        <div className="p-3 border border-black rounded flex flex-col items-center">
           <span className="text-[7px] font-black uppercase opacity-60">Valor Total Contrato</span>
           <span className="text-xs font-black">{financial.formatBRL(stats.contract)}</span>
         </div>
@@ -192,11 +192,11 @@ export const PrintReport: React.FC<PrintReportProps> = ({ project, companyName, 
           <span className="text-[7px] font-black uppercase text-blue-600">Medição do Período</span>
           <span className="text-xs font-black text-blue-700">{financial.formatBRL(stats.current)}</span>
         </div>
-        <div className="p-3 border-2 border-black rounded flex flex-col items-center">
+        <div className="p-3 border border-black rounded flex flex-col items-center">
           <span className="text-[7px] font-black uppercase opacity-60">Acumulado Atual</span>
           <span className="text-xs font-black">{financial.formatBRL(stats.accumulated)}</span>
         </div>
-        <div className="p-3 border-2 border-black rounded flex flex-col items-center">
+        <div className="p-3 border border-black rounded flex flex-col items-center">
           <span className="text-[7px] font-black uppercase opacity-60">Saldo a Executar</span>
           <span className="text-xs font-black">{financial.formatBRL(stats.balance)}</span>
         </div>
