@@ -2,10 +2,12 @@ import React, { useState, useMemo } from 'react';
 import { Project, ProjectGroup } from '../types';
 import { 
   Briefcase, Plus, Edit2, Trash2, AlertTriangle, 
-  Folder, ChevronRight, Home, FolderPlus, Save, ChevronLeft, Search
+  Folder, ChevronRight, Home, FolderPlus, Save, ChevronLeft, Search,
+  FolderInput, X, Check, Target, Layers, GripVertical
 } from 'lucide-react';
 import { treeService } from '../services/treeService';
 import { projectService } from '../services/projectService';
+import { DragDropContext, Droppable, Draggable, DropResult, DraggableProvided } from '@hello-pangea/dnd';
 
 interface DashboardViewProps {
   projects: Project[];
@@ -21,12 +23,20 @@ export const DashboardView: React.FC<DashboardViewProps> = (props) => {
   const [currentGroupId, setCurrentGroupId] = useState<string | null>(null);
   const [editingGroup, setEditingGroup] = useState<ProjectGroup | null>(null);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
+  const [movingItem, setMovingItem] = useState<{ type: 'group' | 'project', id: string } | null>(null);
   const [isDeleting, setIsDeleting] = useState<{ type: 'group' | 'project', id: string } | null>(null);
   const [newName, setNewName] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
 
-  const currentGroups = props.groups.filter(g => g.parentId === currentGroupId);
-  const currentProjects = props.projects.filter(p => p.groupId === currentGroupId);
+  const currentGroups = useMemo(() => 
+    props.groups.filter(g => g.parentId === currentGroupId), 
+    [props.groups, currentGroupId]
+  );
+  
+  const currentProjects = useMemo(() => 
+    props.projects.filter(p => p.groupId === currentGroupId), 
+    [props.projects, currentGroupId]
+  );
 
   const breadcrumbs = useMemo(() => {
     const list: ProjectGroup[] = [];
@@ -40,6 +50,68 @@ export const DashboardView: React.FC<DashboardViewProps> = (props) => {
     }
     return list;
   }, [currentGroupId, props.groups]);
+
+  const handleDragEnd = (result: DropResult) => {
+    const sourceId = result.draggableId;
+    const cleanSourceId = sourceId.replace('grp-', '').replace('prj-', '');
+    const type = sourceId.startsWith('grp-') ? 'group' : 'project';
+
+    if (result.combine) {
+      const targetId = result.combine.draggableId;
+      let targetGroupId: string | null = null;
+      
+      if (targetId === 'target-root') {
+        targetGroupId = null;
+      } else if (targetId === 'target-back') {
+        targetGroupId = breadcrumbs[breadcrumbs.length - 2]?.id || null;
+      } else if (targetId.startsWith('grp-')) {
+        targetGroupId = targetId.replace('grp-', '');
+      } else {
+        return;
+      }
+
+      if (cleanSourceId === targetGroupId) return;
+
+      const { updatedProjects, updatedGroups } = projectService.moveItem(
+        cleanSourceId, 
+        type, 
+        targetGroupId, 
+        props.projects, 
+        props.groups
+      );
+      props.onBulkUpdate({ projects: updatedProjects, groups: updatedGroups });
+      return;
+    }
+
+    if (result.destination && result.destination.droppableId.startsWith('breadcrumb-')) {
+      const targetGroupId = result.destination.droppableId === 'breadcrumb-root' 
+        ? null 
+        : result.destination.droppableId.replace('breadcrumb-', '');
+
+      const { updatedProjects, updatedGroups } = projectService.moveItem(
+        cleanSourceId, 
+        type, 
+        targetGroupId, 
+        props.projects, 
+        props.groups
+      );
+      props.onBulkUpdate({ projects: updatedProjects, groups: updatedGroups });
+      return;
+    }
+  };
+
+  const handleConfirmMove = (targetGroupId: string | null) => {
+    if (!movingItem) return;
+    const { updatedProjects, updatedGroups } = projectService.moveItem(
+      movingItem.id, 
+      movingItem.type, 
+      targetGroupId, 
+      props.projects, 
+      props.groups
+    );
+    props.onBulkUpdate({ projects: updatedProjects, groups: updatedGroups });
+    setMovingItem(null);
+  };
 
   const handleCreateFolder = () => {
     const newGroup = projectService.createGroup('Nova Pasta', currentGroupId, currentGroups.length);
@@ -59,28 +131,24 @@ export const DashboardView: React.FC<DashboardViewProps> = (props) => {
 
   const handleConfirmDelete = () => {
     if (!isDeleting) return;
-
     if (isDeleting.type === 'group') {
       const { updatedGroups, updatedProjects, newParentId } = projectService.getReassignedItems(isDeleting.id, props.groups, props.projects);
-      // ✅ Chama o bulkUpdate do PAI (App.tsx)
       props.onBulkUpdate({ groups: updatedGroups, projects: updatedProjects });
       if (currentGroupId === isDeleting.id) setCurrentGroupId(newParentId);
     } else {
-      // ✅ Filtra e manda a lista atualizada para o PAI (App.tsx)
       const updatedList = props.projects.filter(p => p.id !== isDeleting.id);
       props.onUpdateProject(updatedList);
     }
     setIsDeleting(null);
   };
 
-  const filteredItems = useMemo(() => {
-    if (!searchQuery.trim()) return null;
-    const q = searchQuery.toLowerCase();
-    return {
-      groups: props.groups.filter(g => g.name.toLowerCase().includes(q)),
-      projects: props.projects.filter(p => p.name.toLowerCase().includes(q))
-    };
-  }, [searchQuery, props.groups, props.projects]);
+  const filteredGroups = searchQuery 
+    ? props.groups.filter(g => g.name.toLowerCase().includes(searchQuery.toLowerCase()))
+    : [];
+    
+  const filteredProjects = searchQuery
+    ? props.projects.filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()))
+    : [];
 
   return (
     <div className="flex-1 overflow-y-auto p-6 sm:p-12 animate-in fade-in duration-500 bg-slate-50 dark:bg-slate-950 custom-scrollbar">
@@ -109,48 +177,147 @@ export const DashboardView: React.FC<DashboardViewProps> = (props) => {
           </div>
         </div>
 
-        {!searchQuery && (
-          <nav className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400 overflow-x-auto no-scrollbar py-2">
-            <button onClick={() => setCurrentGroupId(null)} className={`flex items-center gap-1 hover:text-indigo-600 transition-colors ${!currentGroupId ? 'text-indigo-600' : ''}`}>
-              <Home size={14} /> Raiz
-            </button>
-            {breadcrumbs.map(b => (
-              <React.Fragment key={b.id}>
-                <ChevronRight size={12} className="opacity-40" />
-                <button onClick={() => setCurrentGroupId(b.id)} className="hover:text-indigo-600 transition-colors whitespace-nowrap">{b.name}</button>
-              </React.Fragment>
-            ))}
-          </nav>
-        )}
+        <DragDropContext onDragEnd={handleDragEnd}>
+          {!searchQuery && (
+            <nav className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400 overflow-x-auto no-scrollbar py-2">
+              <Droppable droppableId="breadcrumb-root">
+                {(provided, snapshot) => (
+                  <div 
+                    ref={provided.innerRef} 
+                    {...provided.droppableProps}
+                    className={`transition-all rounded-lg px-2 py-1 ${snapshot.isDraggingOver ? 'bg-indigo-100 text-indigo-600 ring-2 ring-indigo-500 ring-dashed scale-110' : ''}`}
+                  >
+                    <button onClick={() => setCurrentGroupId(null)} className={`flex items-center gap-1 hover:text-indigo-600 transition-colors ${!currentGroupId ? 'text-indigo-600 font-black' : ''}`}>
+                      <Home size={14} /> Raiz
+                    </button>
+                    {provided.placeholder}
+                  </div>
+                )}
+              </Droppable>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {searchQuery ? (
-            <>
-              {filteredItems?.groups.map(g => (
-                <FolderCard key={g.id} group={g} onOpen={() => { setCurrentGroupId(g.id); setSearchQuery(''); }} onRename={() => { setEditingGroup(g); setNewName(g.name); }} onDelete={() => setIsDeleting({ type: 'group', id: g.id })} />
+              {breadcrumbs.map((b, idx) => (
+                <React.Fragment key={b.id}>
+                  <ChevronRight size={12} className="opacity-40" />
+                  <Droppable droppableId={`breadcrumb-${b.id}`}>
+                    {(provided, snapshot) => (
+                      <div 
+                        ref={provided.innerRef} 
+                        {...provided.droppableProps}
+                        className={`transition-all rounded-lg px-2 py-1 ${snapshot.isDraggingOver ? 'bg-indigo-100 text-indigo-600 ring-2 ring-indigo-500 ring-dashed scale-110' : ''}`}
+                      >
+                        <button 
+                          onClick={() => setCurrentGroupId(b.id)} 
+                          className={`hover:text-indigo-600 transition-colors whitespace-nowrap ${idx === breadcrumbs.length - 1 ? 'text-indigo-500 font-black' : ''}`}
+                        >
+                          {b.name}
+                        </button>
+                        {provided.placeholder}
+                      </div>
+                    )}
+                  </Droppable>
+                </React.Fragment>
               ))}
-              {filteredItems?.projects.map(p => (
-                <ProjectCard key={p.id} project={p} onOpen={() => props.onOpenProject(p.id)} onRename={() => { setEditingProject(p); setNewName(p.name); }} onDelete={() => setIsDeleting({ type: 'project', id: p.id })} />
-              ))}
-            </>
-          ) : (
-            <>
-              {currentGroupId && (
-                <button onClick={() => setCurrentGroupId(breadcrumbs[breadcrumbs.length - 2]?.id || null)} className="bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-800 border-dashed rounded-[2rem] p-6 flex items-center justify-center text-slate-400 hover:text-indigo-600 transition-all hover:bg-slate-50 group">
-                  <ChevronLeft size={24} className="group-hover:-translate-x-1 transition-transform" /> 
-                  <span className="text-[10px] font-black uppercase tracking-widest ml-2">Voltar</span>
-                </button>
-              )}
-              {currentGroups.map(g => (
-                <FolderCard key={g.id} group={g} onOpen={() => setCurrentGroupId(g.id)} onRename={() => { setEditingGroup(g); setNewName(g.name); }} onDelete={() => setIsDeleting({ type: 'group', id: g.id })} />
-              ))}
-              {currentProjects.map(p => (
-                <ProjectCard key={p.id} project={p} onOpen={() => props.onOpenProject(p.id)} onRename={() => { setEditingProject(p); setNewName(p.name); }} onDelete={() => setIsDeleting({ type: 'project', id: p.id })} />
-              ))}
-              {currentGroups.length === 0 && currentProjects.length === 0 && <EmptyState />}
-            </>
+            </nav>
           )}
-        </div>
+
+          <Droppable droppableId="dashboard-grid" direction="horizontal" isCombineEnabled>
+            {(provided) => (
+              <div 
+                {...provided.droppableProps} 
+                ref={provided.innerRef}
+                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+              >
+                {!searchQuery && currentGroupId && (
+                  <Draggable draggableId="target-back" index={0} isDragDisabled={true}>
+                    {(p, s) => (
+                      <div
+                        ref={p.innerRef}
+                        {...p.draggableProps}
+                        onClick={() => setCurrentGroupId(breadcrumbs[breadcrumbs.length - 2]?.id || null)}
+                        className={`bg-white dark:bg-slate-900 border-2 border-dashed rounded-[2rem] p-6 flex flex-col items-center justify-center transition-all group h-full cursor-pointer ${s.combineTargetFor ? 'bg-indigo-50 border-indigo-500 ring-4 ring-indigo-500/20 scale-105' : 'border-slate-200 dark:border-slate-800 text-slate-400 hover:text-indigo-600 hover:bg-slate-50'}`}
+                      >
+                        <ChevronLeft size={32} className={`${s.combineTargetFor ? 'animate-bounce' : 'group-hover:-translate-x-1'} transition-transform`} /> 
+                        <span className="text-[10px] font-black uppercase tracking-widest mt-2">Mover para cima</span>
+                      </div>
+                    )}
+                  </Draggable>
+                )}
+
+                {searchQuery ? (
+                  <>
+                    {filteredGroups.map((g, idx) => (
+                      <Draggable key={`grp-${g.id}`} draggableId={`grp-${g.id}`} index={idx}>
+                        {(p) => (
+                          <FolderCard 
+                            provided={p} 
+                            group={g} 
+                            onOpen={() => { setCurrentGroupId(g.id); setSearchQuery(''); }} 
+                            onRename={() => { setEditingGroup(g); setNewName(g.name); }} 
+                            onDelete={() => setIsDeleting({ type: 'group', id: g.id })} 
+                            onMove={() => setMovingItem({ type: 'group', id: g.id })} 
+                          />
+                        )}
+                      </Draggable>
+                    ))}
+                    {filteredProjects.map((p, idx) => (
+                      <Draggable key={`prj-${p.id}`} draggableId={`prj-${p.id}`} index={idx + filteredGroups.length}>
+                        {(pr) => (
+                          <ProjectCard 
+                            provided={pr} 
+                            project={p} 
+                            onOpen={() => props.onOpenProject(p.id)} 
+                            onRename={() => { setEditingProject(p); setNewName(p.name); }} 
+                            onDelete={() => setIsDeleting({ type: 'project', id: p.id })} 
+                            onMove={() => setMovingItem({ type: 'project', id: p.id })} 
+                          />
+                        )}
+                      </Draggable>
+                    ))}
+                  </>
+                ) : (
+                  <>
+                    {currentGroups.map((g, idx) => {
+                      const baseIdx = (currentGroupId ? 1 : 0) + idx;
+                      return (
+                        <Draggable key={`grp-${g.id}`} draggableId={`grp-${g.id}`} index={baseIdx}>
+                          {(p) => (
+                            <FolderCard 
+                              provided={p} 
+                              group={g} 
+                              onOpen={() => setCurrentGroupId(g.id)} 
+                              onRename={() => { setEditingGroup(g); setNewName(g.name); }} 
+                              onDelete={() => setIsDeleting({ type: 'group', id: g.id })} 
+                              onMove={() => setMovingItem({ type: 'group', id: g.id })} 
+                            />
+                          )}
+                        </Draggable>
+                      );
+                    })}
+                    {currentProjects.map((p, idx) => {
+                      const baseIdx = (currentGroupId ? 1 : 0) + currentGroups.length + idx;
+                      return (
+                        <Draggable key={`prj-${p.id}`} draggableId={`prj-${p.id}`} index={baseIdx}>
+                          {(pr) => (
+                            <ProjectCard 
+                              provided={pr} 
+                              project={p} 
+                              onOpen={() => props.onOpenProject(p.id)} 
+                              onRename={() => { setEditingProject(p); setNewName(p.name); }} 
+                              onDelete={() => setIsDeleting({ type: 'project', id: p.id })} 
+                              onMove={() => setMovingItem({ type: 'project', id: p.id })} 
+                            />
+                          )}
+                        </Draggable>
+                      );
+                    })}
+                    {currentGroups.length === 0 && currentProjects.length === 0 && !currentGroupId && <EmptyState />}
+                  </>
+                )}
+                {provided.placeholder}
+              </div>
+            )}
+          </Droppable>
+        </DragDropContext>
       </div>
 
       {(editingGroup || editingProject) && (
@@ -160,6 +327,15 @@ export const DashboardView: React.FC<DashboardViewProps> = (props) => {
           title={editingGroup ? 'Pasta' : 'Obra'} 
           onCancel={() => { setEditingGroup(null); setEditingProject(null); }} 
           onConfirm={handleConfirmRename} 
+        />
+      )}
+
+      {movingItem && (
+        <MoveDialog 
+          groups={props.groups}
+          activeItem={movingItem}
+          onCancel={() => setMovingItem(null)}
+          onConfirm={handleConfirmMove}
         />
       )}
 
@@ -173,14 +349,28 @@ export const DashboardView: React.FC<DashboardViewProps> = (props) => {
   );
 };
 
-// SUB-COMPONENTS
-const FolderCard = ({ group, onOpen, onRename, onDelete }: any) => (
-  <div onClick={onOpen} className="group bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[2rem] p-6 shadow-sm hover:shadow-xl transition-all cursor-pointer relative overflow-hidden">
+// SUB-COMPONENTES
+const FolderCard = ({ group, onOpen, onRename, onDelete, onMove, provided }: { 
+  group: ProjectGroup, 
+  onOpen: () => void, 
+  onRename: () => void, 
+  onDelete: () => void, 
+  onMove: () => void, 
+  provided: DraggableProvided 
+}) => (
+  <div 
+    ref={provided.innerRef}
+    {...provided.draggableProps}
+    {...provided.dragHandleProps}
+    onClick={onOpen} 
+    className="group bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[2rem] p-6 shadow-sm hover:shadow-xl transition-all cursor-pointer relative overflow-hidden h-full"
+  >
     <div className="flex justify-between items-start mb-8">
       <div className="p-4 bg-amber-50 dark:bg-amber-900/20 text-amber-500 rounded-2xl group-hover:scale-110 transition-transform"><Folder size={24}/></div>
       <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-all transform translate-y-2 group-hover:translate-y-0">
-        <button onClick={e => { e.stopPropagation(); onRename(); }} className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg"><Edit2 size={16}/></button>
-        <button onClick={e => { e.stopPropagation(); onDelete(); }} className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg"><Trash2 size={16}/></button>
+        <button title="Mover" onClick={e => { e.stopPropagation(); onMove(); }} className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg"><FolderInput size={16}/></button>
+        <button title="Renomear" onClick={e => { e.stopPropagation(); onRename(); }} className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg"><Edit2 size={16}/></button>
+        <button title="Excluir" onClick={e => { e.stopPropagation(); onDelete(); }} className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg"><Trash2 size={16}/></button>
       </div>
     </div>
     <h3 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-tight truncate">{group.name}</h3>
@@ -188,15 +378,29 @@ const FolderCard = ({ group, onOpen, onRename, onDelete }: any) => (
   </div>
 );
 
-const ProjectCard = ({ project, onOpen, onRename, onDelete }: any) => {
-  const stats = treeService.calculateBasicStats(project.items, project.settings?.bdi || 0);
+const ProjectCard = ({ project, onOpen, onRename, onDelete, onMove, provided }: {
+  project: Project,
+  onOpen: () => void,
+  onRename: () => void,
+  onDelete: () => void,
+  onMove: () => void,
+  provided: DraggableProvided
+}) => {
+  const stats = treeService.calculateBasicStats(project.items, project.bdi || 0);
   return (
-    <div onClick={onOpen} className="group bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[2rem] p-6 shadow-sm hover:shadow-xl transition-all cursor-pointer relative overflow-hidden">
+    <div 
+      ref={provided.innerRef}
+      {...provided.draggableProps}
+      {...provided.dragHandleProps}
+      onClick={onOpen} 
+      className="group bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[2rem] p-6 shadow-sm hover:shadow-xl transition-all cursor-pointer relative overflow-hidden h-full"
+    >
       <div className="flex justify-between items-start mb-8">
         <div className="p-4 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-500 rounded-2xl group-hover:scale-110 transition-transform"><Briefcase size={24}/></div>
         <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-all transform translate-y-2 group-hover:translate-y-0">
-          <button onClick={e => { e.stopPropagation(); onRename(); }} className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg"><Edit2 size={16}/></button>
-          <button onClick={e => { e.stopPropagation(); onDelete(); }} className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg"><Trash2 size={16}/></button>
+          <button title="Mover" onClick={e => { e.stopPropagation(); onMove(); }} className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg"><FolderInput size={16}/></button>
+          <button title="Renomear" onClick={e => { e.stopPropagation(); onRename(); }} className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg"><Edit2 size={16}/></button>
+          <button title="Excluir" onClick={e => { e.stopPropagation(); onDelete(); }} className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg"><Trash2 size={16}/></button>
         </div>
       </div>
       <h3 className="text-sm font-black text-slate-800 dark:text-white truncate uppercase tracking-tight">{project.name}</h3>
@@ -208,6 +412,64 @@ const ProjectCard = ({ project, onOpen, onRename, onDelete }: any) => {
         <div className="h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
           <div className="h-full bg-indigo-500 transition-all duration-1000 ease-out" style={{ width: `${stats.progress}%` }} />
         </div>
+      </div>
+    </div>
+  );
+};
+
+const MoveDialog = ({ groups, activeItem, onCancel, onConfirm }: any) => {
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
+
+  return (
+    <div className="fixed inset-0 z-[1100] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in" onClick={onCancel}>
+      <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-[2.5rem] p-8 border border-slate-200 dark:border-slate-800 shadow-2xl flex flex-col max-h-[80vh]" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+             <div className="p-3 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 rounded-2xl"><FolderInput size={20}/></div>
+             <div>
+               <h2 className="text-lg font-black text-slate-800 dark:text-white uppercase">Mover Item</h2>
+               <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Selecione o destino</p>
+             </div>
+          </div>
+          <button onClick={onCancel} className="p-2 text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl transition-all"><X size={20}/></button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto custom-scrollbar border border-slate-100 dark:border-slate-800 rounded-2xl p-2 mb-6">
+          <button 
+            onClick={() => setSelectedGroupId(null)}
+            className={`w-full flex items-center justify-between p-4 rounded-xl transition-all mb-1 ${selectedGroupId === null ? 'bg-indigo-600 text-white' : 'hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300'}`}
+          >
+            <div className="flex items-center gap-3">
+              <Home size={16}/>
+              <span className="text-xs font-black uppercase">Diretório Raiz</span>
+            </div>
+            {selectedGroupId === null && <Check size={16}/>}
+          </button>
+
+          <div className="space-y-1">
+            {groups.map((g: ProjectGroup) => (
+              <button 
+                key={g.id}
+                disabled={activeItem.type === 'group' && activeItem.id === g.id}
+                onClick={() => setSelectedGroupId(g.id)}
+                className={`w-full flex items-center justify-between p-4 rounded-xl transition-all disabled:opacity-30 disabled:cursor-not-allowed ${selectedGroupId === g.id ? 'bg-indigo-600 text-white' : 'hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300'}`}
+              >
+                <div className="flex items-center gap-3">
+                  <Folder size={16} className={selectedGroupId === g.id ? 'text-white' : 'text-amber-500'}/>
+                  <span className="text-xs font-bold truncate">{g.name}</span>
+                </div>
+                {selectedGroupId === g.id && <Check size={16}/>}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <button 
+          onClick={() => onConfirm(selectedGroupId)} 
+          className="w-full py-5 bg-indigo-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-indigo-500/20 active:scale-95 transition-all flex items-center justify-center gap-2"
+        >
+          <Target size={16} /> Confirmar Transferência
+        </button>
       </div>
     </div>
   );

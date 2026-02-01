@@ -54,12 +54,11 @@ export const projectService = {
    */
   closeMeasurement: (project: Project): Project => {
     try {
-      // 1. Snapshot do estado ATUAL para o histórico
       const stats = treeService.calculateBasicStats(project.items, project.bdi);
       const snapshot: MeasurementSnapshot = {
         measurementNumber: project.measurementNumber,
         date: new Date().toLocaleDateString('pt-BR'),
-        items: JSON.parse(JSON.stringify(project.items)), // Cópia profunda
+        items: JSON.parse(JSON.stringify(project.items)),
         totals: {
           contract: stats.contract,
           period: stats.current,
@@ -68,17 +67,10 @@ export const projectService = {
         }
       };
 
-      // 2. Rotação Financeira: O que foi medido agora vira saldo anterior para a próxima
       const rotatedItems = project.items.map(item => {
         if (item.type === 'category') {
-          return { 
-            ...item,
-            currentTotal: 0,
-            currentPercentage: 0
-          };
+          return { ...item, currentTotal: 0, currentPercentage: 0 };
         }
-        
-        // Novo Anterior = O que era anterior + o que mediu agora
         const newPreviousQuantity = (item.previousQuantity || 0) + (item.currentQuantity || 0);
         const newPreviousTotal = (item.previousTotal || 0) + (item.currentTotal || 0);
 
@@ -86,14 +78,12 @@ export const projectService = {
           ...item,
           previousQuantity: newPreviousQuantity,
           previousTotal: newPreviousTotal,
-          // Zera a medição para o novo período (N+1)
           currentQuantity: 0,
           currentTotal: 0,
           currentPercentage: 0
         };
       });
 
-      // 3. Incrementa o número da medição e persiste histórico
       return {
         ...project,
         measurementNumber: project.measurementNumber + 1,
@@ -107,6 +97,9 @@ export const projectService = {
     }
   },
 
+  /**
+   * Reatribui itens de um grupo que está sendo excluído
+   */
   getReassignedItems: (groupId: string, groups: ProjectGroup[], projects: Project[]) => {
     const targetGroup = groups.find(g => g.id === groupId);
     const newParentId = targetGroup?.parentId || null;
@@ -120,5 +113,31 @@ export const projectService = {
     );
 
     return { updatedGroups, updatedProjects, newParentId };
+  },
+
+  /**
+   * Move uma obra ou pasta para um novo grupo destino
+   */
+  moveItem: (
+    itemId: string, 
+    itemType: 'project' | 'group', 
+    targetGroupId: string | null,
+    projects: Project[],
+    groups: ProjectGroup[]
+  ) => {
+    if (itemType === 'project') {
+      const updatedProjects = projects.map(p => 
+        p.id === itemId ? { ...p, groupId: targetGroupId } : p
+      );
+      return { updatedProjects, updatedGroups: groups };
+    } else {
+      // Evitar mover pasta para dentro de si mesma
+      if (itemId === targetGroupId) return { updatedProjects: projects, updatedGroups: groups };
+      
+      const updatedGroups = groups.map(g => 
+        g.id === itemId ? { ...g, parentId: targetGroupId } : g
+      );
+      return { updatedProjects: projects, updatedGroups: updatedGroups };
+    }
   }
 };
