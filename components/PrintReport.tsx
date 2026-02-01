@@ -43,7 +43,7 @@ export const PrintReport: React.FC<PrintReportProps> = ({ project, companyName, 
           <h2 className="text-lg font-black uppercase">Planilha de Medição</h2>
           <div className="text-[9px] font-bold">
             <span className="bg-black text-white px-2 py-0.5 rounded mr-2 uppercase">Medição Nº {project.measurementNumber}</span>
-            <span className="text-slate-500 uppercase">Local: {project.location || '—'}</span>
+            <span className="text-slate-500 uppercase">Data: {project.referenceDate || '—'}</span>
           </div>
         </div>
       </div>
@@ -56,7 +56,7 @@ export const PrintReport: React.FC<PrintReportProps> = ({ project, companyName, 
         </div>
         <div className="text-center">
           <label className="block text-[7px] font-black text-slate-400 uppercase">Local da Obra</label>
-          <span className="font-bold uppercase">{project.location || project.referenceDate}</span>
+          <span className="font-bold uppercase">{project.location || '-'}</span>
         </div>
         <div className="text-right">
           <label className="block text-[7px] font-black text-slate-400 uppercase">Status Físico Global</label>
