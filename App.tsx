@@ -97,7 +97,8 @@ const App: React.FC = () => {
       />
 
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
-        <header className="lg:hidden h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center px-4 shrink-0 z-50">
+        {/* HEADER MOBILE - OCULTO NO PRINT */}
+        <header className="no-print lg:hidden h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center px-4 shrink-0 z-50">
           <button onClick={() => setMobileMenuOpen(true)} className="p-2 text-slate-600 dark:text-slate-300"><Menu size={24} /></button>
           <span className="ml-4 text-xs font-black uppercase tracking-widest truncate">
             {viewMode === 'global-dashboard' ? 'Dashboard' : (viewMode === 'system-settings' ? 'Configurações' : activeProject?.name)}

@@ -79,45 +79,55 @@
             margin: 10mm; 
           }
           
-          html, body {
-            background: white !important;
-            color: black !important;
-            height: auto !important;
-            overflow: visible !important;
+          /* Esconde absolutamente tudo que não for o relatório */
+          body * {
+            visibility: hidden;
+            background: none !important;
+            box-shadow: none !important;
           }
 
-          #root > div {
+          /* Reset de layout para o container principal */
+          #root, #root > div, main {
             display: block !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            border: none !important;
           }
 
-          .no-print { 
-            display: none !important; 
+          /* Elementos que devem sumir no print */
+          .no-print, 
+          header, 
+          aside, 
+          nav, 
+          button, 
+          input[type="file"],
+          .sidebar-container {
+            display: none !important;
           }
 
-          .print-only { 
-            display: block !important; 
+          /* Torna o relatório e seus filhos visíveis */
+          .print-only, 
+          .print-only * {
+            visibility: visible;
+          }
+
+          .print-only {
+            display: block !important;
+            position: absolute !important;
+            left: 0 !important;
+            top: 0 !important;
             width: 100% !important;
-            position: relative !important;
-          }
-
-          .print-report-container {
             background: white !important;
             color: black !important;
           }
 
           table {
-            page-break-inside: auto;
             border-collapse: collapse !important;
+            width: 100% !important;
           }
-          tr {
-            page-break-inside: avoid;
-            page-break-after: auto;
-          }
-          thead {
-            display: table-header-group;
-          }
-          tfoot {
-            display: table-footer-group;
+          
+          th, td {
+            border: 1px solid black !important;
           }
         }
     </style>
