@@ -7,6 +7,7 @@ import { BrandingView } from './BrandingView';
 import { ExpenseManager } from './ExpenseManager';
 import { AssetManager } from './AssetManager';
 import { PrintReport } from './PrintReport';
+import { WorkItemModal } from './WorkItemModal';
 import { treeService } from '../services/treeService';
 import { financial } from '../utils/math';
 import { 
@@ -22,15 +23,19 @@ interface ProjectWorkspaceProps {
   canRedo: boolean;
   onUndo: () => void;
   onRedo: () => void;
-  onOpenModal: (type: ItemType, item: WorkItem | null, parentId: string | null) => void;
 }
 
 export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
-  project, onUpdateProject, onCloseMeasurement, canUndo, canRedo, onUndo, onRedo, onOpenModal
+  project, onUpdateProject, onCloseMeasurement, canUndo, canRedo, onUndo, onRedo
 }) => {
   const [tab, setTab] = useState<'wbs' | 'stats' | 'expenses' | 'documents' | 'branding'>('wbs');
+  
+  // Controle de Modal local (Encapsulado)
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalType, setModalType] = useState<ItemType>('item');
+  const [editingItem, setEditingItem] = useState<WorkItem | null>(null);
+  const [targetParentId, setTargetParentId] = useState<string | null>(null);
 
-  // Calcula os dados de impressão em tempo real
   const printData = useMemo(() => {
     const tree = treeService.buildTree(project.items);
     const processed = tree.map((root, idx) => treeService.processRecursive(root, '', idx, project.bdi));
@@ -39,6 +44,17 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
     const stats = treeService.calculateBasicStats(project.items, project.bdi);
     return { flattened, stats };
   }, [project.items, project.bdi]);
+
+  const processedCategories = useMemo(() => {
+    return printData.flattened.filter(item => item.type === 'category');
+  }, [printData.flattened]);
+
+  const handleOpenModal = (type: ItemType, item: WorkItem | null, parentId: string | null) => {
+    setModalType(type);
+    setEditingItem(item);
+    setTargetParentId(parentId);
+    setIsModalOpen(true);
+  };
 
   const TabBtn = ({ active, onClick, label, icon }: any) => (
     <button 
@@ -52,9 +68,8 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
   return (
     <>
       <div className="flex-1 flex flex-col overflow-hidden no-print">
-        {/* HEADER SUPERIOR - OCULTO NO PRINT */}
         <header className="min-h-24 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex flex-col md:flex-row items-stretch md:items-center justify-between px-6 md:px-10 py-4 md:py-0 shrink-0 z-40 gap-4">
-          <div className="flex flex-col gap-1 overflow-hidden">
+          <div className="flex flex-col gap-1 overflow-hidden text-left">
             <div className="hidden md:flex items-center gap-2 text-slate-400 text-[10px] font-black uppercase tracking-widest">
               <span className="text-slate-500 truncate">{project.name}</span>
             </div>
@@ -90,14 +105,10 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
               <WbsView 
                 project={project} 
                 onUpdateProject={onUpdateProject} 
-                onOpenModal={onOpenModal} 
+                onOpenModal={handleOpenModal} 
               />
             )}
-
-            {tab === 'stats' && (
-              <StatsView project={project} />
-            )}
-
+            {tab === 'stats' && <StatsView project={project} />}
             {tab === 'expenses' && (
               <ExpenseManager 
                 project={project}
@@ -111,7 +122,6 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
                 onUpdateExpenses={newExpenses => onUpdateProject({ expenses: newExpenses })}
               />
             )}
-
             {tab === 'documents' && (
               <AssetManager 
                 assets={project.assets} 
@@ -119,7 +129,6 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
                 onDelete={id => onUpdateProject({ assets: project.assets.filter(as => as.id !== id) })} 
               />
             )}
-
             {tab === 'branding' && (
               <BrandingView 
                 project={project} 
@@ -130,13 +139,32 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
         </div>
       </div>
 
-      {/* ÁREA DE IMPRESSÃO ISOLADA - FORA DO FLUXO DO DOM PRINCIPAL */}
-      <PrintReport 
-        project={project} 
-        data={printData.flattened} 
-        expenses={project.expenses}
-        stats={printData.stats as any} 
-      />
+      <PrintReport project={project} data={printData.flattened} expenses={project.expenses} stats={printData.stats as any} />
+
+      {isModalOpen && (
+        <WorkItemModal 
+          isOpen={isModalOpen} 
+          onClose={() => setIsModalOpen(false)} 
+          onSave={(data) => {
+            if (editingItem) {
+              onUpdateProject({ items: project.items.map(it => it.id === editingItem.id ? { ...it, ...data } : it) });
+            } else {
+              const newItem: WorkItem = {
+                id: crypto.randomUUID(), parentId: targetParentId, name: data.name || 'Novo Registro', 
+                type: data.type || modalType, wbs: '', order: project.items.filter(i => i.parentId === targetParentId).length,
+                unit: data.unit || 'un', contractQuantity: data.contractQuantity || 0, unitPrice: 0, 
+                unitPriceNoBdi: data.unitPriceNoBdi || 0, contractTotal: 0,
+                previousQuantity: 0, previousTotal: 0, currentQuantity: 0, currentTotal: 0, currentPercentage: 0,
+                accumulatedQuantity: 0, accumulatedTotal: 0, accumulatedPercentage: 0, balanceQuantity: 0, balanceTotal: 0
+              };
+              onUpdateProject({ items: [...project.items, newItem] });
+            }
+          }} 
+          editingItem={editingItem} type={modalType} 
+          categories={processedCategories as any} 
+          projectBdi={project.bdi} 
+        />
+      )}
     </>
   );
 };

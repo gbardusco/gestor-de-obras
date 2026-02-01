@@ -1,15 +1,13 @@
 
-import React, { useState, useMemo, useEffect } from 'react';
-import { ItemType, Project, WorkItem, DEFAULT_THEME, ProjectGroup } from './types';
-import { treeService } from './services/treeService';
+import React, { useState, useEffect } from 'react';
 import { useProjectState } from './hooks/useProjectState';
+import { projectService } from './services/projectService';
 
 // Componentes Modulares
 import { Sidebar } from './components/Sidebar';
 import { DashboardView } from './components/DashboardView';
 import { SettingsView } from './components/SettingsView';
 import { ProjectWorkspace } from './components/ProjectWorkspace';
-import { WorkItemModal } from './components/WorkItemModal';
 
 import { Menu } from 'lucide-react';
 
@@ -19,42 +17,18 @@ const App: React.FC = () => {
   const { 
     projects, groups, activeProject, activeProjectId, setActiveProjectId, 
     globalSettings, setGlobalSettings,
-    updateActiveProject, updateProjects, updateGroups, finalizeMeasurement,
+    updateActiveProject, updateProjects, updateGroups, bulkUpdate, finalizeMeasurement,
     undo, redo, canUndo, canRedo
   } = useProjectState();
 
-  // Estados de UI com persistência
   const [viewMode, setViewMode] = useState<ViewMode>('global-dashboard');
-  const [isDarkMode, setIsDarkMode] = useState(() => {
-    return localStorage.getItem('promeasure_theme') === 'dark';
-  });
+  const [isDarkMode, setIsDarkMode] = useState(() => localStorage.getItem('promeasure_theme') === 'dark');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  
-  // Estados de Modais
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [modalType, setModalType] = useState<ItemType>('item');
-  const [editingItem, setEditingItem] = useState<WorkItem | null>(null);
-  const [targetParentId, setTargetParentId] = useState<string | null>(null);
 
-  // Processamento reativo das categorias para o Select do Modal
-  const processedCategories = useMemo(() => {
-    if (!activeProject) return [];
-    const tree = treeService.buildTree(activeProject.items);
-    const processed = tree.map((root, idx) => treeService.processRecursive(root, '', idx, activeProject.bdi));
-    const allIds = new Set(activeProject.items.map(i => i.id));
-    const flattened = treeService.flattenTree(processed, allIds);
-    return flattened.filter(item => item.type === 'category');
-  }, [activeProject?.items, activeProject?.bdi]);
-
-  // Efeito para persistir o tema
   useEffect(() => {
     localStorage.setItem('promeasure_theme', isDarkMode ? 'dark' : 'light');
-    if (isDarkMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
+    document.documentElement.classList.toggle('dark', isDarkMode);
   }, [isDarkMode]);
 
   const handleOpenProject = (id: string) => {
@@ -63,23 +37,12 @@ const App: React.FC = () => {
     setMobileMenuOpen(false);
   };
 
-  const handleCreateProject = () => {
-    const newProj: Project = {
-      id: crypto.randomUUID(),
-      groupId: null,
-      name: 'Novo Empreendimento',
-      companyName: globalSettings.defaultCompanyName,
-      measurementNumber: 1,
-      referenceDate: new Date().toLocaleDateString('pt-BR'),
-      logo: null,
-      items: [],
-      history: [],
-      theme: { ...DEFAULT_THEME },
-      bdi: 25,
-      assets: [],
-      expenses: [],
-      config: { strict: false, printCards: true, printSubtotals: true }
-    };
+  const handleCreateProject = (groupId: string | null = null) => {
+    const newProj = projectService.createProject(
+      'Novo Empreendimento', 
+      globalSettings.defaultCompanyName, 
+      groupId
+    );
     updateProjects([...projects, newProj]);
     handleOpenProject(newProj.id);
   };
@@ -105,21 +68,17 @@ const App: React.FC = () => {
 
         {viewMode === 'global-dashboard' && (
           <DashboardView 
-            projects={projects} 
-            groups={groups}
+            projects={projects} groups={groups}
             onOpenProject={handleOpenProject} 
             onCreateProject={handleCreateProject} 
             onUpdateProjects={updateProjects}
             onUpdateGroups={updateGroups}
+            onBulkUpdate={bulkUpdate}
           />
         )}
 
         {viewMode === 'system-settings' && (
-          <SettingsView 
-            settings={globalSettings} 
-            onUpdate={setGlobalSettings} 
-            projectCount={projects.length} 
-          />
+          <SettingsView settings={globalSettings} onUpdate={setGlobalSettings} projectCount={projects.length} />
         )}
 
         {viewMode === 'project-workspace' && activeProject && (
@@ -128,39 +87,9 @@ const App: React.FC = () => {
             onUpdateProject={updateActiveProject}
             onCloseMeasurement={finalizeMeasurement}
             canUndo={canUndo} canRedo={canRedo} onUndo={undo} onRedo={redo}
-            onOpenModal={(type, item, parentId) => {
-              setModalType(type);
-              setEditingItem(item);
-              setTargetParentId(parentId);
-              setIsModalOpen(true);
-            }}
           />
         )}
       </main>
-
-      {activeProject && isModalOpen && (
-        <WorkItemModal 
-          isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} 
-          onSave={(data) => {
-            if (editingItem) {
-              updateActiveProject({ items: activeProject.items.map(it => it.id === editingItem.id ? { ...it, ...data } : it) });
-            } else {
-              const newItem: WorkItem = {
-                id: crypto.randomUUID(), parentId: targetParentId, name: data.name || 'Novo Registro', 
-                type: data.type || modalType, wbs: '', order: activeProject.items.filter(i => i.parentId === targetParentId).length,
-                unit: data.unit || 'un', contractQuantity: data.contractQuantity || 0, unitPrice: 0, 
-                unitPriceNoBdi: data.unitPriceNoBdi || 0, contractTotal: 0,
-                previousQuantity: 0, previousTotal: 0, currentQuantity: 0, currentTotal: 0, currentPercentage: 0,
-                accumulatedQuantity: 0, accumulatedTotal: 0, accumulatedPercentage: 0, balanceQuantity: 0, balanceTotal: 0
-              };
-              updateActiveProject({ items: [...activeProject.items, newItem] });
-            }
-          }} 
-          editingItem={editingItem} type={modalType} 
-          categories={processedCategories as any} 
-          projectBdi={activeProject.bdi} 
-        />
-      )}
     </div>
   );
 };

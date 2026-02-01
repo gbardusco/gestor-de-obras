@@ -15,7 +15,7 @@ interface SidebarProps {
   groups: ProjectGroup[];
   activeProjectId: string | null;
   onOpenProject: (id: string) => void;
-  onCreateProject: () => void;
+  onCreateProject: (groupId?: string | null) => void;
   isDarkMode: boolean;
   toggleDarkMode: () => void;
 }
@@ -100,7 +100,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           
           <div className="py-6 px-3 flex items-center justify-between">
             {isOpen && <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Obras por Grupo</h3>}
-            <button onClick={onCreateProject} className="text-indigo-500 hover:scale-110 transition-transform" title="Nova Obra na Raiz"><PlusCircle size={16}/></button>
+            <button onClick={() => onCreateProject()} className="text-indigo-500 hover:scale-110 transition-transform" title="Nova Obra na Raiz"><PlusCircle size={16}/></button>
           </div>
 
           <div className="space-y-1">
