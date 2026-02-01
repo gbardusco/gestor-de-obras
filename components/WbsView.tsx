@@ -7,7 +7,7 @@ import { financial } from '../utils/math';
 import { TreeTable } from './TreeTable';
 import { 
   Plus, Layers, Search, FileSpreadsheet, UploadCloud, Download, 
-  X, CheckCircle2, AlertCircle, Package
+  X, CheckCircle2, AlertCircle, Package, RefreshCw, Eraser
 } from 'lucide-react';
 
 interface WbsViewProps {
@@ -74,6 +74,24 @@ export const WbsView: React.FC<WbsViewProps> = ({
     setImportSummary(null);
   };
 
+  const handleForceRecalculate = () => {
+    if (window.confirm("Isso irá recalcular todos os preços unitários c/ BDI e limpar os ajustes manuais do rodapé para sincronizar com o BDI atual. Continuar?")) {
+      const recalculatedItems = treeService.forceRecalculate(project.items, project.bdi);
+      onUpdateProject({ 
+        items: recalculatedItems,
+        contractTotalOverride: undefined,
+        currentTotalOverride: undefined
+      });
+    }
+  };
+
+  const handleClearOverrides = () => {
+    onUpdateProject({ 
+      contractTotalOverride: undefined,
+      currentTotalOverride: undefined
+    });
+  };
+
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
       <input type="file" ref={fileInputRef} className="hidden" accept=".xlsx, .xls" onChange={handleFileChange} />
@@ -88,14 +106,28 @@ export const WbsView: React.FC<WbsViewProps> = ({
           >
             <Plus size={14} className="inline mr-1"/> Novo Item
           </button>
+          
+          <div className="hidden sm:block w-px h-6 bg-slate-100 dark:bg-slate-800 mx-1" />
+
           <button 
-            type="button"
+            onClick={handleForceRecalculate}
             disabled={isReadOnly}
-            onClick={() => onOpenModal('category', null, null)} 
-            className="px-6 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-black uppercase tracking-widest text-[9px] rounded-xl disabled:opacity-30"
+            className="flex items-center gap-2 px-4 py-3 bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-amber-600 hover:text-white transition-all disabled:opacity-30"
+            title="Recalcular todos os itens com base no BDI global"
           >
-            <Layers size={14} className="inline mr-1"/> Novo Grupo
+            <RefreshCw size={14} /> Recalcular Tudo
           </button>
+
+          {(project.contractTotalOverride !== undefined || project.currentTotalOverride !== undefined) && (
+            <button 
+              onClick={handleClearOverrides}
+              disabled={isReadOnly}
+              className="flex items-center gap-2 px-4 py-3 bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-rose-600 hover:text-white transition-all"
+              title="Limpar ajustes manuais do rodapé"
+            >
+              <Eraser size={14} /> Limpar Ajustes
+            </button>
+          )}
           
           <div className="hidden sm:block w-px h-6 bg-slate-100 dark:bg-slate-800 mx-1" />
           
@@ -103,7 +135,7 @@ export const WbsView: React.FC<WbsViewProps> = ({
             <FileSpreadsheet size={18}/>
           </button>
           <button 
-            type="button"
+            type="button" 
             disabled={isReadOnly || isImporting}
             onClick={() => fileInputRef.current?.click()} 
             className="p-2 text-slate-400 hover:text-emerald-600 transition-colors disabled:opacity-30" 

@@ -42,8 +42,6 @@ export const treeService = {
           treeService.processRecursive(child, wbs, idx, projectBdi)
         );
         
-        // REGRA 3: total_planilha = truncar(soma(total_item); 2)
-        // Como cada total_item já vem truncado, a soma final apenas garante que não haja drift binário.
         node.contractTotal = financial.sum(node.children.map(c => c.contractTotal || 0));
         node.previousTotal = financial.sum(node.children.map(c => c.previousTotal || 0));
         node.currentTotal = financial.sum(node.children.map(c => c.currentTotal || 0));
@@ -57,14 +55,10 @@ export const treeService = {
         node.contractTotal = node.currentTotal = node.accumulatedTotal = node.balanceTotal = node.accumulatedPercentage = 0;
       }
     } else {
-      // REGRA 1: com_BDI = truncar(sem_BDI * (1 + BDI); 2)
       const bdiFactor = 1 + (projectBdi / 100);
       node.unitPrice = financial.truncate((node.unitPriceNoBdi || 0) * bdiFactor);
-      
-      // REGRA 2: total_item = truncar(com_BDI * qtd_contratada; 2)
       node.contractTotal = financial.truncate(node.unitPrice * (node.contractQuantity || 0));
       
-      // Aplica a mesma truncagem estrita para os valores de medição para manter paridade
       node.previousTotal = financial.truncate((node.previousQuantity || 0) * node.unitPrice);
       node.currentTotal = financial.truncate((node.currentQuantity || 0) * node.unitPrice);
       
@@ -82,6 +76,27 @@ export const treeService = {
         : 0;
     }
     return node;
+  },
+
+  /**
+   * Recalcula todos os itens do projeto garantindo que os preços unitários c/ BDI
+   * estejam sincronizados com o Preço Base (s/ BDI) e o BDI global.
+   */
+  forceRecalculate: (items: WorkItem[], bdi: number): WorkItem[] => {
+    return items.map(item => {
+      if (item.type === 'category') return item;
+      const bdiFactor = 1 + (bdi / 100);
+      const newUnitPrice = financial.truncate((item.unitPriceNoBdi || 0) * bdiFactor);
+      return {
+        ...item,
+        unitPrice: newUnitPrice,
+        contractTotal: financial.truncate(newUnitPrice * (item.contractQuantity || 0)),
+        previousTotal: financial.truncate((item.previousQuantity || 0) * newUnitPrice),
+        currentTotal: financial.truncate((item.currentQuantity || 0) * newUnitPrice),
+        accumulatedTotal: financial.truncate(((item.previousQuantity || 0) + (item.currentQuantity || 0)) * newUnitPrice),
+        balanceTotal: financial.truncate(((item.contractQuantity || 0) - ((item.previousQuantity || 0) + (item.currentQuantity || 0))) * newUnitPrice)
+      };
+    });
   },
 
   processExpensesRecursive: (node: ProjectExpense, prefix: string = '', index: number = 0): ProjectExpense => {
@@ -106,7 +121,6 @@ export const treeService = {
     const tree = treeService.buildTree(items);
     const processed = tree.map((r, i) => treeService.processRecursive(r, '', i, bdi));
     
-    // Calcula totais reais da planilha com truncagem final
     const rawTotals = {
       contract: financial.sum(processed.map(n => n.contractTotal || 0)),
       current: financial.sum(processed.map(n => n.currentTotal || 0)),
@@ -114,7 +128,6 @@ export const treeService = {
       balance: financial.sum(processed.map(n => n.balanceTotal || 0)),
     };
 
-    // Respeita overrides manuais se existirem (para forçar valores específicos de contrato)
     const contract = project?.contractTotalOverride ?? rawTotals.contract;
     const current = project?.currentTotalOverride ?? rawTotals.current;
     const balance = financial.truncate(contract - rawTotals.accumulated);
