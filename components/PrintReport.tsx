@@ -21,30 +21,24 @@ interface PrintReportProps {
 export const PrintReport: React.FC<PrintReportProps> = ({ project, companyName, companyCnpj, data, stats }) => {
   const theme = project.theme;
 
-  // CSS Dinâmico Injetado para o Relatório
+  // Motor de CSS Dinâmico para aplicação de Branding
   const dynamicStyles = `
     .print-report-area {
       font-family: '${theme.fontFamily}', sans-serif !important;
-      color: ${theme.primary} !important;
     }
     
+    .print-report-area h1, .print-report-area h2, .print-report-area h3 {
+      color: ${theme.primary} !important;
+    }
+
+    .print-primary-border { border-color: ${theme.primary} !important; }
+    .print-border { border-color: ${theme.border} !important; }
+
     .print-header-bg { 
       background-color: ${theme.header.bg} !important; 
       color: ${theme.header.text} !important; 
     }
     
-    .print-border { 
-      border-color: ${theme.border} !important; 
-    }
-    
-    .print-primary-text { 
-      color: ${theme.primary} !important; 
-    }
-    
-    .print-primary-border { 
-      border-color: ${theme.primary} !important; 
-    }
-
     .print-accent-bg { 
       background-color: ${theme.accent} !important; 
       color: ${theme.accentText} !important; 
@@ -52,11 +46,6 @@ export const PrintReport: React.FC<PrintReportProps> = ({ project, companyName, 
     
     .print-accent-text { 
       color: ${theme.accent} !important; 
-    }
-
-    /* Variação suave da cor de destaque para as linhas da tabela */
-    .print-accent-row-bg { 
-      background-color: ${theme.accent}10 !important; 
     }
 
     .print-category-bg { 
@@ -69,21 +58,16 @@ export const PrintReport: React.FC<PrintReportProps> = ({ project, companyName, 
       color: ${theme.footer.text} !important; 
     }
 
-    .kpi-highlight-border { 
-      border-color: ${theme.accent} !important; 
-    }
-    
-    .kpi-highlight-bg { 
-      background-color: ${theme.accent}05 !important; 
-    }
-    
-    .kpi-highlight-text { 
-      color: ${theme.accent} !important; 
-    }
+    .kpi-highlight-border { border-color: ${theme.accent} !important; }
+    .kpi-highlight-bg { background-color: ${theme.accent}08 !important; }
+    .kpi-highlight-text { color: ${theme.accent} !important; }
 
-    /* Garante que itens não sejam cortados entre páginas */
+    /* Garantia contra cortes de página */
     table tr { page-break-inside: avoid !important; }
-    .no-break { page-break-inside: avoid !important; break-inside: avoid !important; }
+    .no-break { 
+      page-break-inside: avoid !important; 
+      break-inside: avoid !important; 
+    }
   `;
 
   return (
@@ -91,7 +75,7 @@ export const PrintReport: React.FC<PrintReportProps> = ({ project, companyName, 
       <style dangerouslySetInnerHTML={{ __html: dynamicStyles }} />
       
       {/* CABEÇALHO INSTITUCIONAL */}
-      <div className="flex items-center justify-between border-b-2 print-primary-border pb-3 mb-4">
+      <div className="flex items-center justify-between border-b-2 print-primary-border pb-3 mb-4 no-break">
         <div className="flex items-center gap-4">
           {project.logo ? (
             <img src={project.logo} className="w-24 h-16 object-contain" alt="Logo Empresa" />
@@ -101,16 +85,16 @@ export const PrintReport: React.FC<PrintReportProps> = ({ project, companyName, 
             </div>
           )}
           <div>
-            <h1 className="text-xl font-black uppercase tracking-tight leading-none print-primary-text">
+            <h1 className="text-xl font-black uppercase tracking-tight leading-none">
               {companyName || project.companyName}
             </h1>
             <p className="text-[8px] font-bold text-slate-600 uppercase tracking-widest mt-1">
-              {companyCnpj ? `CNPJ: ${companyCnpj}` : 'Gestão Integrada de Medição de Obras'}
+              {companyCnpj ? `CNPJ: ${companyCnpj}` : 'Gestão de Medição Técnica'}
             </p>
           </div>
         </div>
         <div className="text-right">
-          <h2 className="text-lg font-black uppercase print-primary-text">Planilha de Medição</h2>
+          <h2 className="text-lg font-black uppercase">Planilha de Medição</h2>
           <div className="text-[9px] font-bold">
             <span className="px-2 py-0.5 rounded mr-2 uppercase print-accent-bg">
               Medição Nº {project.measurementNumber}
@@ -136,7 +120,7 @@ export const PrintReport: React.FC<PrintReportProps> = ({ project, companyName, 
         </div>
       </div>
 
-      {/* TABELA DE MEDIÇÃO PADRÃO ANEXO */}
+      {/* TABELA DE MEDIÇÃO PADRÃO */}
       <table className="w-full text-[6.5px] border-collapse border print-border mb-6">
         <thead>
           <tr className="font-black uppercase text-center print-header-bg">
@@ -154,7 +138,7 @@ export const PrintReport: React.FC<PrintReportProps> = ({ project, companyName, 
             <th colSpan={2} className="border print-border p-1">Saldo Reman.</th>
             <th rowSpan={2} className="border print-border p-1 w-8">% Exec..</th>
           </tr>
-          <tr className="font-bold text-[6px] uppercase print-header-bg" style={{ filter: 'brightness(90%)' }}>
+          <tr className="font-bold text-[6px] uppercase print-header-bg" style={{ filter: 'brightness(92%)' }}>
             <th className="border print-border p-0.5 w-14">S/ BDI</th>
             <th className="border print-border p-0.5 w-14">C/ BDI</th>
             <th className="border print-border p-0.5 w-10">Quant.</th>
@@ -176,9 +160,7 @@ export const PrintReport: React.FC<PrintReportProps> = ({ project, companyName, 
                 <td className="border print-border p-1 font-mono text-[7px]">{item.wbs}</td>
                 <td className="border print-border p-1">{item.cod || '-'}</td>
                 <td className="border print-border p-1 uppercase">{item.fonte || '-'}</td>
-                <td className="border print-border p-1 text-left uppercase">
-                  {item.name.trim()}
-                </td>
+                <td className="border print-border p-1 text-left uppercase">{item.name.trim()}</td>
                 <td className="border print-border p-1 font-bold">{item.unit || '-'}</td>
                 
                 <td className="border print-border p-1 text-right">
@@ -202,11 +184,11 @@ export const PrintReport: React.FC<PrintReportProps> = ({ project, companyName, 
                   {financial.formatVisual(item.previousTotal)}
                 </td>
 
-                {/* COLUNAS DE MEDIÇÃO DO PERÍODO - REALCE DINÂMICO */}
-                <td className="border print-border p-1 print-accent-row-bg print-accent-text font-black">
+                {/* REALCE DINÂMICO DE MEDIÇÃO */}
+                <td className="border print-border p-1 print-accent-text font-black" style={{ backgroundColor: theme.accent + '08' }}>
                   {!isCategory ? item.currentQuantity : '-'}
                 </td>
-                <td className="border print-border p-1 text-right print-accent-row-bg print-accent-text font-black">
+                <td className="border print-border p-1 text-right print-accent-text font-black" style={{ backgroundColor: theme.accent + '08' }}>
                   {financial.formatVisual(item.currentTotal)}
                 </td>
 
@@ -232,13 +214,13 @@ export const PrintReport: React.FC<PrintReportProps> = ({ project, companyName, 
           })}
         </tbody>
         <tfoot>
-          <tr className="font-black uppercase text-[8px] print-footer-bg no-break">
-            <td colSpan={8} className="border print-border p-2 text-right">Totais Gerais da Medição</td>
+          <tr className="font-black uppercase text-[8px] print-footer-bg">
+            <td colSpan={8} className="border print-border p-2 text-right">Consolidado Geral da Medição</td>
             <td className="border print-border p-2 text-right">{financial.formatVisual(stats.contract)}</td>
             <td className="border print-border p-2"></td>
             <td className="border print-border p-2 text-right">{financial.formatVisual(stats.accumulated - stats.current)}</td>
-            <td className="border print-border p-2" style={{ backgroundColor: 'rgba(255,255,255,0.05)' }}></td>
-            <td className="border print-border p-2 text-right" style={{ backgroundColor: 'rgba(255,255,255,0.05)' }}>{financial.formatVisual(stats.current)}</td>
+            <td className="border print-border p-2" style={{ opacity: 0.3 }}></td>
+            <td className="border print-border p-2 text-right" style={{ opacity: 0.8 }}>{financial.formatVisual(stats.current)}</td>
             <td className="border print-border p-2"></td>
             <td className="border print-border p-2 text-right">{financial.formatVisual(stats.accumulated)}</td>
             <td className="border print-border p-2"></td>
@@ -248,10 +230,10 @@ export const PrintReport: React.FC<PrintReportProps> = ({ project, companyName, 
         </tfoot>
       </table>
 
-      {/* DASHBOARD DE KPI RESUMIDO NO RODAPÉ */}
+      {/* DASHBOARD DE KPI NO RODAPÉ */}
       <div className="grid grid-cols-4 gap-4 mb-8 no-break">
         <div className="p-3 border print-border rounded flex flex-col items-center">
-          <span className="text-[7px] font-black uppercase opacity-60">Valor Contratado</span>
+          <span className="text-[7px] font-black uppercase opacity-60">Valor Total Contrato</span>
           <span className="text-xs font-black">{financial.formatBRL(stats.contract)}</span>
         </div>
         <div className="p-3 border-2 kpi-highlight-border kpi-highlight-bg rounded flex flex-col items-center">
@@ -263,7 +245,7 @@ export const PrintReport: React.FC<PrintReportProps> = ({ project, companyName, 
           <span className="text-xs font-black">{financial.formatBRL(stats.accumulated)}</span>
         </div>
         <div className="p-3 border print-border rounded flex flex-col items-center">
-          <span className="text-[7px] font-black uppercase opacity-60">Saldo Remanescente</span>
+          <span className="text-[7px] font-black uppercase opacity-60">Saldo a Executar</span>
           <span className="text-xs font-black">{financial.formatBRL(stats.balance)}</span>
         </div>
       </div>
@@ -277,13 +259,13 @@ export const PrintReport: React.FC<PrintReportProps> = ({ project, companyName, 
         </div>
         <div className="space-y-1">
           <div className="border-t print-border w-48 mx-auto"></div>
-          <p className="text-[8px] font-black uppercase">Fiscalização / Município</p>
+          <p className="text-[8px] font-black uppercase">Fiscalização / Contratante</p>
           <p className="text-[7px] font-bold text-slate-500 tracking-tighter">Assinatura e Carimbo</p>
         </div>
         <div className="space-y-1">
           <div className="border-t print-border w-48 mx-auto"></div>
-          <p className="text-[8px] font-black uppercase">Gestão de Contrato</p>
-          <p className="text-[7px] font-bold text-slate-500 tracking-tighter">Conformidade Financeira</p>
+          <p className="text-[8px] font-black uppercase">Gestor do Contrato</p>
+          <p className="text-[7px] font-bold text-slate-500 tracking-tighter">Liberação Financeira</p>
         </div>
       </div>
     </div>

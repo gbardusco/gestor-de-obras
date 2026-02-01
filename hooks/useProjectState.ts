@@ -1,6 +1,5 @@
-
 import { useState, useCallback, useEffect } from 'react';
-import { Project, ProjectGroup, MeasurementSnapshot, GlobalSettings, ProjectPlanning, ProjectJournal, WorkItem, ProjectExpense, BiddingProcess, CompanyCertificate } from '../types';
+import { Project, ProjectGroup, MeasurementSnapshot, GlobalSettings, ProjectPlanning, ProjectJournal, WorkItem, ProjectExpense, BiddingProcess, CompanyCertificate, DEFAULT_THEME } from '../types';
 import { treeService } from '../services/treeService';
 import { journalService } from '../services/journalService';
 import { financial } from '../utils/math';
@@ -40,12 +39,25 @@ export const useProjectState = () => {
       const parsed = JSON.parse(saved);
       return {
         ...parsed,
-        projects: (parsed.projects || []).map((p: any) => ({
-          ...p,
-          location: p.location || '',
-          planning: p.planning || { ...INITIAL_PLANNING },
-          journal: p.journal || { ...INITIAL_JOURNAL }
-        })),
+        projects: (parsed.projects || []).map((p: any) => {
+          // Correção Crítica: Garantir que o tema possua todas as propriedades novas
+          const mergedTheme = {
+            ...DEFAULT_THEME,
+            ...(p.theme || {}),
+            header: { ...DEFAULT_THEME.header, ...(p.theme?.header || {}) },
+            category: { ...DEFAULT_THEME.category, ...(p.theme?.category || {}) },
+            footer: { ...DEFAULT_THEME.footer, ...(p.theme?.footer || {}) },
+            kpiHighlight: { ...DEFAULT_THEME.kpiHighlight, ...(p.theme?.kpiHighlight || {}) }
+          };
+
+          return {
+            ...p,
+            location: p.location || '',
+            planning: p.planning || { ...INITIAL_PLANNING },
+            journal: p.journal || { ...INITIAL_JOURNAL },
+            theme: mergedTheme
+          };
+        }),
         biddings: parsed.biddings || [],
         globalSettings: parsed.globalSettings || INITIAL_SETTINGS
       };
@@ -112,6 +124,6 @@ export const useProjectState = () => {
     updateBiddings,
     updateCertificates,
     bulkUpdate,
-    undo: () => {}, redo: () => {}, canUndo: false, canRedo: false // Implementação simplificada para este módulo
+    undo: () => {}, redo: () => {}, canUndo: false, canRedo: false 
   };
 };

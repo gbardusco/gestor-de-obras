@@ -46,8 +46,8 @@ export type PDFBoxTheme = {
 
 export interface PDFTheme {
   fontFamily: 'Inter' | 'Roboto' | 'JetBrains Mono' | 'Merriweather';
-  primary: string; // Cor de destaque principal (títulos)
-  accent: string;  // Cor das colunas de medição
+  primary: string;
+  accent: string;
   accentText: string;
   border: string;
   header: PDFBoxTheme;
@@ -55,6 +55,18 @@ export interface PDFTheme {
   footer: PDFBoxTheme;
   kpiHighlight: PDFBoxTheme;
 }
+
+export const DEFAULT_THEME: PDFTheme = {
+  fontFamily: 'Inter',
+  primary: '#000000',
+  accent: '#2563eb',
+  accentText: '#ffffff',
+  border: '#000000',
+  header: { bg: '#0f172a', text: '#ffffff' },
+  category: { bg: '#f1f5f9', text: '#000000' },
+  footer: { bg: '#0f172a', text: '#ffffff' },
+  kpiHighlight: { bg: '#eff6ff', text: '#1d4ed8' }
+};
 
 export interface MeasurementSnapshot {
   measurementNumber: number;
@@ -101,8 +113,6 @@ export interface ProjectExpense {
   children?: ProjectExpense[];
 }
 
-// --- MÓDULO DE PLANEJAMENTO ---
-
 export interface PlanningTask {
   id: string;
   categoryId: string | null;
@@ -137,8 +147,6 @@ export interface ProjectPlanning {
   milestones: Milestone[];
 }
 
-// --- NOVO MÓDULO: DIÁRIO DE OBRA ---
-
 export type JournalCategory = 'PROGRESS' | 'FINANCIAL' | 'INCIDENT' | 'WEATHER';
 export type WeatherType = 'sunny' | 'rainy' | 'cloudy' | 'storm';
 
@@ -157,18 +165,6 @@ export interface JournalEntry {
 export interface ProjectJournal {
   entries: JournalEntry[];
 }
-
-export const DEFAULT_THEME: PDFTheme = {
-  fontFamily: 'Inter',
-  primary: '#000000',
-  accent: '#2563eb', 
-  accentText: '#ffffff',
-  border: '#000000',
-  header: { bg: '#0f172a', text: '#ffffff' },
-  category: { bg: '#f1f5f9', text: '#000000' },
-  footer: { bg: '#0f172a', text: '#ffffff' },
-  kpiHighlight: { bg: '#eff6ff', text: '#1d4ed8' }
-};
 
 export interface GlobalSettings {
   defaultCompanyName: string;
