@@ -64,11 +64,30 @@ export const TreeTable: React.FC<TreeTableProps> = ({
   contractTotalOverride,
   currentTotalOverride
 }) => {
-  const [view, setView] = useState<ColumnView>('full');
-  const [showMover, setShowMover] = useState(true);
-  const [showAcoes, setShowAcoes] = useState(true);
-  const [showFonte, setShowFonte] = useState(true);
-  const [showCod, setShowCod] = useState(true);
+  // Persistência de Visão e Toggles
+  const [view, setView] = useState<ColumnView>(() => (localStorage.getItem('promeasure_table_view') as ColumnView) || 'full');
+  const [showMover, setShowMover] = useState(() => localStorage.getItem('promeasure_table_mover') !== 'false');
+  const [showAcoes, setShowAcoes] = useState(() => localStorage.getItem('promeasure_table_acoes') !== 'false');
+  const [showFonte, setShowFonte] = useState(() => localStorage.getItem('promeasure_table_fonte') !== 'false');
+  const [showCod, setShowCod] = useState(() => localStorage.getItem('promeasure_table_cod') !== 'false');
+
+  // Estado para descrições expandidas
+  const [expandedDescriptions, setExpandedDescriptions] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    localStorage.setItem('promeasure_table_view', view);
+    localStorage.setItem('promeasure_table_mover', String(showMover));
+    localStorage.setItem('promeasure_table_acoes', String(showAcoes));
+    localStorage.setItem('promeasure_table_fonte', String(showFonte));
+    localStorage.setItem('promeasure_table_cod', String(showCod));
+  }, [view, showMover, showAcoes, showFonte, showCod]);
+
+  const toggleDescription = (id: string) => {
+    const next = new Set(expandedDescriptions);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    setExpandedDescriptions(next);
+  };
 
   const filteredData = searchQuery.trim() 
     ? data.filter(item => item.name.toLowerCase().includes(searchQuery.toLowerCase()) || item.wbs.includes(searchQuery))
@@ -256,7 +275,14 @@ export const TreeTable: React.FC<TreeTableProps> = ({
                                   </button>
                                 ) : <div className="w-6 h-px bg-slate-200 dark:bg-slate-700" />}
                                 {item.type === 'category' ? <Layers size={14} className="text-blue-500 flex-shrink-0 mt-0.5" /> : <Package size={14} className="text-slate-300 flex-shrink-0 mt-0.5" />}
-                                <span className={`line-clamp-2 overflow-hidden text-ellipsis whitespace-normal leading-tight ${item.type === 'category' ? 'text-slate-900 dark:text-slate-100 uppercase text-[10px] font-black' : 'text-slate-600 dark:text-slate-300'}`}>{item.name}</span>
+                                
+                                <span 
+                                  onClick={() => toggleDescription(item.id)}
+                                  className={`cursor-pointer overflow-hidden text-ellipsis whitespace-normal leading-tight transition-all duration-300 ${expandedDescriptions.has(item.id) ? '' : 'line-clamp-2'} ${item.type === 'category' ? 'text-slate-900 dark:text-slate-100 uppercase text-[10px] font-black' : 'text-slate-600 dark:text-slate-300'}`}
+                                >
+                                  {item.name}
+                                </span>
+
                                 {item.type === 'category' && !isReadOnly && (
                                   <div className="ml-auto lg:opacity-0 group-hover:opacity-100 flex items-center gap-1 transition-opacity">
                                     <button onClick={() => onAddChild(item.id, 'category')} className="p-1 text-slate-400 hover:text-blue-600"><FolderPlus size={14} /></button>

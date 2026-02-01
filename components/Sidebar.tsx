@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Home, Cog, PlusCircle, Briefcase, Sun, Moon, Menu, HardHat, X, Folder, ChevronRight, ChevronLeft, ChevronDown, Landmark, AlertCircle } from 'lucide-react';
 import { Project, ProjectGroup, CompanyCertificate } from '../types';
 import { biddingService } from '../services/biddingService';
@@ -25,7 +25,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
   isOpen, setIsOpen, mobileOpen, setMobileOpen, viewMode, setViewMode,
   projects, groups, activeProjectId, onOpenProject, onCreateProject, isDarkMode, toggleDarkMode, certificates
 }) => {
-  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(() => {
+    const saved = localStorage.getItem('promeasure_sidebar_expanded_groups');
+    return saved ? new Set(JSON.parse(saved)) : new Set();
+  });
+
+  useEffect(() => {
+    localStorage.setItem('promeasure_sidebar_expanded_groups', JSON.stringify(Array.from(expandedGroups)));
+  }, [expandedGroups]);
 
   const hasAlerts = biddingService.hasGlobalAlerts(certificates);
 
@@ -45,7 +52,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
     return (
       <div className="space-y-1">
         <button 
-          onClick={(e) => { e.stopPropagation(); const n = new Set(expandedGroups); n.has(group.id) ? n.delete(group.id) : n.add(group.id); setExpandedGroups(n); }}
+          onClick={(e) => { 
+            e.stopPropagation(); 
+            const n = new Set(expandedGroups); 
+            n.has(group.id) ? n.delete(group.id) : n.add(group.id); 
+            setExpandedGroups(n); 
+          }}
           className={`w-full flex items-center gap-2 p-2 rounded-xl text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all`}
           style={{ paddingLeft: `${depth * 12 + 8}px` }}
         >
@@ -75,7 +87,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {mobileOpen && <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-[100] lg:hidden" onClick={() => setMobileOpen(false)} />}
       <aside className={`fixed inset-y-0 left-0 z-[110] lg:relative lg:translate-x-0 transition-all duration-300 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col ${isOpen ? 'w-72' : 'w-20'} ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         
-        {/* HEADER COM BOTÃO DE COLAPSO CORRIGIDO PARA MODO RECOLHIDO */}
         <div className={`h-20 flex items-center border-b border-slate-100 dark:border-slate-800 shrink-0 ${isOpen ? 'justify-between px-6' : 'justify-center px-0'}`}>
           {isOpen && (
             <div className="flex items-center gap-3 animate-in fade-in duration-300">
