@@ -1,8 +1,8 @@
 
 import React, { useState } from 'react';
-import { Home, Cog, PlusCircle, Briefcase, Sun, Moon, Menu, HardHat, X, Folder, ChevronRight, ChevronDown } from 'lucide-react';
-import { Project, ProjectGroup } from '../types';
-import { treeService } from '../services/treeService';
+import { Home, Cog, PlusCircle, Briefcase, Sun, Moon, Menu, HardHat, X, Folder, ChevronRight, ChevronDown, Landmark, AlertCircle } from 'lucide-react';
+import { Project, ProjectGroup, CompanyCertificate } from '../types';
+import { biddingService } from '../services/biddingService';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -18,25 +18,22 @@ interface SidebarProps {
   onCreateProject: (groupId?: string | null) => void;
   isDarkMode: boolean;
   toggleDarkMode: () => void;
+  certificates: CompanyCertificate[];
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
   isOpen, setIsOpen, mobileOpen, setMobileOpen, viewMode, setViewMode,
-  projects, groups, activeProjectId, onOpenProject, onCreateProject, isDarkMode, toggleDarkMode
+  projects, groups, activeProjectId, onOpenProject, onCreateProject, isDarkMode, toggleDarkMode, certificates
 }) => {
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
 
-  const toggleGroup = (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    const next = new Set(expandedGroups);
-    next.has(id) ? next.delete(id) : next.add(id);
-    setExpandedGroups(next);
-  };
+  const hasAlerts = biddingService.hasGlobalAlerts(certificates);
 
-  const NavItem = ({ active, onClick, icon, label }: any) => (
-    <button onClick={onClick} className={`w-full flex items-center gap-4 p-3.5 rounded-2xl transition-all ${active ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'}`}>
+  const NavItem = ({ active, onClick, icon, label, badge }: any) => (
+    <button onClick={onClick} className={`w-full flex items-center gap-4 p-3.5 rounded-2xl transition-all relative ${active ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'}`}>
       <div className="shrink-0">{icon}</div>
       {isOpen && <span className="text-[11px] font-black uppercase tracking-widest truncate">{label}</span>}
+      {badge && <div className="absolute right-3 top-3 w-2 h-2 bg-rose-500 rounded-full animate-pulse border-2 border-white dark:border-slate-900" />}
     </button>
   );
 
@@ -48,7 +45,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     return (
       <div className="space-y-1">
         <button 
-          onClick={(e) => toggleGroup(group.id, e)}
+          onClick={(e) => { e.stopPropagation(); const n = new Set(expandedGroups); n.has(group.id) ? n.delete(group.id) : n.add(group.id); setExpandedGroups(n); }}
           className={`w-full flex items-center gap-2 p-2 rounded-xl text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all`}
           style={{ paddingLeft: `${depth * 12 + 8}px` }}
         >
@@ -58,17 +55,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <Folder size={14} className="shrink-0 text-amber-500" />
           {isOpen && <span className="text-[10px] font-black uppercase tracking-tight truncate">{group.name}</span>}
         </button>
-        
         {isExpanded && (
           <>
             {subGroups.map(sg => <GroupTreeItem key={sg.id} group={sg} depth={depth + 1} />)}
             {groupProjects.map(p => (
-              <button 
-                key={p.id} 
-                onClick={() => onOpenProject(p.id)}
-                className={`w-full flex items-center gap-2 p-2 rounded-xl transition-all ${activeProjectId === p.id ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600' : 'text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}`}
-                style={{ paddingLeft: `${(depth + 1) * 12 + 18}px` }}
-              >
+              <button key={p.id} onClick={() => onOpenProject(p.id)} className={`w-full flex items-center gap-2 p-2 rounded-xl transition-all ${activeProjectId === p.id ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600' : 'text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}`} style={{ paddingLeft: `${(depth + 1) * 12 + 18}px` }}>
                 <Briefcase size={12} className="shrink-0" />
                 {isOpen && <span className="text-[11px] truncate">{p.name}</span>}
               </button>
@@ -79,9 +70,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
     );
   };
 
-  const rootGroups = groups.filter(g => !g.parentId);
-  const rootProjects = projects.filter(p => !p.groupId);
-
   return (
     <>
       {mobileOpen && <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-[100] lg:hidden" onClick={() => setMobileOpen(false)} />}
@@ -91,22 +79,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <div className="w-9 h-9 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg"><HardHat size={20} /></div>
             {isOpen && <span className="text-sm font-black tracking-tighter uppercase">ProMeasure</span>}
           </div>
-          <button onClick={() => setMobileOpen(false)} className="lg:hidden p-2 text-slate-400"><X size={20} /></button>
         </div>
 
         <nav className="flex-1 p-4 space-y-1 overflow-y-auto custom-scrollbar">
           <NavItem active={viewMode === 'global-dashboard'} onClick={() => { setViewMode('global-dashboard'); setMobileOpen(false); }} icon={<Home size={18}/>} label="Dashboard" />
-          <NavItem active={viewMode === 'system-settings'} onClick={() => { setViewMode('system-settings'); setMobileOpen(false); }} icon={<Cog size={18}/>} label="Ajustes Globais" />
+          <NavItem active={viewMode === 'bidding-view'} onClick={() => { setViewMode('bidding-view'); setMobileOpen(false); }} icon={<Landmark size={18}/>} label="Licitações" badge={hasAlerts} />
+          <NavItem active={viewMode === 'system-settings'} onClick={() => { setViewMode('system-settings'); setMobileOpen(false); }} icon={<Cog size={18}/>} label="Configurações" />
           
           <div className="py-6 px-3 flex items-center justify-between">
-            {isOpen && <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Obras por Grupo</h3>}
-            <button onClick={() => onCreateProject()} className="text-indigo-500 hover:scale-110 transition-transform" title="Nova Obra na Raiz"><PlusCircle size={16}/></button>
+            {isOpen && <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Obras Ativas</h3>}
+            <button onClick={() => onCreateProject()} className="text-indigo-500 hover:scale-110 transition-transform"><PlusCircle size={16}/></button>
           </div>
 
           <div className="space-y-1">
-            {rootGroups.map(g => <GroupTreeItem key={g.id} group={g} depth={0} />)}
-            {rootProjects.map(p => (
-              <button key={p.id} onClick={() => onOpenProject(p.id)} className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all ${activeProjectId === p.id && viewMode === 'project-workspace' ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 font-bold' : 'text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800'}`}>
+            {groups.filter(g => !g.parentId).map(g => <GroupTreeItem key={g.id} group={g} depth={0} />)}
+            {projects.filter(p => !p.groupId).map(p => (
+              <button key={p.id} onClick={() => onOpenProject(p.id)} className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all ${activeProjectId === p.id && viewMode === 'project-workspace' ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 font-bold' : 'text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800'}`}>
                 <Briefcase size={16} className="shrink-0" />
                 {isOpen && <span className="text-xs truncate text-left">{p.name}</span>}
               </button>
@@ -114,14 +102,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
         </nav>
 
-        <div className="p-4 border-t border-slate-100 dark:border-slate-800 gap-2 flex flex-col">
+        <div className="p-4 border-t border-slate-100 dark:border-slate-800 flex flex-col gap-2">
           <button onClick={toggleDarkMode} className="w-full flex items-center gap-3 p-3 text-slate-500 hover:bg-slate-50 rounded-xl">
             {isDarkMode ? <Sun size={18}/> : <Moon size={18}/>}
             {isOpen && <span className="text-xs font-bold uppercase tracking-widest">{isDarkMode ? 'Claro' : 'Escuro'}</span>}
-          </button>
-          <button onClick={() => setIsOpen(!isOpen)} className="hidden lg:flex w-full items-center gap-3 p-3 text-slate-400 hover:bg-slate-50 rounded-xl">
-             <Menu size={18} />
-             {isOpen && <span className="text-xs font-bold uppercase tracking-widest">Recolher</span>}
           </button>
         </div>
       </aside>

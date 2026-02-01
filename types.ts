@@ -96,6 +96,94 @@ export interface ProjectExpense {
   children?: ProjectExpense[];
 }
 
+// --- MÓDULO DE PLANEJAMENTO ---
+
+export interface PlanningTask {
+  id: string;
+  categoryId: string | null;
+  description: string;
+  isCompleted: boolean;
+  dueDate: string;
+  createdAt: string;
+  completedAt?: string;
+}
+
+export type ForecastStatus = 'pending' | 'ordered' | 'delivered';
+
+export interface MaterialForecast {
+  id: string;
+  description: string;
+  quantityNeeded: number;
+  unit: string;
+  estimatedDate: string;
+  status: ForecastStatus;
+}
+
+export interface Milestone {
+  id: string;
+  title: string;
+  date: string;
+  isCompleted: boolean;
+}
+
+export interface ProjectPlanning {
+  tasks: PlanningTask[];
+  forecasts: MaterialForecast[];
+  milestones: Milestone[];
+}
+
+// --- NOVO MÓDULO: DIÁRIO DE OBRA ---
+
+export type JournalCategory = 'PROGRESS' | 'FINANCIAL' | 'INCIDENT' | 'WEATHER';
+export type WeatherType = 'sunny' | 'rainy' | 'cloudy' | 'storm';
+
+export interface JournalEntry {
+  id: string;
+  timestamp: string;
+  type: 'AUTO' | 'MANUAL';
+  category: JournalCategory;
+  title: string;
+  description: string;
+  weatherStatus?: WeatherType;
+  photoUrls?: string[];
+  linkedItemId?: string;
+}
+
+export interface ProjectJournal {
+  entries: JournalEntry[];
+}
+
+// --- NOVO MÓDULO: LICITAÇÕES (BIDDING) ---
+
+export type BiddingStatus = 'PROSPECTING' | 'DRAFTING' | 'SUBMITTED' | 'WON' | 'LOST';
+
+export interface BiddingProcess {
+  id: string;
+  tenderNumber: string; // Número do Edital
+  clientName: string;   // Órgão ou Cliente
+  object: string;       // Descrição do objeto
+  openingDate: string;  // Abertura
+  visitDate?: string;   // Visita Técnica
+  expirationDate: string; // Validade da Proposta
+  estimatedValue: number; // Valor Edital
+  ourProposalValue: number; // Valor Calculado
+  status: BiddingStatus;
+  items: WorkItem[];    // Orçamento da Proposta
+  assets: ProjectAsset[]; // Documentos do Edital
+  bdi: number;
+}
+
+export interface CompanyCertificate {
+  id: string;
+  name: string;
+  issuer: string;
+  expirationDate: string;
+  fileData?: string;
+  status: 'valid' | 'warning' | 'expired';
+}
+
+// --- FIM LICITAÇÕES ---
+
 export const DEFAULT_THEME: PDFTheme = {
   primary: '#2563eb',
   secondary: '#64748b',
@@ -111,6 +199,7 @@ export interface GlobalSettings {
   defaultCompanyName: string;
   userName: string;
   language: 'pt-BR' | 'en-US';
+  certificates: CompanyCertificate[];
 }
 
 export interface ProjectGroup {
@@ -123,7 +212,7 @@ export interface ProjectGroup {
 
 export interface Project {
   id: string;
-  groupId: string | null; // Vínculo com pastas
+  groupId: string | null;
   name: string;
   companyName: string;
   measurementNumber: number;
@@ -135,6 +224,8 @@ export interface Project {
   bdi: number;
   assets: ProjectAsset[];
   expenses: ProjectExpense[];
+  planning: ProjectPlanning;
+  journal: ProjectJournal;
   config: {
     strict: boolean;
     printCards: boolean;

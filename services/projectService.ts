@@ -4,7 +4,6 @@ import { Project, ProjectGroup, DEFAULT_THEME } from '../types';
 /**
  * ProjectService
  * Centraliza a lógica de criação e transformação de entidades de negócio.
- * Garante que nenhum objeto nasça "incompleto" no sistema.
  */
 export const projectService = {
   /**
@@ -24,6 +23,15 @@ export const projectService = {
     bdi: 25,
     assets: [],
     expenses: [],
+    planning: {
+      tasks: [],
+      forecasts: [],
+      milestones: []
+    },
+    // Inicialização do Diário
+    journal: {
+      entries: []
+    },
     config: { 
       strict: false, 
       printCards: true, 
@@ -31,9 +39,6 @@ export const projectService = {
     }
   }),
 
-  /**
-   * Fábrica de Grupos (Pastas)
-   */
   createGroup: (name: string, parentId: string | null = null, order: number = 0): ProjectGroup => ({
     id: crypto.randomUUID(),
     parentId,
@@ -42,10 +47,6 @@ export const projectService = {
     children: []
   }),
 
-  /**
-   * Lógica de Reatribuição Pós-Exclusão
-   * Garante que se uma pasta for deletada, seus filhos não se percam.
-   */
   getReassignedItems: (groupId: string, groups: ProjectGroup[], projects: Project[]) => {
     const targetGroup = groups.find(g => g.id === groupId);
     const newParentId = targetGroup?.parentId || null;

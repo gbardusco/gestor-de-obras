@@ -1,18 +1,21 @@
 
 import React, { useState, useMemo } from 'react';
-import { Project, WorkItem, ItemType } from '../types';
+import { Project, WorkItem, ItemType, ProjectPlanning, ProjectExpense, ProjectJournal } from '../types';
 import { WbsView } from './WbsView';
 import { StatsView } from './StatsView';
 import { BrandingView } from './BrandingView';
 import { ExpenseManager } from './ExpenseManager';
 import { AssetManager } from './AssetManager';
+import { PlanningView } from './PlanningView';
+import { JournalView } from './JournalView';
 import { PrintReport } from './PrintReport';
 import { WorkItemModal } from './WorkItemModal';
 import { treeService } from '../services/treeService';
+import { planningService } from '../services/planningService';
 import { financial } from '../utils/math';
 import { 
   Layers, BarChart3, Coins, FileText, Sliders, 
-  Printer, Undo2, Redo2, Lock 
+  Printer, Undo2, Redo2, Lock, Calendar, BookOpen
 } from 'lucide-react';
 
 interface ProjectWorkspaceProps {
@@ -28,7 +31,7 @@ interface ProjectWorkspaceProps {
 export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
   project, onUpdateProject, onCloseMeasurement, canUndo, canRedo, onUndo, onRedo
 }) => {
-  const [tab, setTab] = useState<'wbs' | 'stats' | 'expenses' | 'documents' | 'branding'>('wbs');
+  const [tab, setTab] = useState<'wbs' | 'planning' | 'journal' | 'stats' | 'expenses' | 'documents' | 'branding'>('wbs');
   
   // Controle de Modal local (Encapsulado)
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -56,6 +59,16 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
     setIsModalOpen(true);
   };
 
+  /**
+   * handleUpdateItemsWithCleanup
+   * Centraliza a atualização de itens EAP e garante que o Planejamento seja saneado
+   * caso ocorra uma exclusão de categoria.
+   */
+  const handleUpdateItemsWithCleanup = (newItems: WorkItem[]) => {
+    const cleanedPlanning = planningService.cleanupOrphanedTasks(project.planning, newItems);
+    onUpdateProject({ items: newItems, planning: cleanedPlanning });
+  };
+
   const TabBtn = ({ active, onClick, label, icon }: any) => (
     <button 
       onClick={onClick} 
@@ -76,6 +89,8 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
             <div className="flex items-center gap-4 overflow-x-auto no-scrollbar pb-1">
               <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl shadow-inner whitespace-nowrap">
                 <TabBtn active={tab === 'wbs'} onClick={() => setTab('wbs')} label="Planilha" icon={<Layers size={14}/>} />
+                <TabBtn active={tab === 'planning'} onClick={() => setTab('planning')} label="Planejamento" icon={<Calendar size={14}/>} />
+                <TabBtn active={tab === 'journal'} onClick={() => setTab('journal')} label="Diário" icon={<BookOpen size={14}/>} />
                 <TabBtn active={tab === 'stats'} onClick={() => setTab('stats')} label="Análise" icon={<BarChart3 size={14}/>} />
                 <TabBtn active={tab === 'expenses'} onClick={() => setTab('expenses')} label="Financeiro" icon={<Coins size={14}/>} />
                 <TabBtn active={tab === 'documents'} onClick={() => setTab('documents')} label="Docs" icon={<FileText size={14}/>} />
@@ -104,8 +119,27 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
             {tab === 'wbs' && (
               <WbsView 
                 project={project} 
-                onUpdateProject={onUpdateProject} 
+                onUpdateProject={data => {
+                  if (data.items) handleUpdateItemsWithCleanup(data.items);
+                  else onUpdateProject(data);
+                }} 
                 onOpenModal={handleOpenModal} 
+              />
+            )}
+            {tab === 'planning' && (
+              <PlanningView 
+                project={project} 
+                onUpdatePlanning={p => onUpdateProject({ planning: p })} 
+                onAddExpense={e => onUpdateProject({ expenses: [...project.expenses, e] })}
+                categories={processedCategories as any} 
+                allWorkItems={project.items}
+              />
+            )}
+            {tab === 'journal' && (
+              <JournalView 
+                project={project}
+                onUpdateJournal={j => onUpdateProject({ journal: j })}
+                allWorkItems={project.items}
               />
             )}
             {tab === 'stats' && <StatsView project={project} />}
@@ -147,7 +181,7 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
           onClose={() => setIsModalOpen(false)} 
           onSave={(data) => {
             if (editingItem) {
-              onUpdateProject({ items: project.items.map(it => it.id === editingItem.id ? { ...it, ...data } : it) });
+              handleUpdateItemsWithCleanup(project.items.map(it => it.id === editingItem.id ? { ...it, ...data } : it));
             } else {
               const newItem: WorkItem = {
                 id: crypto.randomUUID(), parentId: targetParentId, name: data.name || 'Novo Registro', 
@@ -157,7 +191,7 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
                 previousQuantity: 0, previousTotal: 0, currentQuantity: 0, currentTotal: 0, currentPercentage: 0,
                 accumulatedQuantity: 0, accumulatedTotal: 0, accumulatedPercentage: 0, balanceQuantity: 0, balanceTotal: 0
               };
-              onUpdateProject({ items: [...project.items, newItem] });
+              handleUpdateItemsWithCleanup([...project.items, newItem]);
             }
           }} 
           editingItem={editingItem} type={modalType} 

@@ -2,23 +2,23 @@
 import React, { useState, useEffect } from 'react';
 import { useProjectState } from './hooks/useProjectState';
 import { projectService } from './services/projectService';
+import { biddingService } from './services/biddingService';
 
-// Componentes Modulares
 import { Sidebar } from './components/Sidebar';
 import { DashboardView } from './components/DashboardView';
 import { SettingsView } from './components/SettingsView';
 import { ProjectWorkspace } from './components/ProjectWorkspace';
+import { BiddingView } from './components/BiddingView';
 
 import { Menu } from 'lucide-react';
 
-type ViewMode = 'global-dashboard' | 'project-workspace' | 'system-settings';
+type ViewMode = 'global-dashboard' | 'project-workspace' | 'system-settings' | 'bidding-view';
 
 const App: React.FC = () => {
   const { 
-    projects, groups, activeProject, activeProjectId, setActiveProjectId, 
+    projects, biddings, groups, activeProject, activeProjectId, setActiveProjectId, 
     globalSettings, setGlobalSettings,
-    updateActiveProject, updateProjects, updateGroups, bulkUpdate, finalizeMeasurement,
-    undo, redo, canUndo, canRedo
+    updateActiveProject, updateProjects, updateGroups, updateBiddings, updateCertificates, bulkUpdate
   } = useProjectState();
 
   const [viewMode, setViewMode] = useState<ViewMode>('global-dashboard');
@@ -37,12 +37,8 @@ const App: React.FC = () => {
     setMobileMenuOpen(false);
   };
 
-  const handleCreateProject = (groupId: string | null = null) => {
-    const newProj = projectService.createProject(
-      'Novo Empreendimento', 
-      globalSettings.defaultCompanyName, 
-      groupId
-    );
+  const handleCreateProjectFromBidding = (bidding: any) => {
+    const newProj = biddingService.convertToProject(bidding, globalSettings.defaultCompanyName);
     updateProjects([...projects, newProj]);
     handleOpenProject(newProj.id);
   };
@@ -54,26 +50,38 @@ const App: React.FC = () => {
         mobileOpen={mobileMenuOpen} setMobileOpen={setMobileMenuOpen}
         viewMode={viewMode} setViewMode={setViewMode}
         projects={projects} groups={groups} activeProjectId={activeProjectId}
-        onOpenProject={handleOpenProject} onCreateProject={handleCreateProject}
+        onOpenProject={handleOpenProject} onCreateProject={(gid) => {
+          const np = projectService.createProject('Nova Obra', globalSettings.defaultCompanyName, gid || null);
+          updateProjects([...projects, np]);
+          handleOpenProject(np.id);
+        }}
         isDarkMode={isDarkMode} toggleDarkMode={() => setIsDarkMode(!isDarkMode)}
+        certificates={globalSettings.certificates}
       />
 
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
         <header className="no-print lg:hidden h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center px-4 shrink-0 z-50">
           <button onClick={() => setMobileMenuOpen(true)} className="p-2 text-slate-600 dark:text-slate-300"><Menu size={24} /></button>
           <span className="ml-4 text-xs font-black uppercase tracking-widest truncate">
-            {viewMode === 'global-dashboard' ? 'Dashboard' : (viewMode === 'system-settings' ? 'Configurações' : activeProject?.name)}
+            {viewMode === 'global-dashboard' ? 'Dashboard' : (viewMode === 'bidding-view' ? 'Licitações' : activeProject?.name)}
           </span>
         </header>
 
         {viewMode === 'global-dashboard' && (
-          <DashboardView 
-            projects={projects} groups={groups}
-            onOpenProject={handleOpenProject} 
-            onCreateProject={handleCreateProject} 
-            onUpdateProjects={updateProjects}
-            onUpdateGroups={updateGroups}
-            onBulkUpdate={bulkUpdate}
+          <DashboardView projects={projects} groups={groups} onOpenProject={handleOpenProject} onCreateProject={(gid) => {
+            const np = projectService.createProject('Nova Obra', globalSettings.defaultCompanyName, gid || null);
+            updateProjects([...projects, np]);
+            handleOpenProject(np.id);
+          }} onUpdateProjects={updateProjects} onUpdateGroups={updateGroups} onBulkUpdate={bulkUpdate} />
+        )}
+
+        {viewMode === 'bidding-view' && (
+          <BiddingView 
+            biddings={biddings} 
+            certificates={globalSettings.certificates} 
+            onUpdateBiddings={updateBiddings} 
+            onUpdateCertificates={updateCertificates}
+            onCreateProjectFromBidding={handleCreateProjectFromBidding}
           />
         )}
 
@@ -85,8 +93,8 @@ const App: React.FC = () => {
           <ProjectWorkspace 
             project={activeProject}
             onUpdateProject={updateActiveProject}
-            onCloseMeasurement={finalizeMeasurement}
-            canUndo={canUndo} canRedo={canRedo} onUndo={undo} onRedo={redo}
+            onCloseMeasurement={() => {}} // Simplificado
+            canUndo={false} canRedo={false} onUndo={() => {}} onRedo={() => {}}
           />
         )}
       </main>
