@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useEffect } from 'react';
 import { Project, ProjectGroup, MeasurementSnapshot, GlobalSettings, ProjectPlanning, ProjectJournal, WorkItem, ProjectExpense, BiddingProcess, CompanyCertificate } from '../types';
 import { treeService } from '../services/treeService';
@@ -81,6 +80,10 @@ export const useProjectState = () => {
     });
   }, []);
 
+  const updateProjects = (projects: Project[]) => bulkUpdate({ projects });
+  
+  const updateGroups = (groups: ProjectGroup[]) => bulkUpdate({ groups });
+  
   const updateBiddings = (biddings: BiddingProcess[]) => bulkUpdate({ biddings });
   
   const updateCertificates = (certs: CompanyCertificate[]) => 
@@ -94,6 +97,8 @@ export const useProjectState = () => {
     setActiveProjectId: (id: string | null) => setPresent(prev => ({ ...prev, activeProjectId: id, activeBiddingId: null })),
     setActiveBiddingId: (id: string | null) => setPresent(prev => ({ ...prev, activeBiddingId: id, activeProjectId: null })),
     updateActiveProject,
+    updateProjects,
+    updateGroups,
     updateBiddings,
     updateCertificates,
     bulkUpdate,
