@@ -25,7 +25,7 @@ interface WorkItemModalProps {
   onSave: (data: Partial<WorkItem>) => void;
   editingItem: WorkItem | null;
   type: ItemType;
-  categories: WorkItem[];
+  categories: (WorkItem & { depth: number })[];
   projectBdi: number;
 }
 
@@ -148,7 +148,9 @@ export const WorkItemModal: React.FC<WorkItemModalProps> = ({
                     <select className="w-full pl-11 pr-4 py-3.5 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 dark:text-white text-xs font-bold outline-none appearance-none focus:border-indigo-500 transition-all" value={formData.parentId || ''} onChange={e => setFormData({...formData, parentId: e.target.value || null})}>
                       <option value="">Nível Raiz (Principal)</option>
                       {categories.filter(c => c.id !== editingItem?.id).map(cat => (
-                        <option key={cat.id} value={cat.id}>{cat.wbs} - {cat.name}</option>
+                        <option key={cat.id} value={cat.id}>
+                          {"\u00A0".repeat(cat.depth * 3)} {cat.wbs} - {cat.name}
+                        </option>
                       ))}
                     </select>
                   </div>
@@ -173,7 +175,7 @@ export const WorkItemModal: React.FC<WorkItemModalProps> = ({
                   </div>
                   <div>
                     <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase mb-2 block tracking-widest">Quantidade</label>
-                    <input type="text" inputMode="decimal" className="w-full px-6 py-3.5 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 dark:text-white text-xs font-black text-center outline-none focus:border-indigo-500 transition-all" value={strQty} onChange={e => handleNumericChange(setStrQty, e.target.value, 'qty')} />
+                    <input type="text" inputMode="decimal" className="w-full px-4 py-3.5 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 dark:text-white text-xs font-black text-center outline-none focus:border-indigo-500 transition-all" value={strQty} onChange={e => handleNumericChange(setStrQty, e.target.value, 'qty')} />
                   </div>
                   
                   <div className="col-span-2 p-5 bg-slate-50 dark:bg-slate-800/40 rounded-3xl border-2 border-slate-100 dark:border-slate-800 space-y-4">

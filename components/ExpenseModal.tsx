@@ -11,7 +11,7 @@ interface ExpenseModalProps {
   editingItem: ProjectExpense | null;
   expenseType: ExpenseType;
   itemType: ItemType;
-  categories: ProjectExpense[];
+  categories: (ProjectExpense & { depth: number })[];
 }
 
 export const ExpenseModal: React.FC<ExpenseModalProps> = ({
@@ -159,7 +159,9 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
                   <select className="w-full pl-12 pr-4 py-4 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 dark:text-white text-xs font-bold outline-none appearance-none focus:border-indigo-500 transition-all" value={formData.parentId || ''} onChange={e => setFormData({...formData, parentId: e.target.value || null})}>
                     <option value="">Nível Principal</option>
                     {categories.filter(c => c.id !== editingItem?.id).map(cat => (
-                      <option key={cat.id} value={cat.id}>{cat.wbs} - {cat.description}</option>
+                      <option key={cat.id} value={cat.id}>
+                        {"\u00A0".repeat(cat.depth * 3)} {cat.wbs} - {cat.description}
+                      </option>
                     ))}
                   </select>
                 </div>

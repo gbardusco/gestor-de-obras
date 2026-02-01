@@ -78,6 +78,17 @@ export const ExpenseManager: React.FC<ExpenseManagerProps> = ({
     return tree.map((root, idx) => treeService.processExpensesRecursive(root as ProjectExpense, '', idx));
   }, [expenses, activeTab]);
 
+  // Lista de categorias ordenadas e processadas para o Select do Modal
+  const processedExpenseCategories = useMemo(() => {
+    if (activeTab === 'overview') return [];
+    const filtered = expenses.filter(e => e.type === activeTab);
+    const tree = treeService.buildTree(filtered);
+    const processed = tree.map((root, idx) => treeService.processExpensesRecursive(root as ProjectExpense, '', idx));
+    const allIds = new Set(filtered.map(e => e.id));
+    const flattened = treeService.flattenTree(processed, allIds);
+    return flattened.filter(e => e.itemType === 'category');
+  }, [expenses, activeTab]);
+
   const flattenedExpenses = useMemo(() => 
     treeService.flattenTree(currentExpenses, expandedIds)
   , [currentExpenses, expandedIds]);
@@ -284,7 +295,7 @@ export const ExpenseManager: React.FC<ExpenseManagerProps> = ({
         editingItem={editingExpense} 
         expenseType={activeTab === 'overview' ? 'material' : (activeTab as ExpenseType)} 
         itemType={modalItemType} 
-        categories={expenses.filter(e => e.type === (activeTab === 'overview' ? 'material' : activeTab) && e.itemType === 'category')}
+        categories={processedExpenseCategories as any}
       />
     </div>
   );

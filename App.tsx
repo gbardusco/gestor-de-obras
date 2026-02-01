@@ -39,6 +39,16 @@ const App: React.FC = () => {
   const [editingItem, setEditingItem] = useState<WorkItem | null>(null);
   const [targetParentId, setTargetParentId] = useState<string | null>(null);
 
+  // Processamento reativo das categorias para o Select do Modal
+  const processedCategories = useMemo(() => {
+    if (!activeProject) return [];
+    const tree = treeService.buildTree(activeProject.items);
+    const processed = tree.map((root, idx) => treeService.processRecursive(root, '', idx, activeProject.bdi));
+    const allIds = new Set(activeProject.items.map(i => i.id));
+    const flattened = treeService.flattenTree(processed, allIds);
+    return flattened.filter(item => item.type === 'category');
+  }, [activeProject?.items, activeProject?.bdi]);
+
   // Efeito para persistir o tema
   useEffect(() => {
     localStorage.setItem('promeasure_theme', isDarkMode ? 'dark' : 'light');
@@ -146,7 +156,7 @@ const App: React.FC = () => {
             }
           }} 
           editingItem={editingItem} type={modalType} 
-          categories={activeProject.items.filter(i => i.type === 'category')} 
+          categories={processedCategories as any} 
           projectBdi={activeProject.bdi} 
         />
       )}
