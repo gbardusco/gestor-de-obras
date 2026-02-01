@@ -113,7 +113,6 @@ export const PrintReport: React.FC<PrintReportProps> = ({ project, companyName, 
     /* Itens: Accent + 06 (~4% opacidade - ainda mais clara) */
     .row-item .cell-medi-period {
       background-color: ${theme.accent}0A !important; 
-      color: ${theme.accent} !important;
     }
 
     .footer-total-row {
