@@ -18,7 +18,7 @@ const App: React.FC = () => {
   const { 
     projects, biddings, groups, activeProject, activeProjectId, setActiveProjectId, 
     globalSettings, setGlobalSettings,
-    updateActiveProject, updateProjects, updateGroups, updateBiddings, updateCertificates, bulkUpdate
+    updateActiveProject, updateProject, updateGroups, updateBiddings, updateCertificates, bulkUpdate
   } = useProjectState();
 
   const [viewMode, setViewMode] = useState<ViewMode>('global-dashboard');
@@ -39,7 +39,7 @@ const App: React.FC = () => {
 
   const handleCreateProjectFromBidding = (bidding: any) => {
     const newProj = biddingService.convertToProject(bidding, globalSettings.defaultCompanyName);
-    updateProjects([...projects, newProj]);
+    updateProject([...projects, newProj]);
     handleOpenProject(newProj.id);
   };
 
@@ -52,7 +52,7 @@ const App: React.FC = () => {
         projects={projects} groups={groups} activeProjectId={activeProjectId}
         onOpenProject={handleOpenProject} onCreateProject={(gid) => {
           const np = projectService.createProject('Nova Obra', globalSettings.defaultCompanyName, gid || null);
-          updateProjects([...projects, np]);
+          updateProject([...projects, np]);
           handleOpenProject(np.id);
         }}
         isDarkMode={isDarkMode} toggleDarkMode={() => setIsDarkMode(!isDarkMode)}
@@ -70,9 +70,9 @@ const App: React.FC = () => {
         {viewMode === 'global-dashboard' && (
           <DashboardView projects={projects} groups={groups} onOpenProject={handleOpenProject} onCreateProject={(gid) => {
             const np = projectService.createProject('Nova Obra', globalSettings.defaultCompanyName, gid || null);
-            updateProjects([...projects, np]);
+            updateProject([...projects, np]);
             handleOpenProject(np.id);
-          }} onUpdateProjects={updateProjects} onUpdateGroups={updateGroups} onBulkUpdate={bulkUpdate} />
+          }} onupdateProject={updateProject} onUpdateGroups={updateGroups} onBulkUpdate={bulkUpdate} />
         )}
 
         {viewMode === 'bidding-view' && (

@@ -13,7 +13,7 @@ interface DashboardViewProps {
   groups: ProjectGroup[];
   onOpenProject: (id: string) => void;
   onCreateProject: (groupId?: string | null) => void;
-  onUpdateProjects: (p: Project[]) => void;
+  onupdateProject: (p: Project[]) => void;
   onUpdateGroups: (g: ProjectGroup[]) => void;
   onBulkUpdate: (updates: { projects?: Project[], groups?: ProjectGroup[] }) => void;
 }
@@ -53,7 +53,7 @@ export const DashboardView: React.FC<DashboardViewProps> = (props) => {
       props.onUpdateGroups(props.groups.map(g => g.id === editingGroup.id ? { ...g, name: newName.trim() } : g));
       setEditingGroup(null);
     } else if (editingProject) {
-      props.onUpdateProjects(props.projects.map(p => p.id === editingProject.id ? { ...p, name: newName.trim() } : p));
+      props.onupdateProject(props.projects.map(p => p.id === editingProject.id ? { ...p, name: newName.trim() } : p));
       setEditingProject(null);
     }
   };
@@ -65,7 +65,7 @@ export const DashboardView: React.FC<DashboardViewProps> = (props) => {
       props.onBulkUpdate({ groups: updatedGroups, projects: updatedProjects });
       if (currentGroupId === isDeleting.id) setCurrentGroupId(newParentId);
     } else {
-      props.onUpdateProjects(props.projects.filter(p => p.id !== isDeleting.id));
+      props.onupdateProject(props.projects.filter(p => p.id !== isDeleting.id));
     }
     setIsDeleting(null);
   };
