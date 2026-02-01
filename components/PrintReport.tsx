@@ -101,6 +101,14 @@ export const PrintReport: React.FC<PrintReportProps> = ({ project, companyName, 
       font-weight: 900;
     }
 
+    /* Estilo de fonte para itens vs categorias */
+    .row-item td {
+      font-weight: 300 !important;
+    }
+    .row-category td {
+      font-weight: 900 !important;
+    }
+
     .footer-total-row {
       background-color: ${theme.footer.bg} !important;
       color: ${theme.footer.text} !important;
@@ -214,25 +222,25 @@ export const PrintReport: React.FC<PrintReportProps> = ({ project, companyName, 
             {data.map((item) => {
               const isCat = item.type === 'category';
               return (
-                <tr key={item.id} className={isCat ? 'row-category' : ''}>
+                <tr key={item.id} className={isCat ? 'row-category' : 'row-item'}>
                   <td className="text-center">{item.wbs}</td>
                   <td className="text-center">{item.cod || '-'}</td>
                   <td className="text-center">{item.fonte || '-'}</td>
                   <td className="col-desc" style={{ paddingLeft: isCat ? '2pt' : (item.depth * 6 + 6) + 'pt' }}>{item.name}</td>
                   <td className="text-center">{isCat ? '-' : item.unit}</td>
                   <td className="text-right">{!isCat ? financial.formatVisual(item.unitPriceNoBdi, currencySymbol) : '-'}</td>
-                  <td className="text-right font-bold">{!isCat ? financial.formatVisual(item.unitPrice, currencySymbol) : '-'}</td>
+                  <td className="text-right">{!isCat ? financial.formatVisual(item.unitPrice, currencySymbol) : '-'}</td>
                   <td className="text-center">{!isCat ? item.contractQuantity : '-'}</td>
-                  <td className="text-right font-bold">{financial.formatVisual(item.contractTotal, currencySymbol)}</td>
+                  <td className="text-right">{financial.formatVisual(item.contractTotal, currencySymbol)}</td>
                   <td className="text-center">{!isCat ? item.previousQuantity : '-'}</td>
                   <td className="text-right">{financial.formatVisual(item.previousTotal, currencySymbol)}</td>
                   <td className="text-center cell-medi-period">{!isCat ? (item.currentQuantity || '-') : '-'}</td>
                   <td className="text-right cell-medi-period">{financial.formatVisual(item.currentTotal, currencySymbol)}</td>
-                  <td className="text-center font-bold">{!isCat ? item.accumulatedQuantity : '-'}</td>
-                  <td className="text-right font-bold">{financial.formatVisual(item.accumulatedTotal, currencySymbol)}</td>
+                  <td className="text-center">{!isCat ? item.accumulatedQuantity : '-'}</td>
+                  <td className="text-right">{financial.formatVisual(item.accumulatedTotal, currencySymbol)}</td>
                   <td className="text-center">{!isCat ? item.balanceQuantity : '-'}</td>
                   <td className="text-right">{financial.formatVisual(item.balanceTotal, currencySymbol)}</td>
-                  <td className="text-center font-bold">{item.accumulatedPercentage.toFixed(1)}%</td>
+                  <td className="text-center">{item.accumulatedPercentage.toFixed(1)}%</td>
                 </tr>
               );
             })}
@@ -242,9 +250,9 @@ export const PrintReport: React.FC<PrintReportProps> = ({ project, companyName, 
               <td colSpan={8} className="p-2 pr-4">TOTAIS CONSOLIDADOS</td>
               <td className="text-right">{financial.formatVisual(finalStats.contract, currencySymbol)}</td>
               <td></td>
-              <td className="text-right">{financial.formatVisual(finalStats.accumulated - finalStats.current, currencySymbol)}</td>
-              <td></td>
-              <td className="text-right" style={{ color: theme.accentText }}>{financial.formatVisual(finalStats.current, currencySymbol)}</td>
+              <td className="text-right">{financial.formatBRL(finalStats.accumulated - finalStats.current)}</td>
+              <td className="bg-medi-period"></td>
+              <td className="text-right bg-medi-period" style={{ color: theme.accentText }}>{financial.formatVisual(finalStats.current, currencySymbol)}</td>
               <td></td>
               <td className="text-right">{financial.formatVisual(finalStats.accumulated, currencySymbol)}</td>
               <td></td>
