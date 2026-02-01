@@ -12,10 +12,14 @@ interface ExpenseModalProps {
   expenseType: ExpenseType;
   itemType: ItemType;
   categories: (ProjectExpense & { depth: number })[];
+  // Fix: Added missing currencySymbol prop definition
+  currencySymbol?: string;
 }
 
 export const ExpenseModal: React.FC<ExpenseModalProps> = ({
-  isOpen, onClose, onSave, editingItem, expenseType, itemType: initialItemType, categories
+  isOpen, onClose, onSave, editingItem, expenseType, itemType: initialItemType, categories,
+  // Fix: Destructure currencySymbol with default value
+  currencySymbol = 'R$'
 }) => {
   const isRevenue = expenseType === 'revenue';
   const [activeItemType, setActiveItemType] = useState<ItemType>(initialItemType);
@@ -46,11 +50,12 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
     if (editingItem) {
       setFormData({ ...editingItem, paymentDate: editingItem.paymentDate || '' });
       setActiveItemType(editingItem.itemType);
-      setStrQty(financial.formatVisual(editingItem.quantity || 0));
-      setStrPrice(financial.formatVisual(editingItem.unitPrice || 0));
-      setStrAmount(financial.formatVisual(editingItem.amount || 0));
-      setStrDiscVal(financial.formatVisual(editingItem.discountValue || 0));
-      setStrDiscPct(financial.formatVisual(editingItem.discountPercentage || 0));
+      // Fix: Use currencySymbol for formatting and strip it to match maskCurrency expectations
+      setStrQty(financial.formatVisual(editingItem.quantity || 0, currencySymbol).replace(currencySymbol, '').trim());
+      setStrPrice(financial.formatVisual(editingItem.unitPrice || 0, currencySymbol).replace(currencySymbol, '').trim());
+      setStrAmount(financial.formatVisual(editingItem.amount || 0, currencySymbol).replace(currencySymbol, '').trim());
+      setStrDiscVal(financial.formatVisual(editingItem.discountValue || 0, currencySymbol).replace(currencySymbol, '').trim());
+      setStrDiscPct(financial.formatVisual(editingItem.discountPercentage || 0, '').trim());
     } else {
       setFormData({ 
         description: '', parentId: null, 
@@ -65,7 +70,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
       setStrQty('1,00'); setStrPrice('0,00'); setStrAmount('0,00');
       setStrDiscVal('0,00'); setStrDiscPct('0,00');
     }
-  }, [editingItem, initialItemType, isOpen, expenseType, isRevenue]);
+  }, [editingItem, initialItemType, isOpen, expenseType, isRevenue, currencySymbol]);
 
   const handleNumericChange = (setter: (v: string) => void, val: string, field: 'qty' | 'price' | 'amount' | 'discVal' | 'discPct') => {
     const masked = financial.maskCurrency(val);
@@ -81,24 +86,25 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
 
     if (field === 'qty' || field === 'price') {
       const actualDisc = financial.round(baseTotal * (dp / 100));
-      setStrDiscVal(financial.formatVisual(actualDisc));
-      setStrAmount(financial.formatVisual(financial.round(baseTotal - actualDisc)));
+      // Fix: Use currencySymbol for consistency and strip it for internal state
+      setStrDiscVal(financial.formatVisual(actualDisc, currencySymbol).replace(currencySymbol, '').trim());
+      setStrAmount(financial.formatVisual(financial.round(baseTotal - actualDisc), currencySymbol).replace(currencySymbol, '').trim());
     } 
     else if (field === 'discVal') {
       const newPct = baseTotal > 0 ? financial.round((num / baseTotal) * 100) : 0;
-      setStrDiscPct(financial.formatVisual(newPct));
-      setStrAmount(financial.formatVisual(financial.round(baseTotal - num)));
+      setStrDiscPct(financial.formatVisual(newPct, '').trim());
+      setStrAmount(financial.formatVisual(financial.round(baseTotal - num), currencySymbol).replace(currencySymbol, '').trim());
     }
     else if (field === 'discPct') {
       const newVal = financial.round(baseTotal * (num / 100));
-      setStrDiscVal(financial.formatVisual(newVal));
-      setStrAmount(financial.formatVisual(financial.round(baseTotal - newVal)));
+      setStrDiscVal(financial.formatVisual(newVal, currencySymbol).replace(currencySymbol, '').trim());
+      setStrAmount(financial.formatVisual(financial.round(baseTotal - newVal), currencySymbol).replace(currencySymbol, '').trim());
     }
     else if (field === 'amount') {
       const newDisc = financial.round(baseTotal - num);
-      setStrDiscVal(financial.formatVisual(newDisc));
+      setStrDiscVal(financial.formatVisual(newDisc, currencySymbol).replace(currencySymbol, '').trim());
       const newPct = baseTotal > 0 ? financial.round((newDisc / baseTotal) * 100) : 0;
-      setStrDiscPct(financial.formatVisual(newPct));
+      setStrDiscPct(financial.formatVisual(newPct, '').trim());
     }
   };
 
@@ -221,7 +227,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
                     <div>
                       <label className="text-[8px] font-black text-slate-400 uppercase mb-1 block tracking-widest">Desconto Valor</label>
                       <div className="relative">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] text-slate-400">R$</span>
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] text-slate-400">{currencySymbol}</span>
                         <input type="text" inputMode="decimal" className="w-full pl-8 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-xs font-bold text-right outline-none focus:border-rose-500 transition-all" value={strDiscVal} onChange={e => handleNumericChange(setStrDiscVal, e.target.value, 'discVal')} />
                       </div>
                     </div>

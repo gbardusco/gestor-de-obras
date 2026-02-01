@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { ProjectExpense } from '../types';
 import { financial } from '../utils/math';
@@ -37,10 +36,11 @@ interface ExpenseTreeTableProps {
   onReorder: (sourceId: string, targetId: string, position: 'before' | 'after' | 'inside') => void;
   onMoveManual: (id: string, direction: 'up' | 'down') => void;
   isReadOnly?: boolean;
+  currencySymbol?: string;
 }
 
 export const ExpenseTreeTable: React.FC<ExpenseTreeTableProps> = ({ 
-  data, expandedIds, onToggle, onEdit, onDelete, onAddChild, onUpdateTotal, onUpdateUnitPrice, onTogglePaid, onReorder, onMoveManual, isReadOnly 
+  data, expandedIds, onToggle, onEdit, onDelete, onAddChild, onUpdateTotal, onUpdateUnitPrice, onTogglePaid, onReorder, onMoveManual, isReadOnly, currencySymbol = 'R$'
 }) => {
   const isRevenueTable = data.some(d => d.type === 'revenue');
 
@@ -186,7 +186,7 @@ export const ExpenseTreeTable: React.FC<ExpenseTreeTableProps> = ({
                               type="text" 
                               className="w-full bg-transparent text-right font-mono outline-none focus:ring-1 focus:ring-indigo-500 rounded px-1" 
                               key={`${item.id}-up-${item.unitPrice}`}
-                              defaultValue={financial.formatVisual(item.unitPrice).replace('R$ ', '')} 
+                              defaultValue={financial.formatVisual(item.unitPrice, currencySymbol).replace(currencySymbol, '').trim()} 
                               onBlur={(e) => onUpdateUnitPrice(item.id, financial.parseLocaleNumber(e.target.value))} 
                             />
                           ) : '-'}
@@ -194,7 +194,7 @@ export const ExpenseTreeTable: React.FC<ExpenseTreeTableProps> = ({
                         <td className="p-2 text-right border-r border-slate-100 dark:border-slate-800 font-mono text-rose-500/80">
                           {item.itemType === 'item' && item.discountValue ? (
                             <div className="flex flex-col items-end">
-                              <span className="font-bold">-{financial.formatVisual(item.discountValue).replace('R$ ', '')}</span>
+                              <span className="font-bold">-{financial.formatVisual(item.discountValue, currencySymbol).replace(currencySymbol, '').trim()}</span>
                               <span className="text-[8px] font-black">{item.discountPercentage}% OFF</span>
                             </div>
                           ) : '-'}
@@ -206,10 +206,10 @@ export const ExpenseTreeTable: React.FC<ExpenseTreeTableProps> = ({
                                type="text" 
                                className={`w-full bg-transparent text-right font-black outline-none focus:ring-1 focus:ring-indigo-500 rounded px-1 ${isRevenueTable ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-800 dark:text-slate-100'}`} 
                                key={`${item.id}-amt-${item.amount}`}
-                               defaultValue={financial.formatVisual(item.amount).replace('R$ ', '')} 
+                               defaultValue={financial.formatVisual(item.amount, currencySymbol).replace(currencySymbol, '').trim()} 
                                onBlur={(e) => onUpdateTotal(item.id, financial.parseLocaleNumber(e.target.value))} 
                              />
-                           ) : <span className={`font-black ${isRevenueTable ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-800 dark:text-slate-100'}`}>{financial.formatVisual(item.amount)}</span>}
+                           ) : <span className={`font-black ${isRevenueTable ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-800 dark:text-slate-100'}`}>{financial.formatVisual(item.amount, currencySymbol)}</span>}
                         </td>
                       </tr>
                     )}
@@ -225,7 +225,7 @@ export const ExpenseTreeTable: React.FC<ExpenseTreeTableProps> = ({
                     Soma líquida consolidada (considerando abatimentos e descontos)
                   </td>
                   <td className={`p-4 text-right text-base tracking-tighter ${isRevenueTable ? 'text-emerald-400' : 'text-rose-400'}`}>
-                    {financial.formatVisual(totalTable)}
+                    {financial.formatVisual(totalTable, currencySymbol)}
                   </td>
                 </tr>
               </tbody>

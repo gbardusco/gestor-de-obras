@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Project, WorkItem, ItemType } from '../types';
 import { treeService } from '../services/treeService';
@@ -172,6 +171,7 @@ export const WbsView: React.FC<WbsViewProps> = ({
           onReorder={(src, tgt, pos) => !isReadOnly && onUpdateProject({ items: treeService.reorderItems(project.items, src, tgt, pos) })}
           searchQuery={searchQuery}
           isReadOnly={isReadOnly}
+          currencySymbol={project.theme?.currencySymbol || 'R$'}
         />
       </div>
 

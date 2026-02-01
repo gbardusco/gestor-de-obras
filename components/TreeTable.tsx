@@ -32,6 +32,7 @@ interface TreeTableProps {
   onReorder: (sourceId: string, targetId: string, position: 'before' | 'after' | 'inside') => void;
   searchQuery: string;
   isReadOnly?: boolean;
+  currencySymbol?: string;
 }
 
 export const TreeTable: React.FC<TreeTableProps> = ({ 
@@ -49,7 +50,8 @@ export const TreeTable: React.FC<TreeTableProps> = ({
   onUpdateCurrentTotal,
   onReorder,
   searchQuery,
-  isReadOnly = false
+  isReadOnly = false,
+  currencySymbol = 'R$'
 }) => {
   const filteredData = searchQuery.trim() 
     ? data.filter(item => item.name.toLowerCase().includes(searchQuery.toLowerCase()) || item.wbs.includes(searchQuery))
@@ -98,7 +100,7 @@ export const TreeTable: React.FC<TreeTableProps> = ({
                 <th rowSpan={2} className="p-4 border-r border-slate-800 dark:border-slate-900 w-20 text-center">Código</th>
                 <th rowSpan={2} className="p-4 border-r border-slate-800 dark:border-slate-900 text-left min-w-[450px]">Estrutura Analítica do Projeto (EAP)</th>
                 <th rowSpan={2} className="p-4 border-r border-slate-800 dark:border-slate-900 w-14 text-center">Und</th>
-                <th colSpan={2} className="p-2 border-r border-slate-800 dark:border-slate-900 bg-slate-800/50">Unitário (R$)</th>
+                <th colSpan={2} className="p-2 border-r border-slate-800 dark:border-slate-900 bg-slate-800/50">Unitário ({currencySymbol})</th>
                 <th colSpan={2} className="p-2 border-r border-slate-800 dark:border-slate-900 bg-slate-800/30">Planilha Contratual</th>
                 <th colSpan={2} className="p-2 border-r border-slate-800 dark:border-slate-900 bg-amber-900/20">Anterior</th>
                 <th colSpan={3} className="p-2 border-r border-slate-800 dark:border-slate-900 bg-blue-900/20">Período Corrente</th>
@@ -169,24 +171,26 @@ export const TreeTable: React.FC<TreeTableProps> = ({
                             </div>
                           </td>
                           <td className="p-2 text-center border-r border-slate-100 dark:border-slate-800 font-black text-slate-400 uppercase text-[9px]">{item.unit || '-'}</td>
-                          <td className="p-2 text-right border-r border-slate-100 dark:border-slate-800 text-slate-400 dark:text-slate-500 font-mono text-[10px]">{item.type === 'item' ? financial.formatVisual(item.unitPriceNoBdi) : '-'}</td>
-                          <td className="p-2 text-right border-r border-slate-100 dark:border-slate-800 font-mono font-bold text-slate-700 dark:text-slate-300">{item.type === 'item' ? financial.formatVisual(item.unitPrice) : '-'}</td>
+                          <td className="p-2 text-right border-r border-slate-100 dark:border-slate-800 text-slate-400 dark:text-slate-500 font-mono text-[10px]">{item.type === 'item' ? financial.formatVisual(item.unitPriceNoBdi, currencySymbol) : '-'}</td>
+                          <td className="p-2 text-right border-r border-slate-100 dark:border-slate-800 font-mono font-bold text-slate-700 dark:text-slate-300">{item.type === 'item' ? financial.formatVisual(item.unitPrice, currencySymbol) : '-'}</td>
                           <td className="p-2 text-center border-r border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-900/40 text-slate-500 dark:text-slate-400 font-mono">{item.type === 'item' ? item.contractQuantity : '-'}</td>
                           
                           <td className="p-2 text-right border-r border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-900/40">
                              {item.type === 'item' ? (
-                               <input 
-                                 disabled={isReadOnly} 
-                                 type="text" 
-                                 className="w-full bg-transparent text-right font-bold text-slate-900 dark:text-slate-100 outline-none focus:ring-1 focus:ring-indigo-500 rounded px-1" 
-                                 defaultValue={financial.formatVisual(item.contractTotal).replace('R$ ', '')} 
-                                 onBlur={(e) => onUpdateTotal(item.id, financial.parseLocaleNumber(e.target.value))} 
-                               />
-                             ) : <span className="font-bold text-slate-900 dark:text-slate-100">{financial.formatVisual(item.contractTotal)}</span>}
+                               <div className="flex items-center justify-end gap-1">
+                                 <input 
+                                   disabled={isReadOnly} 
+                                   type="text" 
+                                   className="w-full bg-transparent text-right font-bold text-slate-900 dark:text-slate-100 outline-none focus:ring-1 focus:ring-indigo-500 rounded px-1" 
+                                   defaultValue={financial.formatVisual(item.contractTotal, currencySymbol).replace(currencySymbol, '').trim()} 
+                                   onBlur={(e) => onUpdateTotal(item.id, financial.parseLocaleNumber(e.target.value))} 
+                                 />
+                               </div>
+                             ) : <span className="font-bold text-slate-900 dark:text-slate-100">{financial.formatVisual(item.contractTotal, currencySymbol)}</span>}
                           </td>
 
                           <td className="p-2 text-center border-r border-slate-100 dark:border-slate-800 bg-amber-50/10 dark:bg-amber-900/10 text-slate-400 dark:text-slate-500 font-mono">{item.type === 'item' ? item.previousQuantity : '-'}</td>
-                          <td className="p-2 text-right border-r border-slate-100 dark:border-slate-800 bg-amber-50/10 dark:bg-amber-900/10 text-slate-400 dark:text-slate-500">{financial.formatVisual(item.previousTotal)}</td>
+                          <td className="p-2 text-right border-r border-slate-100 dark:border-slate-800 bg-amber-50/10 dark:bg-amber-900/10 text-slate-400 dark:text-slate-500">{financial.formatVisual(item.previousTotal, currencySymbol)}</td>
                           <td className="p-2 text-center border-r border-slate-100 dark:border-slate-800 bg-blue-50/20 dark:bg-blue-900/10">
                             {item.type === 'item' ? (
                               <div className="flex items-center justify-center gap-1">
@@ -207,17 +211,17 @@ export const TreeTable: React.FC<TreeTableProps> = ({
                                  disabled={isReadOnly} 
                                  type="text" 
                                  className="w-full bg-transparent text-right font-black text-blue-700 dark:text-blue-300 outline-none focus:ring-1 focus:ring-blue-500 rounded px-1" 
-                                 defaultValue={financial.formatVisual(item.currentTotal).replace('R$ ', '')} 
+                                 defaultValue={financial.formatVisual(item.currentTotal, currencySymbol).replace(currencySymbol, '').trim()} 
                                  onBlur={(e) => onUpdateCurrentTotal(item.id, financial.parseLocaleNumber(e.target.value))} 
                                />
-                             ) : <span className="font-black text-blue-700 dark:text-blue-300">{financial.formatVisual(item.currentTotal)}</span>}
+                             ) : <span className="font-black text-blue-700 dark:text-blue-300">{financial.formatVisual(item.currentTotal, currencySymbol)}</span>}
                           </td>
 
                           <td className="p-2 text-center border-r border-slate-100 dark:border-slate-800 bg-emerald-50/10 dark:bg-emerald-900/10 font-bold text-slate-500 dark:text-slate-400 font-mono">{item.type === 'item' ? item.accumulatedQuantity : '-'}</td>
-                          <td className="p-2 text-right border-r border-slate-100 dark:border-slate-800 bg-emerald-50/10 dark:bg-emerald-900/10 font-black text-emerald-700 dark:text-emerald-400">{financial.formatVisual(item.accumulatedTotal)}</td>
+                          <td className="p-2 text-right border-r border-slate-100 dark:border-slate-800 bg-emerald-50/10 dark:bg-emerald-900/10 font-black text-emerald-700 dark:text-emerald-400">{financial.formatVisual(item.accumulatedTotal, currencySymbol)}</td>
                           <td className="p-2 text-center border-r border-slate-100 dark:border-slate-800 bg-emerald-50/30 dark:bg-emerald-900/20 font-black text-emerald-800 dark:text-emerald-100 text-[10px]">{item.accumulatedPercentage}%</td>
                           <td className="p-2 text-center border-r border-slate-100 dark:border-slate-800 bg-rose-50/10 dark:bg-rose-900/10 font-bold text-rose-600/60 dark:text-rose-400/60 font-mono">{item.type === 'item' ? item.balanceQuantity : '-'}</td>
-                          <td className="p-2 text-right bg-rose-50/20 dark:bg-rose-900/10 font-black text-rose-800 dark:text-rose-300">{financial.formatVisual(item.balanceTotal)}</td>
+                          <td className="p-2 text-right bg-rose-50/20 dark:bg-rose-900/10 font-black text-rose-800 dark:text-rose-300">{financial.formatVisual(item.balanceTotal, currencySymbol)}</td>
                           <td className="p-2 text-center font-black text-slate-700 dark:text-slate-200">{item.accumulatedPercentage}%</td>
                         </tr>
                       )}
@@ -229,15 +233,15 @@ export const TreeTable: React.FC<TreeTableProps> = ({
                     <td colSpan={7} className="p-5 text-right uppercase tracking-[0.2em] text-[10px] border-r border-white/10">Consolidado:</td>
                     <td colSpan={2} className="p-4 border-r border-white/10 opacity-30 italic">Preços Médios</td>
                     <td className="p-4 border-r border-white/10"></td>
-                    <td className="p-4 border-r border-white/10 text-right text-base tracking-tighter">{financial.formatVisual(financial.sum(filteredData.filter(i => i.depth === 0).map(i => i.contractTotal)))}</td>
-                    <td colSpan={2} className="p-4 border-r border-white/10 text-right opacity-50">{financial.formatVisual(financial.sum(filteredData.filter(i => i.depth === 0).map(i => i.previousTotal)))}</td>
+                    <td className="p-4 border-r border-white/10 text-right text-base tracking-tighter">{financial.formatVisual(financial.sum(filteredData.filter(i => i.depth === 0).map(i => i.contractTotal)), currencySymbol)}</td>
+                    <td colSpan={2} className="p-4 border-r border-white/10 text-right opacity-50">{financial.formatVisual(financial.sum(filteredData.filter(i => i.depth === 0).map(i => i.previousTotal)), currencySymbol)}</td>
                     <td colSpan={2} className="p-4 border-r border-white/10"></td>
-                    <td className="p-4 border-r border-white/10 text-right text-blue-400 text-base tracking-tighter">{financial.formatVisual(financial.sum(filteredData.filter(i => i.depth === 0).map(i => i.currentTotal)))}</td>
+                    <td className="p-4 border-r border-white/10 text-right text-blue-400 text-base tracking-tighter">{financial.formatVisual(financial.sum(filteredData.filter(i => i.depth === 0).map(i => i.currentTotal)), currencySymbol)}</td>
                     <td className="p-4 border-r border-white/10"></td>
-                    <td className="p-4 border-r border-white/10 text-right text-emerald-400 text-base tracking-tighter">{financial.formatVisual(financial.sum(filteredData.filter(i => i.depth === 0).map(i => i.accumulatedTotal)))}</td>
+                    <td className="p-4 border-r border-white/10 text-right text-emerald-400 text-base tracking-tighter">{financial.formatVisual(financial.sum(filteredData.filter(i => i.depth === 0).map(i => i.accumulatedTotal)), currencySymbol)}</td>
                     <td className="p-4 border-r border-white/10"></td>
                     <td className="p-4 border-r border-white/10"></td>
-                    <td className="p-4 border-r border-white/10 text-right text-rose-400 text-base tracking-tighter">{financial.formatVisual(financial.sum(filteredData.filter(i => i.depth === 0).map(i => i.balanceTotal)))}</td>
+                    <td className="p-4 border-r border-white/10 text-right text-rose-400 text-base tracking-tighter">{financial.formatVisual(financial.sum(filteredData.filter(i => i.depth === 0).map(i => i.balanceTotal)), currencySymbol)}</td>
                     <td className="p-4 text-center">100%</td>
                   </tr>
                 </tbody>

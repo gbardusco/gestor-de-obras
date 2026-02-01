@@ -1,6 +1,5 @@
-
 import React from 'react';
-import { Building2, ShieldCheck, Trash2, Cog } from 'lucide-react';
+import { Building2, ShieldCheck, Trash2, Cog, Coins } from 'lucide-react';
 import { GlobalSettings } from '../types';
 
 interface SettingsViewProps {
@@ -61,6 +60,18 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ settings, onUpdate, 
                   <option value="pt-BR">Português (Brasil)</option>
                   <option value="en-US">English (US)</option>
                 </select>
+              </div>
+              <div>
+                <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase mb-2 block tracking-widest ml-1">Símbolo Monetário</label>
+                <div className="relative">
+                  <Coins className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                  <input 
+                    className="w-full pl-12 pr-6 py-4 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-white text-sm font-black focus:border-indigo-500 outline-none transition-all"
+                    value={settings.currencySymbol}
+                    onChange={(e) => onUpdate({ ...settings, currencySymbol: e.target.value })}
+                    placeholder="R$"
+                  />
+                </div>
               </div>
             </div>
           </section>

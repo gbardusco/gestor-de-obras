@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useEffect } from 'react';
 import { Project, ProjectGroup, MeasurementSnapshot, GlobalSettings, ProjectPlanning, ProjectJournal, WorkItem, ProjectExpense, BiddingProcess, CompanyCertificate, DEFAULT_THEME } from '../types';
 import { treeService } from '../services/treeService';
@@ -14,7 +13,6 @@ interface State {
   globalSettings: GlobalSettings;
 }
 
-// Added missing currencySymbol property to satisfy GlobalSettings interface
 const INITIAL_SETTINGS: GlobalSettings = {
   defaultCompanyName: 'Sua Empresa de Engenharia',
   companyCnpj: '',
@@ -47,10 +45,10 @@ export const useProjectState = () => {
           location: p.location || '',
           planning: p.planning || { ...INITIAL_PLANNING },
           journal: p.journal || { ...INITIAL_JOURNAL },
-          // Migração profunda do tema para evitar erro de undefined em propriedades novas
           theme: {
             ...DEFAULT_THEME,
             ...(p.theme || {}),
+            currencySymbol: p.theme?.currencySymbol || parsed.globalSettings?.currencySymbol || 'R$',
             header: { ...DEFAULT_THEME.header, ...(p.theme?.header || {}) },
             category: { ...DEFAULT_THEME.category, ...(p.theme?.category || {}) },
             footer: { ...DEFAULT_THEME.footer, ...(p.theme?.footer || {}) },
@@ -58,7 +56,10 @@ export const useProjectState = () => {
           }
         })),
         biddings: parsed.biddings || [],
-        globalSettings: parsed.globalSettings || INITIAL_SETTINGS
+        globalSettings: {
+          ...INITIAL_SETTINGS,
+          ...(parsed.globalSettings || {})
+        }
       };
     }
     return {

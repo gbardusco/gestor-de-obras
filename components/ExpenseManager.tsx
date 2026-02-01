@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { ProjectExpense, ExpenseType, WorkItem, ItemType, Project } from '../types';
 import { financial } from '../utils/math';
@@ -149,10 +148,10 @@ export const ExpenseManager: React.FC<ExpenseManagerProps> = ({
       <input type="file" ref={fileInputRef} className="hidden" accept=".xlsx, .xls" onChange={handleImportExpenses} />
       
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-        <KpiSummary label="Receita Total" value={stats.revenue} icon={<ArrowRightLeft size={20}/>} color="emerald" subText="Entradas Confirmadas" />
-        <KpiSummary label="Custo Total" value={stats.totalOut} icon={<TrendingDown size={20}/>} color="rose" subText="Comprometido MO+Mat" />
-        <KpiSummary label="Valor Pago" value={stats.paidOut} icon={<CheckCircle2 size={20}/>} color="blue" subText="Liquidado" />
-        <KpiSummary label="A Pagar" value={stats.unpaidOut} icon={<Clock size={20}/>} color="amber" subText="Pendente" />
+        <KpiSummary label="Receita Total" value={stats.revenue} icon={<ArrowRightLeft size={20}/>} color="emerald" subText="Entradas Confirmadas" currencySymbol={project.theme?.currencySymbol} />
+        <KpiSummary label="Custo Total" value={stats.totalOut} icon={<TrendingDown size={20}/>} color="rose" subText="Comprometido MO+Mat" currencySymbol={project.theme?.currencySymbol} />
+        <KpiSummary label="Valor Pago" value={stats.paidOut} icon={<CheckCircle2 size={20}/>} color="blue" subText="Liquidado" currencySymbol={project.theme?.currencySymbol} />
+        <KpiSummary label="A Pagar" value={stats.unpaidOut} icon={<Clock size={20}/>} color="amber" subText="Pendente" currencySymbol={project.theme?.currencySymbol} />
         
         <div className={`p-6 rounded-[2rem] border shadow-xl transition-all flex flex-col justify-between ${stats.profit >= 0 ? 'bg-indigo-600 text-white' : 'bg-rose-600 text-white'}`}>
           <div className="flex justify-between items-start mb-4">
@@ -160,7 +159,7 @@ export const ExpenseManager: React.FC<ExpenseManagerProps> = ({
             <span className="text-[9px] font-black uppercase tracking-widest opacity-80">Resultado Líquido</span>
           </div>
           <div>
-            <p className="text-2xl font-black tracking-tighter leading-none">{financial.formatBRL(stats.profit)}</p>
+            <p className="text-2xl font-black tracking-tighter leading-none">{financial.formatVisual(stats.profit, project.theme?.currencySymbol || 'R$')}</p>
             <p className="text-[10px] font-bold uppercase mt-2 opacity-70">Margem: {stats.marginPercent.toFixed(1)}%</p>
           </div>
         </div>
@@ -197,7 +196,7 @@ export const ExpenseManager: React.FC<ExpenseManagerProps> = ({
       </div>
 
       {activeTab === 'overview' ? (
-        <FinancialOverview stats={stats} />
+        <FinancialOverview stats={stats} currencySymbol={project.theme?.currencySymbol} />
       ) : (
         <div className="space-y-4">
           <div className="flex items-center gap-2 no-print">
@@ -243,6 +242,7 @@ export const ExpenseManager: React.FC<ExpenseManagerProps> = ({
             onReorder={(src, tgt, pos) => onUpdateExpenses(treeService.reorderItems(expenses, src, tgt, pos))}
             onMoveManual={(id, dir) => onUpdateExpenses(treeService.moveInSiblings(expenses, id, dir))}
             isReadOnly={isReadOnly}
+            currencySymbol={project.theme?.currencySymbol || 'R$'}
           />
         </div>
       )}
@@ -296,6 +296,7 @@ export const ExpenseManager: React.FC<ExpenseManagerProps> = ({
         expenseType={activeTab === 'overview' ? 'material' : (activeTab as ExpenseType)} 
         itemType={modalItemType} 
         categories={processedExpenseCategories as any}
+        currencySymbol={project.theme?.currencySymbol || 'R$'}
       />
     </div>
   );
@@ -315,7 +316,7 @@ const SummaryStat = ({ label, count, color }: any) => {
   );
 }
 
-const FinancialOverview = ({ stats }: { stats: any }) => (
+const FinancialOverview = ({ stats, currencySymbol }: { stats: any, currencySymbol?: string }) => (
   <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
     <div className="bg-white dark:bg-slate-900 p-8 rounded-[3rem] border border-slate-200 dark:border-slate-800 shadow-sm">
       <div className="flex items-center gap-3 mb-8">
@@ -333,7 +334,7 @@ const FinancialOverview = ({ stats }: { stats: any }) => (
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
             <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Custo Real</span>
-            <span className="text-lg font-black dark:text-white">{financial.formatBRL(stats.totalOut)}</span>
+            <span className="text-lg font-black dark:text-white">{financial.formatVisual(stats.totalOut, currencySymbol || 'R$')}</span>
           </div>
         </div>
 
@@ -365,11 +366,11 @@ const FinancialOverview = ({ stats }: { stats: any }) => (
       </div>
       <div className="flex-1 flex flex-col justify-center space-y-10">
          <div className="space-y-4">
-            <div className="flex justify-between items-end"><span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Total Recebido</span><span className="text-sm font-black text-emerald-600">{financial.formatBRL(stats.revenue)}</span></div>
+            <div className="flex justify-between items-end"><span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Total Recebido</span><span className="text-sm font-black text-emerald-600">{financial.formatVisual(stats.revenue, currencySymbol || 'R$')}</span></div>
             <div className="h-3 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden"><div className="h-full bg-emerald-500 w-full" /></div>
          </div>
          <div className="space-y-4">
-            <div className="flex justify-between items-end"><span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Custos Gastos</span><span className="text-sm font-black text-rose-500">{financial.formatBRL(stats.totalOut)}</span></div>
+            <div className="flex justify-between items-end"><span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Custos Gastos</span><span className="text-sm font-black text-rose-500">{financial.formatVisual(stats.totalOut, currencySymbol || 'R$')}</span></div>
             <div className="h-3 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden"><div className="h-full bg-rose-500" style={{ width: `${stats.revenue > 0 ? Math.min(100, (stats.totalOut / stats.revenue) * 100) : 0}%` }} /></div>
          </div>
       </div>
@@ -381,7 +382,7 @@ const TabTrigger = ({ active, onClick, label, icon }: any) => (
   <button type="button" onClick={onClick} className={`flex items-center gap-2 px-6 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${active ? 'bg-white dark:bg-slate-700 text-indigo-600 shadow-md' : 'text-slate-500'}`}>{icon} {label}</button>
 );
 
-const KpiSummary = ({ label, value, icon, color, subText }: any) => {
+const KpiSummary = ({ label, value, icon, color, subText, currencySymbol }: any) => {
   const colors: any = { indigo: 'text-indigo-600 dark:text-indigo-400', emerald: 'text-emerald-600 dark:text-emerald-400', rose: 'text-rose-600 dark:text-rose-400', blue: 'text-blue-600 dark:text-blue-400', amber: 'text-amber-600 dark:text-amber-400' };
   return (
     <div className="p-6 rounded-[2rem] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm flex flex-col justify-between">
@@ -389,7 +390,7 @@ const KpiSummary = ({ label, value, icon, color, subText }: any) => {
         <div className="p-2 bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-500 rounded-lg">{icon}</div>
         <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">{label}</span>
       </div>
-      <div><p className={`text-xl font-black tracking-tighter ${colors[color]}`}>{financial.formatBRL(value)}</p><p className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase mt-1">{subText}</p></div>
+      <div><p className={`text-xl font-black tracking-tighter ${colors[color]}`}>{financial.formatVisual(value, currencySymbol || 'R$')}</p><p className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase mt-1">{subText}</p></div>
     </div>
   );
 };

@@ -21,6 +21,7 @@ export const financial = {
   /**
    * Formata um número com símbolo customizado.
    * Se nenhum símbolo for passado, usa R$.
+   * Garante que o símbolo sempre acompanhe o valor.
    */
   formatVisual: (value: number, symbol: string = 'R$'): string => {
     const formatted = new Intl.NumberFormat('pt-BR', {
