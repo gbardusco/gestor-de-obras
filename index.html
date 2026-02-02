@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -36,7 +37,7 @@
         @media print {
           @page { 
             size: A4 landscape; 
-            margin: 0 !important; 
+            margin: 18mm 8mm !important; /* Vertical maior (18mm), Horizontal menor (8mm) */
           }
 
           /* Reset de Layout: Impede vazamento de cores e alturas fixas */
@@ -71,9 +72,9 @@
           .print-report-area {
             display: block !important;
             visibility: visible !important;
-            width: 297mm !important;
+            width: 100% !important;
             background-color: white !important;
-            padding: 10mm !important;
+            padding: 0 !important;
             box-sizing: border-box !important;
             position: relative !important;
             margin: 0 !important;
@@ -92,18 +93,17 @@
     "react": "https://esm.sh/react@18.3.1",
     "react/": "https://esm.sh/react@18.3.1/",
     "react-dom": "https://esm.sh/react-dom@18.3.1",
-    "react-dom/": "https://esm.sh/react-dom@18.3.1/",
     "react-dom/client": "https://esm.sh/react-dom@18.3.1/client",
     "lucide-react": "https://esm.sh/lucide-react@0.460.0?external=react,react-dom",
     "xlsx": "https://esm.sh/xlsx@0.18.5",
     "zod": "https://esm.sh/zod@3.23.8",
     "@hello-pangea/dnd": "https://esm.sh/@hello-pangea/dnd@17.0.0?external=react,react-dom",
     "vite": "https://esm.sh/vite@^7.3.1",
-    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2"
+    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.4/"
   }
 }
 </script>
-<link rel="stylesheet" href="/index.css">
 </head>
 <body class="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100">
     <div id="root"></div>

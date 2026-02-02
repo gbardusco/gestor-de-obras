@@ -29,7 +29,6 @@ export const PrintReport: React.FC<PrintReportProps> = ({ project, companyName, 
     kpiHighlight: { ...DEFAULT_THEME.kpiHighlight, ...(project.theme?.kpiHighlight || {}) }
   };
 
-  const REPORT_WIDTH = "800pt";
   const currencySymbol = theme.currencySymbol || 'R$';
 
   const finalStats = {
@@ -38,7 +37,6 @@ export const PrintReport: React.FC<PrintReportProps> = ({ project, companyName, 
     current: project.currentTotalOverride ?? stats.current,
   };
 
-  // Enclausuramos todo o estilo em @media print para não vazar para a UI do sistema
   const dynamicStyles = `
     @media print {
       .print-report-area {
@@ -46,15 +44,15 @@ export const PrintReport: React.FC<PrintReportProps> = ({ project, companyName, 
         color: #000 !important;
         background-color: white !important;
         margin: 0 !important;
-        padding: 10mm !important;
+        padding: 0 !important;
         height: auto !important;
         min-height: 0 !important;
-        display: block !important; /* Visível apenas no print */
+        display: block !important;
       }
 
       .report-master-container {
-        width: ${REPORT_WIDTH} !important;
-        margin: 0 auto !important;
+        width: 100% !important; /* Preenche a largura definida pelo @page */
+        margin: 0 !important;
         background: white !important;
         padding-bottom: 0 !important;
         height: auto !important;
@@ -81,7 +79,7 @@ export const PrintReport: React.FC<PrintReportProps> = ({ project, companyName, 
 
       .report-table th, .report-table td {
         border: 0.4pt solid ${theme.border} !important;
-        padding: 1.5pt 2pt !important;
+        padding: 2.5pt 2pt !important;
         font-size: 5pt !important;
         text-transform: uppercase;
         overflow: hidden;
@@ -95,6 +93,8 @@ export const PrintReport: React.FC<PrintReportProps> = ({ project, companyName, 
         color: ${theme.header.text} !important;
         font-weight: 900;
         text-align: center;
+        padding-top: 4pt !important;
+        padding-bottom: 4pt !important;
       }
 
       .bg-medi-period {
@@ -128,6 +128,8 @@ export const PrintReport: React.FC<PrintReportProps> = ({ project, companyName, 
         color: ${theme.footer.text} !important;
         font-weight: 700;
         text-align: right;
+        padding-top: 4pt !important;
+        padding-bottom: 4pt !important;
       }
 
       .kpi-box {
