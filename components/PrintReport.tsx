@@ -178,12 +178,12 @@ export const PrintReport: React.FC<PrintReportProps> = ({ project, companyName, 
         </div>
 
         {/* INFOS OBRA */}
-        <div className="flex border mb-4 text-[6pt] font-black uppercase overflow-hidden" style={{ borderColor: theme.border }}>
-          <div className="flex-1 p-2 border-r" style={{ borderColor: theme.border }}>
+        <div className="flex mb-4 text-[6pt] font-black uppercase overflow-hidden">
+          <div className="flex-1 p-2">
             <div className="text-[4.5pt] text-slate-400">Empreendimento</div>
             <div>{project.name}</div>
           </div>
-          <div className="flex-1 p-2 border-r" style={{ borderColor: theme.border }}>
+          <div className="flex-1 p-2">
             <div className="text-[4.5pt] text-slate-400">Localização</div>
             <div>{project.location || '-'}</div>
           </div>
