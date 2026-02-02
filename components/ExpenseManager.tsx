@@ -77,7 +77,6 @@ export const ExpenseManager: React.FC<ExpenseManagerProps> = ({
     return tree.map((root, idx) => treeService.processExpensesRecursive(root as ProjectExpense, '', idx));
   }, [expenses, activeTab]);
 
-  // Lista de categorias ordenadas e processadas para o Select do Modal
   const processedExpenseCategories = useMemo(() => {
     if (activeTab === 'overview') return [];
     const filtered = expenses.filter(e => e.type === activeTab);
@@ -109,14 +108,30 @@ export const ExpenseManager: React.FC<ExpenseManagerProps> = ({
 
   const confirmImport = () => {
     if (!importSummary) return;
-    onAddMany(importSummary.expenses);
+
+    // LÓGICA DE PREVENÇÃO DE DUPLICAÇÃO:
+    // Se o usuário está na aba "Materiais", removemos os materiais atuais e inserimos os novos.
+    // Se ele está em "Overview", ele provavelmente está subindo um arquivo geral, então substituímos tudo.
+    
+    let updatedExpenses = [...expenses];
+    
+    if (activeTab === 'overview') {
+      updatedExpenses = importSummary.expenses;
+    } else {
+      // Remove apenas os itens do tipo que estamos visualizando para substituir pela nova lista do Excel
+      const otherTypes = expenses.filter(e => e.type !== activeTab);
+      const newItemsOfActiveTab = importSummary.expenses.filter(e => e.type === activeTab);
+      updatedExpenses = [...otherTypes, ...newItemsOfActiveTab];
+    }
+
+    onUpdateExpenses(updatedExpenses);
+    
     const cats = importSummary.expenses.filter(ex => ex.itemType === 'category').map(ex => ex.id);
     setExpandedIds(new Set([...Array.from(expandedIds), ...cats]));
     setImportSummary(null);
   };
 
   const handleSaveExpense = (data: Partial<ProjectExpense>) => {
-    const typeForNew = (activeTab === 'overview' || activeTab === 'revenue') ? 'revenue' : activeTab;
     if (editingExpense) {
       onUpdate(editingExpense.id, data);
     } else {
@@ -135,7 +150,7 @@ export const ExpenseManager: React.FC<ExpenseManagerProps> = ({
         quantity: data.quantity || 1,
         unitPrice: data.unitPrice || 0,
         discountValue: data.discountValue || 0,
-        discountPercentage: data.discountPercentage || 0,
+        discountPercentage: 0,
         amount: data.amount || 0,
         isPaid: data.isPaid || false
       };
@@ -270,15 +285,18 @@ export const ExpenseManager: React.FC<ExpenseManagerProps> = ({
                 <SummaryStat label="Materiais" count={importSummary.stats.byType.material} color="indigo" />
                 <SummaryStat label="Receitas" count={importSummary.stats.byType.revenue} color="emerald" />
               </div>
-              <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800">
-                 <p className="text-xs text-slate-500 font-medium text-center">
-                   Os registros acima foram detectados automaticamente e serão distribuídos nas respectivas abas de gestão financeira.
+              
+              <div className="p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-100 rounded-2xl">
+                 <p className="text-[10px] font-bold text-amber-700 text-center uppercase leading-tight">
+                   {activeTab === 'overview' 
+                     ? "A confirmação irá SUBSTITUIR TODO o financeiro atual pelos dados do Excel."
+                     : `A confirmação irá substituir apenas os registros de "${activeTab}" da planilha atual.`}
                  </p>
               </div>
             </div>
             <div className="px-8 py-6 bg-slate-50 dark:bg-slate-800/80 border-t border-slate-100 dark:border-slate-800 flex flex-col gap-3 shrink-0">
               <button onClick={confirmImport} className="w-full py-5 bg-emerald-600 text-white rounded-2xl text-[11px] font-black uppercase tracking-widest shadow-xl shadow-emerald-500/20 active:scale-95 transition-all flex items-center justify-center gap-2">
-                <CheckCircle2 size={18} /> Efetivar Todos os Lançamentos
+                <CheckCircle2 size={18} /> Confirmar e Substituir
               </button>
               <button onClick={() => setImportSummary(null)} className="w-full py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
                 Cancelar
@@ -366,11 +384,11 @@ const FinancialOverview = ({ stats, currencySymbol }: { stats: any, currencySymb
       </div>
       <div className="flex-1 flex flex-col justify-center space-y-10">
          <div className="space-y-4">
-            <div className="flex justify-between items-end"><span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Total Recebido</span><span className="text-sm font-black text-emerald-600">{financial.formatVisual(stats.revenue, currencySymbol || 'R$')}</span></div>
+            <div className="flex justify-between items-end"><span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Total Recebido</span><span className="text-sm font-black text-emerald-600">{financial.formatBRL(stats.revenue)}</span></div>
             <div className="h-3 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden"><div className="h-full bg-emerald-500 w-full" /></div>
          </div>
          <div className="space-y-4">
-            <div className="flex justify-between items-end"><span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Custos Gastos</span><span className="text-sm font-black text-rose-500">{financial.formatVisual(stats.totalOut, currencySymbol || 'R$')}</span></div>
+            <div className="flex justify-between items-end"><span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Custos Gastos</span><span className="text-sm font-black text-rose-500">{financial.formatBRL(stats.totalOut)}</span></div>
             <div className="h-3 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden"><div className="h-full bg-rose-500" style={{ width: `${stats.revenue > 0 ? Math.min(100, (stats.totalOut / stats.revenue) * 100) : 0}%` }} /></div>
          </div>
       </div>
