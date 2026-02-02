@@ -32,119 +32,132 @@ export const PrintReport: React.FC<PrintReportProps> = ({ project, companyName, 
   const REPORT_WIDTH = "800pt";
   const currencySymbol = theme.currencySymbol || 'R$';
 
-  // Usar overrides do projeto para os totais consolidados se existirem
   const finalStats = {
     ...stats,
     contract: project.contractTotalOverride ?? stats.contract,
     current: project.currentTotalOverride ?? stats.current,
   };
 
+  // Enclausuramos todo o estilo em @media print para não vazar para a UI do sistema
   const dynamicStyles = `
-    .print-report-area {
-      font-family: '${theme.fontFamily}', sans-serif !important;
-      color: #000 !important;
-      background-color: white !important;
-      margin: 0 !important;
-      padding: 10mm !important;
-      height: auto !important;
-      min-height: 0 !important;
-    }
+    @media print {
+      .print-report-area {
+        font-family: '${theme.fontFamily}', sans-serif !important;
+        color: #000 !important;
+        background-color: white !important;
+        margin: 0 !important;
+        padding: 10mm !important;
+        height: auto !important;
+        min-height: 0 !important;
+        display: block !important; /* Visível apenas no print */
+      }
 
-    .report-master-container {
-      width: ${REPORT_WIDTH} !important;
-      margin: 0 auto !important;
-      background: white !important;
-      padding-bottom: 0 !important;
-      height: auto !important;
-      min-height: 0 !important;
-    }
+      .report-master-container {
+        width: ${REPORT_WIDTH} !important;
+        margin: 0 auto !important;
+        background: white !important;
+        padding-bottom: 0 !important;
+        height: auto !important;
+        min-height: 0 !important;
+        display: block !important;
+      }
 
-    .report-table {
-      border-collapse: collapse !important;
-      width: 100% !important;
-      table-layout: fixed !important;
-      box-sizing: border-box !important;
-    }
+      .report-table {
+        border-collapse: collapse !important;
+        width: 100% !important;
+        table-layout: fixed !important;
+        box-sizing: border-box !important;
+        display: table !important;
+      }
 
-    .report-table th, .report-table td {
-      border: 0.4pt solid ${theme.border} !important;
-      padding: 1.5pt 2pt !important;
-      font-size: 5pt !important;
-      text-transform: uppercase;
-      overflow: hidden;
-      white-space: nowrap;
-      text-overflow: ellipsis;
-      box-sizing: border-box !important;
-    }
+      .report-table thead {
+        display: table-header-group !important;
+      }
 
-    .report-table thead th {
-      background-color: ${theme.header.bg};
-      color: ${theme.header.text} !important;
-      font-weight: 900;
-      text-align: center;
-    }
+      .report-table tr {
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+      }
 
-    /* HEADER DA COLUNA DE MEDIÇÃO COM COR DE DESTAQUE INTEGRAL */
-    .bg-medi-period {
-      background-color: ${theme.accent} !important;
-      color: ${theme.accentText} !important;
-    }
+      .report-table th, .report-table td {
+        border: 0.4pt solid ${theme.border} !important;
+        padding: 1.5pt 2pt !important;
+        font-size: 5pt !important;
+        text-transform: uppercase;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        box-sizing: border-box !important;
+      }
 
-    /* ESTILO DE LINHAS: CATEGORIAS VS ITENS */
-    .row-category {
-      background-color: ${theme.category.bg} !important;
-      color: ${theme.category.text} !important;
-    }
-    
-    .row-category td {
-      font-weight: 700 !important; /* CATEGORIAS SEMPRE BOLD */
-    }
+      .report-table thead th {
+        background-color: ${theme.header.bg} !important;
+        color: ${theme.header.text} !important;
+        font-weight: 900;
+        text-align: center;
+      }
 
-    .row-item td {
-      font-weight: 400 !important; /* ITENS COM FONTE FINA (400/NORMAL) */
-    }
+      .bg-medi-period {
+        background-color: ${theme.accent} !important;
+        color: ${theme.accentText} !important;
+      }
 
-    /* BACKGROUNDS DINÂMICOS NA COLUNA DE MEDIÇÃO COM OPACIDADES HEXADECIMAIS */
-    /* Categorias: Accent + 1A (~10% opacidade) */
-    .row-category .cell-medi-period {
-      background-color: ${theme.accent}1A !important; 
-    }
+      .row-category {
+        background-color: ${theme.category.bg} !important;
+        color: ${theme.category.text} !important;
+      }
+      
+      .row-category td {
+        font-weight: 700 !important;
+      }
 
-    /* Itens: Accent + 06 (~4% opacidade - ainda mais clara) */
-    .row-item .cell-medi-period {
-      background-color: ${theme.accent}0A !important; 
-    }
+      .row-item td {
+        font-weight: 400 !important;
+      }
 
-    .footer-total-row {
-      background-color: ${theme.footer.bg} !important;
-      color: ${theme.footer.text} !important;
-      font-weight: 700;
-      text-align: right;
-    }
+      .row-category .cell-medi-period {
+        background-color: ${theme.accent}1A !important; 
+      }
 
-    .kpi-box {
-      border: 0.5pt solid ${theme.border} !important;
-    }
+      .row-item .cell-medi-period {
+        background-color: ${theme.accent}0A !important; 
+      }
 
-    .kpi-accent {
-      border: 1pt solid ${theme.accent} !important;
-      color: ${theme.accent} !important;
-    }
+      .footer-total-row {
+        background-color: ${theme.footer.bg} !important;
+        color: ${theme.footer.text} !important;
+        font-weight: 700;
+        text-align: right;
+      }
 
-    .signature-line {
-      border-top: 0.5pt solid #000 !important;
-    }
+      .kpi-box {
+        border: 0.5pt solid ${theme.border} !important;
+      }
 
-    /* LARGURAS RÍGIDAS */
-    .col-wbs { width: 22pt; }
-    .col-cod { width: 35pt; }
-    .col-fonte { width: 32pt; }
-    .col-desc { width: 150pt; text-align: left !important; white-space: normal !important; }
-    .col-und { width: 18pt; }
-    .col-price { width: 42pt; }
-    .col-qty { width: 28pt; }
-    .col-total { width: 50pt; }
-    .col-perc { width: 25pt; }
+      .kpi-accent {
+        border: 1pt solid ${theme.accent} !important;
+        color: ${theme.accent} !important;
+      }
+
+      .no-break {
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+      }
+
+      .signature-line {
+        border-top: 0.5pt solid #000 !important;
+      }
+
+      .col-wbs { width: 22pt; }
+      .col-cod { width: 35pt; }
+      .col-fonte { width: 32pt; }
+      .col-desc { width: 150pt; text-align: left !important; white-space: normal !important; }
+      .col-und { width: 18pt; }
+      .col-price { width: 42pt; }
+      .col-qty { width: 28pt; }
+      .col-total { width: 50pt; }
+      .col-perc { width: 25pt; }
+    }
   `;
 
   return (
@@ -269,7 +282,7 @@ export const PrintReport: React.FC<PrintReportProps> = ({ project, companyName, 
         </table>
 
         {/* KPIs FINANCEIROS */}
-        <div className="grid grid-cols-4 gap-4 mt-6">
+        <div className="grid grid-cols-4 gap-4 mt-6 no-break">
           <div className="kpi-box p-3 text-center rounded bg-slate-50">
             <div className="text-[4.5pt] text-slate-400 uppercase font-bold">Valor Contrato</div>
             <div className="text-[10pt] font-black">{financial.formatVisual(finalStats.contract, currencySymbol)}</div>
@@ -290,7 +303,7 @@ export const PrintReport: React.FC<PrintReportProps> = ({ project, companyName, 
 
         {/* ASSINATURAS CONDICIONAL */}
         {project.config?.showSignatures && (
-          <div className="grid grid-cols-3 gap-10 mt-10">
+          <div className="grid grid-cols-3 gap-10 mt-10 no-break">
             <div className="text-center">
               <div className="signature-line w-full mb-1"></div>
               <div className="text-[7pt] font-black uppercase">Responsável Técnico</div>
