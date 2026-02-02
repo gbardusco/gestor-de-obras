@@ -2,7 +2,7 @@
 import React, { useRef } from 'react';
 import { Project, PDFTheme } from '../types';
 import { ThemeEditor } from './ThemeEditor';
-import { Percent, Sliders, AlertTriangle, ShieldCheck, MapPin, Upload, Image as ImageIcon, Trash2 } from 'lucide-react';
+import { Percent, Sliders, AlertTriangle, ShieldCheck, MapPin, Upload, Image as ImageIcon, Trash2, FileText, CheckCircle2 } from 'lucide-react';
 
 interface BrandingViewProps {
   project: Project;
@@ -31,6 +31,15 @@ export const BrandingView: React.FC<BrandingViewProps> = ({
     reader.readAsDataURL(file);
   };
 
+  const toggleSignatures = () => {
+    onUpdateProject({
+      config: {
+        ...project.config,
+        showSignatures: !project.config.showSignatures
+      }
+    });
+  };
+
   return (
     <div className="space-y-12 animate-in fade-in duration-500 pb-20">
       <header className="max-w-4xl mx-auto flex items-center gap-4 px-4">
@@ -41,7 +50,7 @@ export const BrandingView: React.FC<BrandingViewProps> = ({
         </div>
       </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-6xl mx-auto px-4">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 max-w-7xl mx-auto px-4">
         {/* UPLOAD DE LOGOMARCA */}
         <div className="bg-white dark:bg-slate-900 p-8 rounded-[3rem] border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col items-center justify-center text-center">
           <div className="flex items-center gap-3 mb-6 self-start w-full">
@@ -122,6 +131,28 @@ export const BrandingView: React.FC<BrandingViewProps> = ({
               <span className="absolute right-6 top-1/2 -translate-y-1/2 text-xl font-black text-slate-300">%</span>
             </div>
             <p className="text-[10px] font-bold text-slate-400 mt-4 text-center uppercase tracking-widest">Fator Multiplicador: <span className="text-indigo-600">{(1 + project.bdi/100).toFixed(4)}x</span></p>
+          </div>
+        </div>
+
+        {/* OPÇÕES DO RELATÓRIO */}
+        <div className="bg-white dark:bg-slate-900 p-8 rounded-[3rem] border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col">
+          <div className="flex items-center gap-4 mb-8">
+            <div className="p-3 bg-indigo-600 rounded-xl text-white shadow-lg"><FileText size={20} /></div>
+            <div>
+              <h3 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-widest">Relatório</h3>
+              <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">Preferências do PDF</p>
+            </div>
+          </div>
+          <div className="flex-1 flex flex-col justify-center space-y-4">
+             <button 
+               onClick={toggleSignatures}
+               disabled={isReadOnly}
+               className={`w-full flex items-center justify-between p-4 rounded-2xl border-2 transition-all ${project.config?.showSignatures ? 'border-indigo-100 bg-indigo-50/50 dark:bg-indigo-900/10 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300' : 'border-slate-100 bg-slate-50 dark:bg-slate-800 dark:border-slate-700 text-slate-400'}`}
+             >
+                <span className="text-xs font-black uppercase tracking-widest">Bloco de Assinaturas</span>
+                {project.config?.showSignatures ? <CheckCircle2 size={20}/> : <div className="w-5 h-5 rounded-full border-2 border-slate-200 dark:border-slate-600" />}
+             </button>
+             <p className="text-[10px] font-bold text-slate-400 text-center uppercase tracking-widest italic">Habilita o quadro de assinaturas no final da planilha.</p>
           </div>
         </div>
       </div>

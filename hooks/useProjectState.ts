@@ -1,3 +1,4 @@
+
 import { useState, useCallback, useEffect } from 'react';
 import { Project, ProjectGroup, MeasurementSnapshot, GlobalSettings, ProjectPlanning, ProjectJournal, WorkItem, ProjectExpense, BiddingProcess, CompanyCertificate, DEFAULT_THEME } from '../types';
 import { treeService } from '../services/treeService';
@@ -45,6 +46,13 @@ export const useProjectState = () => {
           location: p.location || '',
           planning: p.planning || { ...INITIAL_PLANNING },
           journal: p.journal || { ...INITIAL_JOURNAL },
+          config: {
+            strict: false,
+            printCards: true,
+            printSubtotals: true,
+            showSignatures: true,
+            ...(p.config || {})
+          },
           theme: {
             ...DEFAULT_THEME,
             ...(p.theme || {}),

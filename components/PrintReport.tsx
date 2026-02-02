@@ -288,24 +288,26 @@ export const PrintReport: React.FC<PrintReportProps> = ({ project, companyName, 
           </div>
         </div>
 
-        {/* ASSINATURAS */}
-        <div className="grid grid-cols-3 gap-10 mt-10">
-          <div className="text-center">
-            <div className="signature-line w-full mb-1"></div>
-            <div className="text-[7pt] font-black uppercase">Responsável Técnico</div>
-            <div className="text-[5pt] text-slate-400 font-bold">CONTRATADA</div>
+        {/* ASSINATURAS CONDICIONAL */}
+        {project.config?.showSignatures && (
+          <div className="grid grid-cols-3 gap-10 mt-10">
+            <div className="text-center">
+              <div className="signature-line w-full mb-1"></div>
+              <div className="text-[7pt] font-black uppercase">Responsável Técnico</div>
+              <div className="text-[5pt] text-slate-400 font-bold">CONTRATADA</div>
+            </div>
+            <div className="text-center">
+              <div className="signature-line w-full mb-1"></div>
+              <div className="text-[7pt] font-black uppercase">Fiscalização de Obra</div>
+              <div className="text-[5pt] text-slate-400 font-bold">Assinatura e Carimbo</div>
+            </div>
+            <div className="text-center">
+              <div className="signature-line w-full mb-1"></div>
+              <div className="text-[7pt] font-black uppercase">Gestor do Contrato</div>
+              <div className="text-[5pt] text-slate-400 font-bold">CONTRATANTE</div>
+            </div>
           </div>
-          <div className="text-center">
-            <div className="signature-line w-full mb-1"></div>
-            <div className="text-[7pt] font-black uppercase">Fiscalização de Obra</div>
-            <div className="text-[5pt] text-slate-400 font-bold">Assinatura e Carimbo</div>
-          </div>
-          <div className="text-center">
-            <div className="signature-line w-full mb-1"></div>
-            <div className="text-[7pt] font-black uppercase">Gestor do Contrato</div>
-            <div className="text-[5pt] text-slate-400 font-bold">CONTRATANTE</div>
-          </div>
-        </div>
+        )}
       </div>
     </div>
   );

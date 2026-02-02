@@ -1,3 +1,4 @@
+
 import { Project, ProjectGroup, DEFAULT_THEME, MeasurementSnapshot } from '../types';
 import { treeService } from './treeService';
 
@@ -35,7 +36,8 @@ export const projectService = {
     config: { 
       strict: false, 
       printCards: true, 
-      printSubtotals: true 
+      printSubtotals: true,
+      showSignatures: true
     }
   }),
 
