@@ -28,7 +28,6 @@
         body { 
           font-family: 'Inter', sans-serif; 
           background-color: #f8fafc;
-          /* Compatibilidade de cores global */
           -webkit-print-color-adjust: exact !important;
           print-color-adjust: exact !important;
           color-adjust: exact !important;
@@ -42,7 +41,7 @@
             margin: 18mm 8mm !important; 
           }
 
-          /* Compatibilidade Cross-Browser: Reset de Renderização */
+          /* Correção Safari: O overflow hidden mata a quebra de página */
           html, body {
             background-color: white !important;
             color: black !important;
@@ -50,42 +49,29 @@
             min-height: 0 !important;
             margin: 0 !important;
             padding: 0 !important;
-            overflow: visible !important;
+            overflow: visible !important; /* Vital para Safari */
             -webkit-font-smoothing: subpixel-antialiased !important;
-            text-rendering: optimizeLegibility !important;
           }
 
           #root, #root > div, main {
             background-color: white !important;
-            background: white !important;
             height: auto !important;
-            min-height: 0 !important;
             margin: 0 !important;
             padding: 0 !important;
-            display: block !important;
+            display: block !important; /* Safari odeia flex na raiz do print */
             overflow: visible !important;
             position: static !important;
           }
 
-          /* Oculta interface do sistema */
           aside, nav, header.no-print, .no-print, button, .lucide {
             display: none !important;
-            visibility: hidden !important;
           }
 
           .print-report-area {
             display: block !important;
-            visibility: visible !important;
             width: 100% !important;
-            background-color: white !important;
-            padding: 0 !important;
-            box-sizing: border-box !important;
-            position: relative !important;
-            margin: 0 !important;
-            height: auto !important;
-            min-height: 0 !important;
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
+            overflow: visible !important;
+            position: static !important;
           }
         }
 
