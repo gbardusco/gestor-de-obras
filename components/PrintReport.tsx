@@ -48,10 +48,12 @@ export const PrintReport: React.FC<PrintReportProps> = ({ project, companyName, 
         height: auto !important;
         min-height: 0 !important;
         display: block !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
       }
 
       .report-master-container {
-        width: 100% !important; /* Preenche a largura definida pelo @page */
+        width: 100% !important;
         margin: 0 !important;
         background: white !important;
         padding-bottom: 0 !important;
@@ -66,15 +68,18 @@ export const PrintReport: React.FC<PrintReportProps> = ({ project, companyName, 
         table-layout: fixed !important;
         box-sizing: border-box !important;
         display: table !important;
+        page-break-after: auto !important;
       }
 
+      /* Garante a repetição do cabeçalho em todas as páginas */
       .report-table thead {
         display: table-header-group !important;
       }
 
+      /* Melhora a legibilidade ao evitar quebras de linhas no meio do texto */
       .report-table tr {
-        break-inside: avoid !important;
         page-break-inside: avoid !important;
+        break-inside: avoid !important;
       }
 
       .report-table th, .report-table td {
@@ -86,25 +91,30 @@ export const PrintReport: React.FC<PrintReportProps> = ({ project, companyName, 
         white-space: nowrap;
         text-overflow: ellipsis;
         box-sizing: border-box !important;
+        orphans: 3;
+        widows: 3;
       }
 
       .report-table thead th {
-        background-color: ${theme.header.bg};
+        background-color: ${theme.header.bg} !important;
         color: ${theme.header.text} !important;
         font-weight: 900;
         text-align: center;
         padding-top: 4pt !important;
         padding-bottom: 4pt !important;
+        -webkit-print-color-adjust: exact !important;
       }
 
       .bg-medi-period {
         background-color: ${theme.accent} !important;
         color: ${theme.accentText} !important;
+        -webkit-print-color-adjust: exact !important;
       }
 
       .row-category {
         background-color: ${theme.category.bg} !important;
         color: ${theme.category.text} !important;
+        -webkit-print-color-adjust: exact !important;
       }
       
       .row-category td {
@@ -117,10 +127,12 @@ export const PrintReport: React.FC<PrintReportProps> = ({ project, companyName, 
 
       .row-category .cell-medi-period {
         background-color: ${theme.accent}1A !important; 
+        -webkit-print-color-adjust: exact !important;
       }
 
       .row-item .cell-medi-period {
         background-color: ${theme.accent}0A !important; 
+        -webkit-print-color-adjust: exact !important;
       }
 
       .footer-total-row {
@@ -130,26 +142,32 @@ export const PrintReport: React.FC<PrintReportProps> = ({ project, companyName, 
         text-align: right;
         padding-top: 4pt !important;
         padding-bottom: 4pt !important;
+        -webkit-print-color-adjust: exact !important;
       }
 
       .kpi-box {
         border: 0.5pt solid ${theme.border} !important;
+        background-color: #f8fafc !important;
+        -webkit-print-color-adjust: exact !important;
       }
 
       .kpi-accent {
         border: 1pt solid ${theme.accent} !important;
         color: ${theme.accent} !important;
+        background-color: white !important;
+        -webkit-print-color-adjust: exact !important;
       }
 
       .no-break {
-        break-inside: avoid !important;
         page-break-inside: avoid !important;
+        break-inside: avoid !important;
       }
 
       .signature-line {
         border-top: 0.5pt solid #000 !important;
       }
 
+      /* Larguras das colunas otimizadas para landscape */
       .col-wbs { width: 22pt; }
       .col-cod { width: 35pt; }
       .col-fonte { width: 32pt; }
@@ -167,7 +185,7 @@ export const PrintReport: React.FC<PrintReportProps> = ({ project, companyName, 
       <style dangerouslySetInnerHTML={{ __html: dynamicStyles }} />
 
       <div className="report-master-container">
-        {/* CABEÇALHO */}
+        {/* CABEÇALHO INSTITUCIONAL */}
         <div className="flex justify-between items-start mb-4 border-b pb-4" style={{ borderColor: theme.primary }}>
           <div className="flex items-center gap-6">
             {project.logo ? (
@@ -196,11 +214,11 @@ export const PrintReport: React.FC<PrintReportProps> = ({ project, companyName, 
         <div className="flex mb-4 text-[6pt] font-black uppercase overflow-hidden">
           <div className="flex-1 p-2">
             <div className="text-[4.5pt] text-slate-400">Empreendimento</div>
-            <div>{project.name}</div>
+            <div className="dark:text-black">{project.name}</div>
           </div>
           <div className="flex-1 p-2">
             <div className="text-[4.5pt] text-slate-400">Localização</div>
-            <div>{project.location || '-'}</div>
+            <div className="dark:text-black">{project.location || '-'}</div>
           </div>
           <div className="w-32 p-2 text-right">
             <div className="text-[4.5pt] text-slate-400">Progresso Físico</div>
@@ -208,7 +226,7 @@ export const PrintReport: React.FC<PrintReportProps> = ({ project, companyName, 
           </div>
         </div>
 
-        {/* TABELA */}
+        {/* TABELA PRINCIPAL */}
         <table className="report-table">
           <thead>
             <tr>
@@ -283,42 +301,42 @@ export const PrintReport: React.FC<PrintReportProps> = ({ project, companyName, 
           </tfoot>
         </table>
 
-        {/* KPIs FINANCEIROS */}
+        {/* RESUMO FINANCEIRO - KPIs */}
         <div className="grid grid-cols-4 gap-4 mt-6 no-break">
-          <div className="kpi-box p-3 text-center rounded bg-slate-50">
+          <div className="kpi-box p-3 text-center rounded">
             <div className="text-[4.5pt] text-slate-400 uppercase font-bold">Valor Contrato</div>
-            <div className="text-[10pt] font-black">{financial.formatVisual(finalStats.contract, currencySymbol)}</div>
+            <div className="text-[10pt] font-black dark:text-black">{financial.formatVisual(finalStats.contract, currencySymbol)}</div>
           </div>
-          <div className="kpi-accent p-3 text-center rounded bg-white">
+          <div className="kpi-accent p-3 text-center rounded">
             <div className="text-[4.5pt] uppercase font-bold">Medição no Período</div>
             <div className="text-[10pt] font-black">{financial.formatVisual(finalStats.current, currencySymbol)}</div>
           </div>
           <div className="kpi-box p-3 text-center rounded">
             <div className="text-[4.5pt] text-slate-400 uppercase font-bold">Acumulado Atual</div>
-            <div className="text-[10pt] font-black">{financial.formatVisual(finalStats.accumulated, currencySymbol)}</div>
+            <div className="text-[10pt] font-black dark:text-black">{financial.formatVisual(finalStats.accumulated, currencySymbol)}</div>
           </div>
           <div className="kpi-box p-3 text-center rounded">
             <div className="text-[4.5pt] text-slate-400 uppercase font-bold">Saldo a Executar</div>
-            <div className="text-[10pt] font-black">{financial.formatVisual(finalStats.balance, currencySymbol)}</div>
+            <div className="text-[10pt] font-black dark:text-black">{financial.formatVisual(finalStats.balance, currencySymbol)}</div>
           </div>
         </div>
 
-        {/* ASSINATURAS CONDICIONAL */}
+        {/* BLOCO DE ASSINATURAS */}
         {project.config?.showSignatures && (
           <div className="grid grid-cols-3 gap-10 mt-10 no-break">
             <div className="text-center">
               <div className="signature-line w-full mb-1"></div>
-              <div className="text-[7pt] font-black uppercase">Responsável Técnico</div>
+              <div className="text-[7pt] font-black uppercase dark:text-black">Responsável Técnico</div>
               <div className="text-[5pt] text-slate-400 font-bold">CONTRATADA</div>
             </div>
             <div className="text-center">
               <div className="signature-line w-full mb-1"></div>
-              <div className="text-[7pt] font-black uppercase">Fiscalização de Obra</div>
+              <div className="text-[7pt] font-black uppercase dark:text-black">Fiscalização de Obra</div>
               <div className="text-[5pt] text-slate-400 font-bold">Assinatura e Carimbo</div>
             </div>
             <div className="text-center">
               <div className="signature-line w-full mb-1"></div>
-              <div className="text-[7pt] font-black uppercase">Gestor do Contrato</div>
+              <div className="text-[7pt] font-black uppercase dark:text-black">Gestor do Contrato</div>
               <div className="text-[5pt] text-slate-400 font-bold">CONTRATANTE</div>
             </div>
           </div>
