@@ -43,7 +43,7 @@ export const WbsView: React.FC<WbsViewProps> = ({
   }, [importSummary]);
 
   const processedTree = useMemo(() => {
-    const tree = treeService.buildTree(project.items);
+    const tree = treeService.buildTree<WorkItem>(project.items);
     return tree.map((root, idx) => treeService.processRecursive(root, '', idx, project.bdi));
   }, [project.items, project.bdi]);
 
@@ -69,7 +69,7 @@ export const WbsView: React.FC<WbsViewProps> = ({
 
   const confirmImport = () => {
     if (!importSummary) return;
-    // CORREÇÃO: Substituímos o array para evitar duplicação
+    // Substituição total para evitar duplicação
     onUpdateProject({ items: importSummary.items });
     setImportSummary(null);
   };
@@ -207,7 +207,7 @@ export const WbsView: React.FC<WbsViewProps> = ({
           
           onAddChild={(pid, type) => !isReadOnly && onOpenModal(type, null, pid)}
           onEdit={item => !isReadOnly && onOpenModal(item.type, item, item.parentId)}
-          onReorder={(src, tgt, pos) => !isReadOnly && onUpdateProject({ items: treeService.reorderItems(project.items, src, tgt, pos) })}
+          onReorder={(src, tgt, pos) => !isReadOnly && onUpdateProject({ items: treeService.reorderItems<WorkItem>(project.items, src, tgt, pos) })}
           searchQuery={searchQuery}
           isReadOnly={isReadOnly}
           currencySymbol={project.theme?.currencySymbol || 'R$'}
@@ -271,8 +271,8 @@ export const WbsView: React.FC<WbsViewProps> = ({
               )}
 
               <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded-2xl">
-                 <p className="text-[10px] font-bold text-blue-600 text-center uppercase">
-                   A confirmação irá SUBSTITUIR a planilha atual pela do Excel, carregando as quantidades de contrato e as medições informadas.
+                 <p className="text-[10px] font-bold text-blue-600 text-center uppercase leading-tight">
+                   A confirmação irá SUBSTITUIR a planilha atual para evitar duplicação de dados, preservando as quantidades de contrato e medições informadas no Excel.
                  </p>
               </div>
             </div>
