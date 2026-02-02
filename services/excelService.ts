@@ -176,7 +176,8 @@ export const excelService = {
             const type = (String(row[1] || "").toLowerCase() === 'category' ? 'category' : 'item') as ItemType;
             const qty = parseVal(row[5]);
             const priceNoBdi = parseVal(row[6]);
-            const fonte = String(row[7] || "Próprio").trim();
+            // Ajuste aqui: Captura o valor exato ou string vazia se não houver conteúdo
+            const fonte = row[7] ? String(row[7]).trim() : "";
 
             const item: WorkItem = {
               id: crypto.randomUUID(), parentId: null, name: String(row[3] || "Novo Item").trim(),

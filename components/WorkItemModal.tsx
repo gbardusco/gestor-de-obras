@@ -36,7 +36,7 @@ export const WorkItemModal: React.FC<WorkItemModalProps> = ({
 }) => {
   const [activeType, setActiveType] = useState<ItemType>(initialType);
   const [formData, setFormData] = useState<Partial<WorkItem>>({
-    name: '', parentId: null, unit: '', contractQuantity: 0, unitPrice: 0, unitPriceNoBdi: 0, cod: '', fonte: 'Próprio'
+    name: '', parentId: null, unit: '', contractQuantity: 0, unitPrice: 0, unitPriceNoBdi: 0, cod: '', fonte: ''
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   
@@ -54,7 +54,8 @@ export const WorkItemModal: React.FC<WorkItemModalProps> = ({
       setStrPriceWithBdi(financial.formatVisual(editingItem.unitPrice || 0, '').trim());
       setStrTotalWithBdi(financial.formatVisual(editingItem.contractTotal || 0, '').trim());
     } else {
-      setFormData({ name: '', parentId: null, unit: initialType === 'item' ? 'un' : '', contractQuantity: 0, unitPrice: 0, unitPriceNoBdi: 0, cod: '', fonte: 'Próprio' });
+      // Ajustado para começar com fonte vazia
+      setFormData({ name: '', parentId: null, unit: initialType === 'item' ? 'un' : '', contractQuantity: 0, unitPrice: 0, unitPriceNoBdi: 0, cod: '', fonte: '' });
       setActiveType(initialType);
       setStrQty('0,00'); setStrPriceNoBdi('0,00'); setStrPriceWithBdi('0,00'); setStrTotalWithBdi('0,00');
     }
@@ -69,7 +70,6 @@ export const WorkItemModal: React.FC<WorkItemModalProps> = ({
     const currentQty = field === 'qty' ? num : financial.parseLocaleNumber(strQty);
 
     if (field === 'priceNoBdi') {
-      // USANDO TRUNCATE PARA NÃO SUBIR O VALOR
       const pWithBdi = financial.truncate(num * (1 + projectBdi/100));
       setStrPriceWithBdi(financial.formatVisual(pWithBdi, '').trim());
       setStrTotalWithBdi(financial.formatVisual(financial.truncate(pWithBdi * currentQty), '').trim());
