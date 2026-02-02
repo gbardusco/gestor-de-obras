@@ -41,58 +41,67 @@ export const PrintReport: React.FC<PrintReportProps> = ({ project, companyName, 
     @media print {
       .print-report-area {
         font-family: '${theme.fontFamily}', sans-serif !important;
+        color: #000 !important;
         background-color: white !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        height: auto !important;
+        min-height: 0 !important;
         display: block !important;
-        width: 100% !important;
-        overflow: visible !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
       }
 
       .report-master-container {
-        display: block !important;
         width: 100% !important;
-        overflow: visible !important;
+        margin: 0 !important;
+        background: white !important;
+        padding-bottom: 0 !important;
+        height: auto !important;
+        min-height: 0 !important;
+        display: block !important;
       }
 
       .report-table {
         border-collapse: collapse !important;
         width: 100% !important;
         table-layout: fixed !important;
-        /* Safari: Evita que a tabela inteira tente caber em uma página só */
+        box-sizing: border-box !important;
+        display: table !important;
         page-break-after: auto !important;
       }
 
+      /* Garante a repetição do cabeçalho em todas as páginas */
       .report-table thead {
         display: table-header-group !important;
       }
 
+      /* Melhora a legibilidade ao evitar quebras de linhas no meio do texto */
       .report-table tr {
-        /* Safari/WebKit: break-inside avoid é ignorado se houver flex no pai */
         page-break-inside: avoid !important;
         break-inside: avoid !important;
-        -webkit-column-break-inside: avoid !important;
       }
 
-      .report-table td, .report-table th {
-        /* Safari: Garante que o conteúdo da célula não quebre no meio */
-        page-break-inside: avoid !important;
-        break-inside: avoid !important;
-        word-wrap: break-word;
-        overflow-wrap: break-word;
-      }
-
-      /* Estilos Visuais */
       .report-table th, .report-table td {
         border: 0.4pt solid ${theme.border} !important;
-        padding: 3pt 2pt !important;
-        font-size: 5.5pt !important;
+        padding: 2.5pt 2pt !important;
+        font-size: 5pt !important;
         text-transform: uppercase;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        box-sizing: border-box !important;
+        orphans: 3;
+        widows: 3;
       }
 
       .report-table thead th {
-        background-color: ${theme.header.bg} !important;
+        background-color: ${theme.header.bg};
         color: ${theme.header.text} !important;
         font-weight: 900;
         text-align: center;
+        padding-top: 4pt !important;
+        padding-bottom: 4pt !important;
         -webkit-print-color-adjust: exact !important;
       }
 
@@ -107,32 +116,66 @@ export const PrintReport: React.FC<PrintReportProps> = ({ project, companyName, 
         color: ${theme.category.text} !important;
         -webkit-print-color-adjust: exact !important;
       }
+      
+      .row-category td {
+        font-weight: 700 !important;
+      }
+
+      .row-item td {
+        font-weight: 400 !important;
+      }
+
+      .row-category .cell-medi-period {
+        background-color: ${theme.accent}1A !important; 
+        -webkit-print-color-adjust: exact !important;
+      }
+
+      .row-item .cell-medi-period {
+        background-color: ${theme.accent}0A !important; 
+        -webkit-print-color-adjust: exact !important;
+      }
 
       .footer-total-row {
         background-color: ${theme.footer.bg} !important;
         color: ${theme.footer.text} !important;
         font-weight: 700;
+        text-align: right;
+        padding-top: 4pt !important;
+        padding-bottom: 4pt !important;
+        -webkit-print-color-adjust: exact !important;
+      }
+
+      .kpi-box {
+        border: 0.5pt solid ${theme.border} !important;
+        background-color: #f8fafc !important;
+        -webkit-print-color-adjust: exact !important;
+      }
+
+      .kpi-accent {
+        border: 1pt solid ${theme.accent} !important;
+        color: ${theme.accent} !important;
+        background-color: white !important;
         -webkit-print-color-adjust: exact !important;
       }
 
       .no-break {
         page-break-inside: avoid !important;
         break-inside: avoid !important;
-        display: block !important; /* Necessário para quebras em divs no Safari */
       }
 
       .signature-line {
         border-top: 0.5pt solid #000 !important;
       }
 
-      .col-wbs { width: 25pt; }
+      /* Larguras das colunas otimizadas para landscape */
+      .col-wbs { width: 22pt; }
       .col-cod { width: 35pt; }
       .col-fonte { width: 32pt; }
-      .col-desc { width: 140pt; text-align: left !important; white-space: normal !important; }
-      .col-und { width: 20pt; }
-      .col-price { width: 45pt; }
-      .col-qty { width: 30pt; }
-      .col-total { width: 55pt; }
+      .col-desc { width: 150pt; text-align: left !important; white-space: normal !important; }
+      .col-und { width: 18pt; }
+      .col-price { width: 42pt; }
+      .col-qty { width: 28pt; }
+      .col-total { width: 50pt; }
       .col-perc { width: 25pt; }
     }
   `;
@@ -142,13 +185,13 @@ export const PrintReport: React.FC<PrintReportProps> = ({ project, companyName, 
       <style dangerouslySetInnerHTML={{ __html: dynamicStyles }} />
 
       <div className="report-master-container">
-        {/* CABEÇALHO */}
-        <div className="flex justify-between items-start mb-4 border-b pb-4" style={{ borderColor: theme.primary, display: 'flex' }}>
-          <div className="flex items-center gap-6" style={{ display: 'flex', alignItems: 'center' }}>
+        {/* CABEÇALHO INSTITUCIONAL */}
+        <div className="flex justify-between items-start mb-4 border-b pb-4" style={{ borderColor: theme.primary }}>
+          <div className="flex items-center gap-6">
             {project.logo ? (
               <img src={project.logo} className="h-14 w-auto" alt="Logo" />
             ) : (
-              <div className="w-12 h-12 bg-black text-white flex items-center justify-center rounded" style={{ backgroundColor: theme.primary, display: 'flex' }}>
+              <div className="w-12 h-12 bg-black text-white flex items-center justify-center rounded" style={{ backgroundColor: theme.primary }}>
                 <HardHat size={24} />
               </div>
             )}
@@ -160,7 +203,7 @@ export const PrintReport: React.FC<PrintReportProps> = ({ project, companyName, 
 
           <div className="text-right">
             <h2 className="text-xl font-black uppercase leading-none" style={{ color: theme.primary }}>Planilha de Medição</h2>
-            <div className="mt-2 flex items-center gap-2 justify-end" style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <div className="mt-2 flex items-center gap-2 justify-end">
                <span className="px-3 py-0.5 rounded text-[8pt] font-black text-white uppercase" style={{ backgroundColor: theme.accent }}>Medição Nº {project.measurementNumber}</span>
                <span className="text-[8pt] font-bold text-slate-400 uppercase">Data: {project.referenceDate}</span>
             </div>
@@ -168,7 +211,7 @@ export const PrintReport: React.FC<PrintReportProps> = ({ project, companyName, 
         </div>
 
         {/* INFOS OBRA */}
-        <div className="flex mb-4 text-[6pt] font-black uppercase" style={{ display: 'flex' }}>
+        <div className="flex mb-4 text-[6pt] font-black uppercase overflow-hidden">
           <div className="flex-1 p-2">
             <div className="text-[4.5pt] text-slate-400">Empreendimento</div>
             <div className="dark:text-black">{project.name}</div>
@@ -183,7 +226,7 @@ export const PrintReport: React.FC<PrintReportProps> = ({ project, companyName, 
           </div>
         </div>
 
-        {/* TABELA */}
+        {/* TABELA PRINCIPAL */}
         <table className="report-table">
           <thead>
             <tr>
@@ -243,7 +286,7 @@ export const PrintReport: React.FC<PrintReportProps> = ({ project, companyName, 
           </tbody>
           <tfoot>
             <tr className="footer-total-row">
-              <td colSpan={8} className="p-2 pr-4 text-right">TOTAIS CONSOLIDADOS</td>
+              <td colSpan={8} className="p-2 pr-4">TOTAIS CONSOLIDADOS</td>
               <td className="text-right">{financial.formatVisual(finalStats.contract, currencySymbol)}</td>
               <td></td>
               <td className="text-right">{financial.formatVisual(finalStats.accumulated - finalStats.current, currencySymbol)}</td>
@@ -258,29 +301,29 @@ export const PrintReport: React.FC<PrintReportProps> = ({ project, companyName, 
           </tfoot>
         </table>
 
-        {/* KPIs FINANCEIROS */}
-        <div className="grid grid-cols-4 gap-4 mt-6 no-break" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)' }}>
-          <div className="p-3 text-center rounded bg-slate-50 border" style={{ border: '0.5pt solid #ccc' }}>
+        {/* RESUMO FINANCEIRO - KPIs */}
+        <div className="grid grid-cols-4 gap-4 mt-6 no-break">
+          <div className="kpi-box p-3 text-center rounded">
             <div className="text-[4.5pt] text-slate-400 uppercase font-bold">Valor Contrato</div>
             <div className="text-[10pt] font-black dark:text-black">{financial.formatVisual(finalStats.contract, currencySymbol)}</div>
           </div>
-          <div className="p-3 text-center rounded bg-white border" style={{ border: `1pt solid ${theme.accent}`, color: theme.accent }}>
+          <div className="kpi-accent p-3 text-center rounded">
             <div className="text-[4.5pt] uppercase font-bold">Medição no Período</div>
             <div className="text-[10pt] font-black">{financial.formatVisual(finalStats.current, currencySymbol)}</div>
           </div>
-          <div className="p-3 text-center rounded bg-white border" style={{ border: '0.5pt solid #ccc' }}>
+          <div className="kpi-box p-3 text-center rounded">
             <div className="text-[4.5pt] text-slate-400 uppercase font-bold">Acumulado Atual</div>
             <div className="text-[10pt] font-black dark:text-black">{financial.formatVisual(finalStats.accumulated, currencySymbol)}</div>
           </div>
-          <div className="p-3 text-center rounded bg-white border" style={{ border: '0.5pt solid #ccc' }}>
+          <div className="kpi-box p-3 text-center rounded">
             <div className="text-[4.5pt] text-slate-400 uppercase font-bold">Saldo a Executar</div>
             <div className="text-[10pt] font-black dark:text-black">{financial.formatVisual(finalStats.balance, currencySymbol)}</div>
           </div>
         </div>
 
-        {/* ASSINATURAS */}
+        {/* BLOCO DE ASSINATURAS */}
         {project.config?.showSignatures && (
-          <div className="grid grid-cols-3 gap-10 mt-10 no-break" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)' }}>
+          <div className="grid grid-cols-3 gap-10 mt-10 no-break">
             <div className="text-center">
               <div className="signature-line w-full mb-1"></div>
               <div className="text-[7pt] font-black uppercase dark:text-black">Responsável Técnico</div>
