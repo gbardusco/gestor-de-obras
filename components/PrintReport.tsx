@@ -90,7 +90,7 @@ export const PrintReport: React.FC<PrintReportProps> = ({ project, companyName, 
       }
 
       .report-table thead th {
-        background-color: ${theme.header.bg} !important;
+        background-color: ${theme.header.bg};
         color: ${theme.header.text} !important;
         font-weight: 900;
         text-align: center;
@@ -106,6 +106,21 @@ export const PrintReport: React.FC<PrintReportProps> = ({ project, companyName, 
       .row-category {
         background-color: ${theme.category.bg} !important;
         color: ${theme.category.text} !important;
+        -webkit-print-color-adjust: exact !important;
+        font-weight: 700;
+      }
+
+      .row-item td {
+        font-weight: 400;
+      }
+
+      .row-category .cell-medi-period {
+        background-color: ${theme.accent}1A !important; 
+        -webkit-print-color-adjust: exact !important;
+      }
+
+      .row-item .cell-medi-period {
+        background-color: ${theme.accent}0A !important; 
         -webkit-print-color-adjust: exact !important;
       }
 
