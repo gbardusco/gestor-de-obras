@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Project, WorkItem, ItemType } from '../types';
 import { treeService } from '../services/treeService';
@@ -70,7 +69,8 @@ export const WbsView: React.FC<WbsViewProps> = ({
 
   const confirmImport = () => {
     if (!importSummary) return;
-    onUpdateProject({ items: [...project.items, ...importSummary.items] });
+    // CORREÇÃO: Substituímos o array para evitar duplicação
+    onUpdateProject({ items: importSummary.items });
     setImportSummary(null);
   };
 
@@ -270,9 +270,11 @@ export const WbsView: React.FC<WbsViewProps> = ({
                 </div>
               )}
 
-              <p className="text-xs text-slate-500 font-medium text-center px-4">
-                Estes itens serão adicionados à planilha atual. Os cálculos de BDI e totais serão atualizados automaticamente após a confirmação.
-              </p>
+              <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded-2xl">
+                 <p className="text-[10px] font-bold text-blue-600 text-center uppercase">
+                   A confirmação irá SUBSTITUIR a planilha atual pela do Excel, carregando as quantidades de contrato e as medições informadas.
+                 </p>
+              </div>
             </div>
 
             <div className="px-8 py-6 bg-slate-50 dark:bg-slate-800/80 border-t border-slate-100 dark:border-slate-800 flex flex-col gap-3 shrink-0">
@@ -281,14 +283,14 @@ export const WbsView: React.FC<WbsViewProps> = ({
                 onClick={confirmImport} 
                 className="w-full py-5 bg-emerald-600 text-white rounded-2xl text-[11px] font-black uppercase tracking-widest shadow-xl shadow-emerald-500/20 active:scale-95 transition-all flex items-center justify-center gap-2"
               >
-                <CheckCircle2 size={18} /> Confirmar Importação
+                <CheckCircle2 size={18} /> Confirmar Substituição
               </button>
               <button 
                 type="button" 
                 onClick={() => setImportSummary(null)} 
                 className="w-full py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
               >
-                Cancelar e Descartar
+                Cancelar
               </button>
             </div>
           </div>

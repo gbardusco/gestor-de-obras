@@ -57,7 +57,6 @@ export const PrintReport: React.FC<PrintReportProps> = ({ project, companyName, 
       .report-table {
         border-collapse: collapse !important;
         width: 100% !important;
-        table-layout: fixed !important;
         /* Safari: Evita que a tabela inteira tente caber em uma página só */
         page-break-after: auto !important;
       }
@@ -95,6 +94,10 @@ export const PrintReport: React.FC<PrintReportProps> = ({ project, companyName, 
         font-weight: 900;
         text-align: center;
         -webkit-print-color-adjust: exact !important;
+      }
+
+      .report-table tfoot {
+        display: table-row-group !important; /* IMPEDE a repetição do footer em todas as páginas */
       }
 
       .bg-medi-period {
