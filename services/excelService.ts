@@ -197,10 +197,6 @@ export const excelService = {
     const fullFlattened = treeService.flattenTree(processedTree, allIds);
 
     const rows = fullFlattened.map(e => {
-<<<<<<< HEAD
-=======
-      // Garantimos que a categoria exportada seja a sigla que o importador reconhece
->>>>>>> 6b5afb1fea73f4224dfbd1ebe3972ed622b8485e
       const typeLabel = e.type === 'labor' ? 'MO' : (e.type === 'revenue' ? 'RE' : 'MA');
       return [
         e.wbs, 
@@ -241,14 +237,8 @@ export const excelService = {
             const wbs = String(row[0] || "").trim();
             const itemType = (String(row[1] || "").toLowerCase() === 'category') ? 'category' : 'item';
             
-<<<<<<< HEAD
             const rawCat = String(row[2] || "").toUpperCase().trim();
             let type: ExpenseType = 'material';
-=======
-            // LÓGICA DE DETECÇÃO DE TIPO (SEPARAÇÃO AUTOMÁTICA)
-            const rawCat = String(row[2] || "").toUpperCase().trim();
-            let type: ExpenseType = 'material'; // Default
->>>>>>> 6b5afb1fea73f4224dfbd1ebe3972ed622b8485e
             
             if (rawCat === 'MO' || rawCat === 'LABOR' || rawCat === 'MÃO DE OBRA' || rawCat === 'MAO DE OBRA') {
               type = 'labor';
@@ -265,10 +255,6 @@ export const excelService = {
             if (itemType === 'item' && row[3] instanceof Date) {
               expenseDate = row[3].toISOString().split('T')[0];
             } else if (itemType === 'item' && row[3]) {
-<<<<<<< HEAD
-=======
-              // Tenta converter string de data caso não seja objeto Date
->>>>>>> 6b5afb1fea73f4224dfbd1ebe3972ed622b8485e
               const d = new Date(row[3]);
               if (!isNaN(d.getTime())) expenseDate = d.toISOString().split('T')[0];
             }

@@ -1,9 +1,5 @@
 
-<<<<<<< HEAD
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-=======
-import React, { useState, useMemo } from 'react';
->>>>>>> 6b5afb1fea73f4224dfbd1ebe3972ed622b8485e
 import { Project, WorkItem, ItemType, GlobalSettings, MeasurementSnapshot } from '../types';
 import { WbsView } from './WbsView';
 import { StatsView } from './StatsView';
@@ -20,15 +16,9 @@ import { planningService } from '../services/planningService';
 import { financial } from '../utils/math';
 import { 
   Layers, BarChart3, Coins, FileText, Sliders, 
-<<<<<<< HEAD
   Undo2, Redo2, Lock, Calendar, BookOpen,
   CheckCircle2, ArrowRight, History, ChevronDown, LockOpen, Target, HardHat,
   RotateCcw, AlertTriangle, X as CloseIcon, Edit2
-=======
-  Printer, Undo2, Redo2, Lock, Calendar, BookOpen,
-  CheckCircle2, ArrowRight, History, ChevronDown, LockOpen, Target, HardHat,
-  RotateCcw, AlertTriangle, X as CloseIcon
->>>>>>> 6b5afb1fea73f4224dfbd1ebe3972ed622b8485e
 } from 'lucide-react';
 
 interface ProjectWorkspaceProps {
@@ -51,16 +41,12 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
   const [showConfirmClose, setShowConfirmClose] = useState(false);
   const [showConfirmReopen, setShowConfirmReopen] = useState(false);
   
-<<<<<<< HEAD
   const [localName, setLocalName] = useState(project.name);
   
-=======
->>>>>>> 6b5afb1fea73f4224dfbd1ebe3972ed622b8485e
   const [modalType, setModalType] = useState<ItemType>('item');
   const [editingItem, setEditingItem] = useState<WorkItem | null>(null);
   const [targetParentId, setTargetParentId] = useState<string | null>(null);
 
-<<<<<<< HEAD
   useEffect(() => {
     setLocalName(project.name);
   }, [project.name]);
@@ -106,26 +92,16 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
     setTab(targetTab);
   };
 
-=======
->>>>>>> 6b5afb1fea73f4224dfbd1ebe3972ed622b8485e
   const activeItems = useMemo(() => {
     if (viewingHistoryIndex === null) return project.items;
     return project.history[viewingHistoryIndex].items;
   }, [project, viewingHistoryIndex]);
 
   const printData = useMemo(() => {
-<<<<<<< HEAD
     const tree = treeService.buildTree<WorkItem>(activeItems);
     const processed = tree.map((root, idx) => treeService.processRecursive(root, '', idx, project.bdi));
     const allIds = new Set<string>(activeItems.map(i => i.id));
     const flattened = treeService.flattenTree(processed, allIds);
-=======
-    const tree = treeService.buildTree(activeItems);
-    const processed = tree.map((root, idx) => treeService.processRecursive(root, '', idx, project.bdi));
-    const allIds = new Set(activeItems.map(i => i.id));
-    const flattened = treeService.flattenTree(processed, allIds);
-    // Aplica o projeto para considerar overrides manuais de centavos
->>>>>>> 6b5afb1fea73f4224dfbd1ebe3972ed622b8485e
     const stats = treeService.calculateBasicStats(activeItems, project.bdi, project);
     return { flattened, stats };
   }, [activeItems, project, project.bdi]);
@@ -154,7 +130,6 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
     onUpdateProject({ items: newItems, planning: cleanedPlanning });
   };
 
-<<<<<<< HEAD
   const handleNameBlur = () => {
     if (localName.trim() && localName !== project.name) {
       onUpdateProject({ name: localName.trim() });
@@ -163,8 +138,6 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
     }
   };
 
-=======
->>>>>>> 6b5afb1fea73f4224dfbd1ebe3972ed622b8485e
   const handleReopenMeasurement = () => {
     const reopenedProject = projectService.reopenLatestMeasurement(project);
     onUpdateProject(reopenedProject);
@@ -175,22 +148,15 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
   const TabBtn = ({ active, onClick, label, icon }: any) => (
     <button 
       onClick={onClick} 
-<<<<<<< HEAD
       className={`flex items-center gap-2 px-6 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all shrink-0 select-none pointer-events-auto ${active ? 'bg-white dark:bg-slate-700 text-indigo-600 shadow-sm border border-slate-200 dark:border-slate-600' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'}`}
     >
       {icon} <span>{label}</span>
-=======
-      className={`flex items-center gap-2 px-6 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${active ? 'bg-white dark:bg-slate-700 text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'}`}
-    >
-      {icon} <span className="hidden sm:inline">{label}</span>
->>>>>>> 6b5afb1fea73f4224dfbd1ebe3972ed622b8485e
     </button>
   );
 
   return (
     <>
       <div className="flex-1 flex flex-col overflow-hidden no-print">
-<<<<<<< HEAD
         <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex flex-col shrink-0 z-40">
           
           <div className="flex flex-col md:flex-row items-center justify-between px-6 md:px-10 py-4 gap-4">
@@ -270,66 +236,6 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
                 </div>
               </div>
             </div>
-=======
-        <header className="min-h-24 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex flex-col md:flex-row items-stretch md:items-center justify-between px-6 md:px-10 py-4 md:py-0 shrink-0 z-40 gap-4">
-          <div className="flex flex-col gap-1 overflow-hidden text-left">
-            <div className="flex items-center gap-3">
-              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 truncate max-w-[150px]">{project.name}</span>
-              <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700 shadow-inner">
-                <select 
-                  className="bg-transparent text-[10px] font-black uppercase tracking-widest text-slate-600 dark:text-slate-300 outline-none px-3 py-1 cursor-pointer"
-                  value={viewingHistoryIndex === null ? 'current' : viewingHistoryIndex}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    setViewingHistoryIndex(val === 'current' ? null : parseInt(val));
-                    setTab('wbs');
-                  }}
-                >
-                  <option value="current">Medição Nº {project.measurementNumber} (EM ABERTO)</option>
-                  {(project.history || []).map((snap, idx) => (
-                    <option key={idx} value={idx}>Medição Nº {snap.measurementNumber} (FECHADA)</option>
-                  ))}
-                </select>
-                <div className={`w-2 h-2 rounded-full mr-2 ${isViewingHistory ? 'bg-amber-500' : 'bg-emerald-500 animate-pulse'}`} />
-              </div>
-            </div>
-
-            <div className="flex items-center gap-4 overflow-x-auto no-scrollbar pb-1 mt-1">
-              <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl shadow-inner whitespace-nowrap">
-                <TabBtn active={tab === 'wbs'} onClick={() => setTab('wbs')} label="Planilha" icon={<Layers size={14}/>} />
-                <TabBtn active={tab === 'stats'} onClick={() => setTab('stats')} label="Análise" icon={<BarChart3 size={14}/>} />
-                <TabBtn active={tab === 'expenses'} onClick={() => setTab('expenses')} label="Financeiro" icon={<Coins size={14}/>} />
-                <TabBtn active={tab === 'planning'} onClick={() => setTab('planning')} label="Planejamento" icon={<Calendar size={14}/>} />
-                <TabBtn active={tab === 'journal'} onClick={() => setTab('journal')} label="Diário" icon={<BookOpen size={14}/>} />
-                <TabBtn active={tab === 'documents'} onClick={() => setTab('documents')} label="Docs" icon={<FileText size={14}/>} />
-                <TabBtn active={tab === 'branding'} onClick={() => setTab('branding')} label="Ajustes" icon={<Sliders size={14}/>} />
-              </div>
-            </div>
-          </div>
-
-          <div className="flex items-center justify-end gap-4">
-            <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
-              <button disabled={!canUndo || isViewingHistory} onClick={onUndo} className="p-2 hover:bg-white dark:hover:bg-slate-700 rounded-lg disabled:opacity-30 transition-all"><Undo2 size={16}/></button>
-              <button disabled={!canRedo || isViewingHistory} onClick={onRedo} className="p-2 hover:bg-white dark:hover:bg-slate-700 rounded-lg disabled:opacity-30 transition-all"><Redo2 size={16}/></button>
-            </div>
-            <button onClick={() => window.print()} title="Gerar PDF" className="p-3 text-white bg-slate-900 dark:bg-slate-700 hover:scale-105 active:scale-95 rounded-2xl transition-all shadow-lg"><Printer size={18}/></button>
-            
-            {!isViewingHistory && (
-              <button 
-                disabled={!canCloseMeasurement}
-                onClick={() => setShowConfirmClose(true)} 
-                className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-lg transition-all active:scale-95 ${canCloseMeasurement ? 'bg-indigo-600 text-white shadow-indigo-500/20' : 'bg-slate-200 text-slate-400 cursor-not-allowed opacity-60'}`}
-              >
-                <Lock size={14}/> <span>Fechar Medição</span>
-              </button>
-            )}
-            
-            {isViewingHistory && (
-              <div className="flex items-center gap-2 px-6 py-3 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded-2xl font-black uppercase text-[10px] tracking-widest border border-amber-200 dark:border-amber-800 shadow-sm">
-                <History size={14}/> <span>Arquivo Histórico</span>
-              </div>
-            )}
->>>>>>> 6b5afb1fea73f4224dfbd1ebe3972ed622b8485e
           </div>
         </header>
 
@@ -432,10 +338,6 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
         stats={printData.stats as any} 
       />
 
-<<<<<<< HEAD
-=======
-      {/* MODAL DE CONFIRMAÇÃO DE FECHAMENTO */}
->>>>>>> 6b5afb1fea73f4224dfbd1ebe3972ed622b8485e
       {showConfirmClose && (
         <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-300">
           <div className="bg-white dark:bg-slate-900 w-full max-w-lg rounded-[2.5rem] shadow-2xl border border-slate-200 dark:border-slate-800 p-8 sm:p-10 text-center">
@@ -482,10 +384,6 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
         </div>
       )}
 
-<<<<<<< HEAD
-=======
-      {/* MODAL DE CONFIRMAÇÃO DE REABERTURA */}
->>>>>>> 6b5afb1fea73f4224dfbd1ebe3972ed622b8485e
       {showConfirmReopen && (
         <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-300">
           <div className="bg-white dark:bg-slate-900 w-full max-w-lg rounded-[2.5rem] shadow-2xl border border-slate-200 dark:border-slate-800 p-8 sm:p-10 text-center">

@@ -25,7 +25,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
   isOpen, setIsOpen, mobileOpen, setMobileOpen, viewMode, setViewMode,
   projects, groups, activeProjectId, onOpenProject, onCreateProject, isDarkMode, toggleDarkMode, certificates
 }) => {
-<<<<<<< HEAD
   // Inicializa estado do localStorage para persistir pastas abertas
   // Fix: Explicitly type Set in lazy initializer to avoid 'Set<unknown>' inference
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(() => {
@@ -35,15 +34,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   useEffect(() => {
     localStorage.setItem('promeasure_sidebar_expanded_v4', JSON.stringify(Array.from(expandedGroups)));
-=======
-  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(() => {
-    const saved = localStorage.getItem('promeasure_sidebar_expanded_groups');
-    return saved ? new Set(JSON.parse(saved)) : new Set();
-  });
-
-  useEffect(() => {
-    localStorage.setItem('promeasure_sidebar_expanded_groups', JSON.stringify(Array.from(expandedGroups)));
->>>>>>> 6b5afb1fea73f4224dfbd1ebe3972ed622b8485e
   }, [expandedGroups]);
 
   const hasAlerts = biddingService.hasGlobalAlerts(certificates);
@@ -56,12 +46,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
     </button>
   );
 
-<<<<<<< HEAD
   // Fix: Explicitly type GroupTreeItem as React.FC to handle React's intrinsic key prop and satisfy strict TS checks
   const GroupTreeItem: React.FC<{ group: ProjectGroup, depth: number }> = ({ group, depth }) => {
-=======
-  const GroupTreeItem = ({ group, depth }: { group: ProjectGroup, depth: number }) => {
->>>>>>> 6b5afb1fea73f4224dfbd1ebe3972ed622b8485e
     const isExpanded = expandedGroups.has(group.id);
     const subGroups = groups.filter(g => g.parentId === group.id);
     const groupProjects = projects.filter(p => p.groupId === group.id);
@@ -71,11 +57,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <button 
           onClick={(e) => { 
             e.stopPropagation(); 
-<<<<<<< HEAD
             const n = new Set<string>(expandedGroups); 
-=======
-            const n = new Set(expandedGroups); 
->>>>>>> 6b5afb1fea73f4224dfbd1ebe3972ed622b8485e
             n.has(group.id) ? n.delete(group.id) : n.add(group.id); 
             setExpandedGroups(n); 
           }}
@@ -92,11 +74,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <>
             {subGroups.map(sg => <GroupTreeItem key={sg.id} group={sg} depth={depth + 1} />)}
             {groupProjects.map(p => (
-<<<<<<< HEAD
               <button key={p.id} onClick={() => onOpenProject(p.id)} className={`w-full flex items-center gap-2 p-2 rounded-xl transition-all ${activeProjectId === p.id ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 font-bold' : 'text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}`} style={{ paddingLeft: `${(depth + 1) * 12 + 18}px` }}>
-=======
-              <button key={p.id} onClick={() => onOpenProject(p.id)} className={`w-full flex items-center gap-2 p-2 rounded-xl transition-all ${activeProjectId === p.id ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600' : 'text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}`} style={{ paddingLeft: `${(depth + 1) * 12 + 18}px` }}>
->>>>>>> 6b5afb1fea73f4224dfbd1ebe3972ed622b8485e
                 <Briefcase size={12} className="shrink-0" />
                 {isOpen && <span className="text-[11px] truncate">{p.name}</span>}
               </button>

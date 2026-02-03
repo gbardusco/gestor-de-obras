@@ -1,7 +1,4 @@
-<<<<<<< HEAD
 
-=======
->>>>>>> 6b5afb1fea73f4224dfbd1ebe3972ed622b8485e
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Project, WorkItem, ItemType } from '../types';
 import { treeService } from '../services/treeService';
@@ -10,11 +7,7 @@ import { financial } from '../utils/math';
 import { TreeTable } from './TreeTable';
 import { 
   Plus, Layers, Search, FileSpreadsheet, UploadCloud, Download, 
-<<<<<<< HEAD
   X, CheckCircle2, AlertCircle, Package, RefreshCw, Eraser, Printer
-=======
-  X, CheckCircle2, AlertCircle, Package, RefreshCw, Eraser
->>>>>>> 6b5afb1fea73f4224dfbd1ebe3972ed622b8485e
 } from 'lucide-react';
 
 interface WbsViewProps {
@@ -29,27 +22,16 @@ export const WbsView: React.FC<WbsViewProps> = ({
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   
-<<<<<<< HEAD
   // Estados para controle de importação e UI
-=======
-  const [expandedIds, setExpandedIds] = useState<Set<string>>(() => {
-    const saved = localStorage.getItem(`exp_wbs_${project.id}`);
-    return saved ? new Set(JSON.parse(saved)) : new Set();
-  });
-
->>>>>>> 6b5afb1fea73f4224dfbd1ebe3972ed622b8485e
   const [isImporting, setIsImporting] = useState(false);
   const [importSummary, setImportSummary] = useState<ImportResult | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-<<<<<<< HEAD
   const [expandedIds, setExpandedIds] = useState<Set<string>>(() => {
     const saved = localStorage.getItem(`exp_wbs_${project.id}`);
     return saved ? new Set<string>(JSON.parse(saved)) : new Set<string>();
   });
 
-=======
->>>>>>> 6b5afb1fea73f4224dfbd1ebe3972ed622b8485e
   useEffect(() => {
     localStorage.setItem(`exp_wbs_${project.id}`, JSON.stringify(Array.from(expandedIds)));
   }, [expandedIds, project.id]);
@@ -112,7 +94,6 @@ export const WbsView: React.FC<WbsViewProps> = ({
     });
   };
 
-<<<<<<< HEAD
   // HANDLERS COM VALIDAÇÃO DE REGRA DE NEGÓCIO (CLAMPS)
   const updateItemQuantity = (id: string, qty: number) => {
     if (isReadOnly) return;
@@ -144,8 +125,6 @@ export const WbsView: React.FC<WbsViewProps> = ({
     });
   };
 
-=======
->>>>>>> 6b5afb1fea73f4224dfbd1ebe3972ed622b8485e
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
       <input type="file" ref={fileInputRef} className="hidden" accept=".xlsx, .xls" onChange={handleFileChange} />
@@ -200,7 +179,6 @@ export const WbsView: React.FC<WbsViewProps> = ({
           <button type="button" onClick={() => excelService.exportProjectToExcel(project)} className="p-2 text-slate-400 hover:text-blue-600 transition-colors" title="Exportar para Excel">
             <Download size={18}/>
           </button>
-<<<<<<< HEAD
 
           <div className="w-px h-6 bg-slate-100 dark:bg-slate-800 mx-1" />
 
@@ -212,8 +190,6 @@ export const WbsView: React.FC<WbsViewProps> = ({
             <Printer size={16}/>
             <span className="text-[9px] font-black uppercase tracking-widest pr-1 hidden sm:inline">Imprimir Relatório</span>
           </button>
-=======
->>>>>>> 6b5afb1fea73f4224dfbd1ebe3972ed622b8485e
         </div>
 
         <div className="relative w-full lg:w-96">
@@ -231,21 +207,12 @@ export const WbsView: React.FC<WbsViewProps> = ({
         <TreeTable 
           data={flattenedList} 
           expandedIds={expandedIds} 
-<<<<<<< HEAD
           onToggle={id => { const n = new Set<string>(expandedIds); n.has(id) ? n.delete(id) : n.add(id); setExpandedIds(n); }} 
           onExpandAll={() => setExpandedIds(new Set<string>(project.items.filter(i => i.type === 'category').map(i => i.id)))}
           onCollapseAll={() => setExpandedIds(new Set<string>())}
           onDelete={id => !isReadOnly && onUpdateProject({ items: project.items.filter(i => i.id !== id && i.parentId !== id) })}
           onUpdateQuantity={updateItemQuantity}
           onUpdatePercentage={updateItemPercentage}
-=======
-          onToggle={id => { const n = new Set(expandedIds); n.has(id) ? n.delete(id) : n.add(id); setExpandedIds(n); }} 
-          onExpandAll={() => setExpandedIds(new Set(project.items.filter(i => i.type === 'category').map(i => i.id)))}
-          onCollapseAll={() => setExpandedIds(new Set())}
-          onDelete={id => !isReadOnly && onUpdateProject({ items: project.items.filter(i => i.id !== id && i.parentId !== id) })}
-          onUpdateQuantity={(id, qty) => !isReadOnly && onUpdateProject({ items: project.items.map(it => it.id === id ? { ...it, currentQuantity: qty } : it) })}
-          onUpdatePercentage={(id, pct) => !isReadOnly && onUpdateProject({ items: project.items.map(it => it.id === id ? { ...it, currentQuantity: financial.round((pct/100) * it.contractQuantity), currentPercentage: pct } : it) })}
->>>>>>> 6b5afb1fea73f4224dfbd1ebe3972ed622b8485e
           
           onUpdateTotal={(id, total) => {
             if (isReadOnly) return;
@@ -375,8 +342,4 @@ export const WbsView: React.FC<WbsViewProps> = ({
       )}
     </div>
   );
-<<<<<<< HEAD
 };
-=======
-};
->>>>>>> 6b5afb1fea73f4224dfbd1ebe3972ed622b8485e
