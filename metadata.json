@@ -1,5 +1,9 @@
 {
+<<<<<<< HEAD
   "name": "teste - GESTOR DE OBRAS V0.5",
+=======
+  "name": "teste - GESTOR DE OBRAS V0.4",
+>>>>>>> 6b5afb1fea73f4224dfbd1ebe3972ed622b8485e
   "description": "Production-grade construction measurement system featuring recursive financial rollups, multi-level WBS hierarchy, dark mode support, and institutional reporting branding editor.",
   "requestFramePermissions": []
 }

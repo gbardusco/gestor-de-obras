@@ -61,6 +61,10 @@ const App: React.FC = () => {
     // Atualiza o estado global e persiste
     updateActiveProject(updated);
     
+<<<<<<< HEAD
+=======
+    // Feedback visual opcional pode ser adicionado aqui
+>>>>>>> 6b5afb1fea73f4224dfbd1ebe3972ed622b8485e
   }, [activeProject, updateActiveProject]);
 
   // Navegação: Criar Obra do zero ou vinculada a uma pasta
@@ -103,16 +107,28 @@ const App: React.FC = () => {
 
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
         
+<<<<<<< HEAD
         {/* HEADER MOBILE: Desduplicado e simplificado */}
+=======
+        {/* HEADER MOBILE */}
+>>>>>>> 6b5afb1fea73f4224dfbd1ebe3972ed622b8485e
         <header className="no-print lg:hidden h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center px-4 shrink-0 z-50">
           <button onClick={() => setMobileMenuOpen(true)} className="p-2 text-slate-600 dark:text-slate-300">
             <Menu size={24} />
           </button>
+<<<<<<< HEAD
           <span className="ml-4 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 truncate">
             {viewMode === 'global-dashboard' ? 'Portal de Obras' : 
              viewMode === 'bidding-view' ? 'Setor de Licitações' : 
              viewMode === 'system-settings' ? 'Configurações de Sistema' : 
              'Obra em Gestão'}
+=======
+          <span className="ml-4 text-xs font-black uppercase tracking-widest truncate">
+            {viewMode === 'global-dashboard' ? 'Dashboard' : 
+             viewMode === 'bidding-view' ? 'Licitações' : 
+             viewMode === 'system-settings' ? 'Configurações' : 
+             activeProject?.name}
+>>>>>>> 6b5afb1fea73f4224dfbd1ebe3972ed622b8485e
           </span>
         </header>
 

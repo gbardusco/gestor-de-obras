@@ -15,8 +15,12 @@ import {
   FilePlus,
   GripVertical,
   Eye,
+<<<<<<< HEAD
   Columns,
   Lock
+=======
+  Columns
+>>>>>>> 6b5afb1fea73f4224dfbd1ebe3972ed622b8485e
 } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 
@@ -65,6 +69,7 @@ export const TreeTable: React.FC<TreeTableProps> = ({
   contractTotalOverride,
   currentTotalOverride
 }) => {
+<<<<<<< HEAD
   // PERSISTÊNCIA DE ESTADOS DE INTERFACE NO LOCALSTORAGE
   const [view, setView] = useState<ColumnView>(() => {
     return (localStorage.getItem('promeasure_table_view') as ColumnView) || 'full';
@@ -75,10 +80,21 @@ export const TreeTable: React.FC<TreeTableProps> = ({
   const [showCod, setShowCod] = useState(() => localStorage.getItem('promeasure_col_cod') !== 'false');
 
   // ESTADO PARA DESCRIÇÕES EXPANDIDAS (LOCAL)
+=======
+  // Persistência de Visão e Toggles
+  const [view, setView] = useState<ColumnView>(() => (localStorage.getItem('promeasure_table_view') as ColumnView) || 'full');
+  const [showMover, setShowMover] = useState(() => localStorage.getItem('promeasure_table_mover') !== 'false');
+  const [showAcoes, setShowAcoes] = useState(() => localStorage.getItem('promeasure_table_acoes') !== 'false');
+  const [showFonte, setShowFonte] = useState(() => localStorage.getItem('promeasure_table_fonte') !== 'false');
+  const [showCod, setShowCod] = useState(() => localStorage.getItem('promeasure_table_cod') !== 'false');
+
+  // Estado para descrições expandidas
+>>>>>>> 6b5afb1fea73f4224dfbd1ebe3972ed622b8485e
   const [expandedDescriptions, setExpandedDescriptions] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     localStorage.setItem('promeasure_table_view', view);
+<<<<<<< HEAD
     localStorage.setItem('promeasure_col_mover', String(showMover));
     localStorage.setItem('promeasure_col_acoes', String(showAcoes));
     localStorage.setItem('promeasure_col_fonte', String(showFonte));
@@ -86,6 +102,15 @@ export const TreeTable: React.FC<TreeTableProps> = ({
   }, [view, showMover, showAcoes, showFonte, showCod]);
 
   const handleToggleDesc = (id: string) => {
+=======
+    localStorage.setItem('promeasure_table_mover', String(showMover));
+    localStorage.setItem('promeasure_table_acoes', String(showAcoes));
+    localStorage.setItem('promeasure_table_fonte', String(showFonte));
+    localStorage.setItem('promeasure_table_cod', String(showCod));
+  }, [view, showMover, showAcoes, showFonte, showCod]);
+
+  const toggleDescription = (id: string) => {
+>>>>>>> 6b5afb1fea73f4224dfbd1ebe3972ed622b8485e
     const next = new Set(expandedDescriptions);
     if (next.has(id)) next.delete(id);
     else next.add(id);
@@ -124,7 +149,11 @@ export const TreeTable: React.FC<TreeTableProps> = ({
   const showBalance = view === 'full';
 
   const calculateConsolidatedColSpan = () => {
+<<<<<<< HEAD
     let base = 4; // ITEM + EAP + UND + QTD
+=======
+    let base = 3; // ITEM + EAP + UND
+>>>>>>> 6b5afb1fea73f4224dfbd1ebe3972ed622b8485e
     if (showMover) base++;
     if (showAcoes) base++;
     if (showFonte) base++;
@@ -188,10 +217,16 @@ export const TreeTable: React.FC<TreeTableProps> = ({
                 {showCod && <th rowSpan={2} className="p-4 border-r border-slate-800 dark:border-slate-900 w-20">Código</th>}
                 <th rowSpan={2} className="p-4 border-r border-slate-800 dark:border-slate-900 text-left w-[400px] min-w-[400px] max-w-[400px]">Estrutura Analítica do Projeto (EAP)</th>
                 <th rowSpan={2} className="p-4 border-r border-slate-800 dark:border-slate-900 w-14">Und</th>
+<<<<<<< HEAD
                 <th rowSpan={2} className="p-4 border-r border-slate-800 dark:border-slate-900 w-18">Qtd</th>
                 
                 {showUnitary && <th colSpan={2} className="p-2 border-r border-slate-800 dark:border-slate-900 bg-slate-800/50">Unitário ({currencySymbol})</th>}
                 {showContract && <th className="p-2 border-r border-slate-800 dark:border-slate-900 bg-slate-800/30">Contrato</th>}
+=======
+                
+                {showUnitary && <th colSpan={2} className="p-2 border-r border-slate-800 dark:border-slate-900 bg-slate-800/50">Unitário ({currencySymbol})</th>}
+                {showContract && <th colSpan={2} className="p-2 border-r border-slate-800 dark:border-slate-900 bg-slate-800/30">Planilha Contratual</th>}
+>>>>>>> 6b5afb1fea73f4224dfbd1ebe3972ed622b8485e
                 {showPrevious && <th colSpan={2} className="p-2 border-r border-slate-800 dark:border-slate-900 bg-amber-900/20">Anterior</th>}
                 {showCurrent && <th colSpan={3} className="p-2 border-r border-slate-800 dark:border-slate-900 bg-blue-900/20">Período Corrente</th>}
                 {showAccumulated && <th colSpan={3} className="p-2 border-r border-slate-800 dark:border-slate-900 bg-emerald-900/20">Acumulado Total</th>}
@@ -207,7 +242,14 @@ export const TreeTable: React.FC<TreeTableProps> = ({
                   </>
                 )}
                 {showContract && (
+<<<<<<< HEAD
                   <th className="p-2 border-r border-slate-700 dark:border-slate-800 w-32 text-right">Total</th>
+=======
+                  <>
+                    <th className="p-2 border-r border-slate-700 dark:border-slate-800 w-16">Qtd</th>
+                    <th className="p-2 border-r border-slate-700 dark:border-slate-800 w-32 text-right">Total</th>
+                  </>
+>>>>>>> 6b5afb1fea73f4224dfbd1ebe3972ed622b8485e
                 )}
                 {showPrevious && (
                   <>
@@ -247,6 +289,7 @@ export const TreeTable: React.FC<TreeTableProps> = ({
                 >
                   {filteredData.map((item, index) => (
                     <Draggable key={item.id} draggableId={item.id} index={index} isDragDisabled={isReadOnly}>
+<<<<<<< HEAD
                       {(provided, snapshot) => {
                         const isExpandedDesc = expandedDescriptions.has(item.id);
                         // Item está 100% concluído em medições anteriores
@@ -313,6 +356,66 @@ export const TreeTable: React.FC<TreeTableProps> = ({
                             )}
 
                             {showContract && (
+=======
+                      {(provided, snapshot) => (
+                        <tr ref={provided.innerRef} {...provided.draggableProps} className={`group transition-all duration-150 ${item.type === 'category' ? 'bg-slate-50/80 dark:bg-slate-800/40 font-bold' : 'hover:bg-blue-50/40 dark:hover:bg-blue-900/10'} ${snapshot.isDragging ? 'dragging-row shadow-2xl z-50' : ''}`}>
+                          {showMover && (
+                            <td className="p-2 border-r border-slate-100 dark:border-slate-800 no-print text-center">
+                              <div {...provided.dragHandleProps} className="inline-flex p-1.5 text-slate-300 hover:text-indigo-500 transition-colors cursor-grab active:cursor-grabbing">
+                                <GripVertical size={16} />
+                              </div>
+                            </td>
+                          )}
+                          {showAcoes && (
+                            <td className="p-2 border-r border-slate-100 dark:border-slate-800 no-print">
+                              <div className="flex items-center justify-center gap-1 lg:opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button disabled={isReadOnly} onClick={() => onEdit(item)} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg"><Edit3 size={14}/></button>
+                                <button disabled={isReadOnly} onClick={() => onDelete(item.id)} className="p-1.5 text-rose-300 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-lg"><Trash2 size={14}/></button>
+                              </div>
+                            </td>
+                          )}
+                          <td className="p-2 text-center border-r border-slate-100 dark:border-slate-800 font-mono text-[10px] text-slate-400 dark:text-slate-500">{item.wbs}</td>
+                          {showFonte && <td className="p-2 text-center border-r border-slate-100 dark:border-slate-800 text-[9px] font-black uppercase text-slate-400 dark:text-slate-500">{item.fonte || '-'}</td>}
+                          {showCod && <td className="p-2 text-center border-r border-slate-100 dark:border-slate-800 text-slate-400 dark:text-slate-500 font-mono text-[10px]">{item.cod || '-'}</td>}
+                          <td className="p-2 border-r border-slate-100 dark:border-slate-800 w-[400px] min-w-[400px] max-w-[400px]">
+                            <div className="flex items-start gap-1 h-full">
+                              <div className="flex items-center gap-2" style={{ marginLeft: `${item.depth * 1.5}rem` }}>
+                                {item.type === 'category' ? (
+                                  <button onClick={() => onToggle(item.id)} className={`p-1 rounded-md transition-colors ${expandedIds.has(item.id) ? 'text-blue-600 bg-blue-100 dark:bg-blue-900/40' : 'text-slate-400 bg-slate-100 dark:bg-slate-800'}`}>
+                                    {expandedIds.has(item.id) ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                                  </button>
+                                ) : <div className="w-6 h-px bg-slate-200 dark:bg-slate-700" />}
+                                {item.type === 'category' ? <Layers size={14} className="text-blue-500 flex-shrink-0 mt-0.5" /> : <Package size={14} className="text-slate-300 flex-shrink-0 mt-0.5" />}
+                                
+                                <span 
+                                  onClick={() => toggleDescription(item.id)}
+                                  className={`cursor-pointer overflow-hidden text-ellipsis whitespace-normal leading-tight transition-all duration-300 ${expandedDescriptions.has(item.id) ? '' : 'line-clamp-2'} ${item.type === 'category' ? 'text-slate-900 dark:text-slate-100 uppercase text-[10px] font-black' : 'text-slate-600 dark:text-slate-300'}`}
+                                >
+                                  {item.name}
+                                </span>
+
+                                {item.type === 'category' && !isReadOnly && (
+                                  <div className="ml-auto lg:opacity-0 group-hover:opacity-100 flex items-center gap-1 transition-opacity">
+                                    <button onClick={() => onAddChild(item.id, 'category')} className="p-1 text-slate-400 hover:text-blue-600"><FolderPlus size={14} /></button>
+                                    <button onClick={() => onAddChild(item.id, 'item')} className="p-1 text-slate-400 hover:text-emerald-600"><FilePlus size={14} /></button>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </td>
+                          <td className="p-2 text-center border-r border-slate-100 dark:border-slate-800 font-black text-slate-400 uppercase text-[9px]">{item.unit || '-'}</td>
+                          
+                          {showUnitary && (
+                            <>
+                              <td className="p-2 text-right border-r border-slate-100 dark:border-slate-800 text-slate-400 dark:text-slate-500 font-mono text-[10px] whitespace-nowrap">{item.type === 'item' ? financial.formatVisual(item.unitPriceNoBdi, currencySymbol) : '-'}</td>
+                              <td className="p-2 text-right border-r border-slate-100 dark:border-slate-800 font-mono font-bold text-slate-700 dark:text-slate-300 whitespace-nowrap">{item.type === 'item' ? financial.formatVisual(item.unitPrice, currencySymbol) : '-'}</td>
+                            </>
+                          )}
+
+                          {showContract && (
+                            <>
+                              <td className="p-2 text-center border-r border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-900/40 text-slate-500 dark:text-slate-400 font-mono">{item.type === 'item' ? item.contractQuantity : '-'}</td>
+>>>>>>> 6b5afb1fea73f4224dfbd1ebe3972ed622b8485e
                               <td className="p-2 text-right border-r border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-900/40 whitespace-nowrap">
                                 {item.type === 'item' ? (
                                   <div className="flex items-center justify-end gap-1">
@@ -320,12 +423,17 @@ export const TreeTable: React.FC<TreeTableProps> = ({
                                     <ItemTotalInput 
                                       value={item.contractTotal} 
                                       onUpdate={(val: number) => onUpdateTotal(item.id, val)} 
+<<<<<<< HEAD
                                       disabled={isReadOnly || isFullyMeasuredPreviously}
+=======
+                                      disabled={isReadOnly}
+>>>>>>> 6b5afb1fea73f4224dfbd1ebe3972ed622b8485e
                                       currencySymbol={currencySymbol}
                                     />
                                   </div>
                                 ) : <span className="font-bold text-slate-900 dark:text-slate-100">{financial.formatVisual(item.contractTotal, currencySymbol)}</span>}
                               </td>
+<<<<<<< HEAD
                             )}
 
                             {showPrevious && (
@@ -394,6 +502,69 @@ export const TreeTable: React.FC<TreeTableProps> = ({
                           </tr>
                         );
                       }}
+=======
+                            </>
+                          )}
+
+                          {showPrevious && (
+                            <>
+                              <td className="p-2 text-center border-r border-slate-100 dark:border-slate-800 bg-amber-50/10 dark:bg-amber-900/10 text-slate-400 dark:text-slate-500 font-mono">{item.type === 'item' ? item.previousQuantity : '-'}</td>
+                              <td className="p-2 text-right border-r border-slate-100 dark:border-slate-800 bg-amber-50/10 dark:bg-amber-900/10 text-slate-400 dark:text-slate-500 whitespace-nowrap">{financial.formatVisual(item.previousTotal, currencySymbol)}</td>
+                            </>
+                          )}
+
+                          {showCurrent && (
+                            <>
+                              <td className="p-2 text-center border-r border-slate-100 dark:border-slate-800 bg-blue-50/20 dark:bg-blue-900/10">
+                                {item.type === 'item' ? (
+                                  <PercentageInput 
+                                    value={item.currentPercentage} 
+                                    onChange={(val) => onUpdatePercentage(item.id, val)}
+                                    disabled={isReadOnly}
+                                  />
+                                ) : '-'}
+                              </td>
+                              <td className="p-2 text-center border-r border-slate-100 dark:border-slate-800 bg-blue-50/20 dark:bg-blue-900/10">
+                                {item.type === 'item' ? (
+                                  <input disabled={isReadOnly} type="number" step="any" className="w-16 bg-white dark:bg-slate-950 border border-blue-300 dark:border-blue-700 rounded px-1 py-0.5 text-center text-[10px] font-bold text-blue-700 dark:text-blue-300 focus:ring-2 focus:ring-blue-500/20 outline-none" value={item.currentQuantity} onChange={(e) => onUpdateQuantity(item.id, parseFloat(e.target.value) || 0)} />
+                                ) : '-'}
+                              </td>
+                              <td className="p-2 text-right border-r border-slate-100 dark:border-slate-800 bg-blue-50/40 dark:bg-blue-900/20 whitespace-nowrap">
+                                {item.type === 'item' ? (
+                                  <div className="flex items-center justify-end">
+                                    <span className="text-[9px] text-blue-300 mr-1">{currencySymbol}</span>
+                                    <ItemTotalInput 
+                                      value={item.currentTotal} 
+                                      onUpdate={(val: number) => onUpdateCurrentTotal(item.id, val)} 
+                                      disabled={isReadOnly}
+                                      currencySymbol={currencySymbol}
+                                      textColorClass="text-blue-700 dark:text-blue-300"
+                                    />
+                                  </div>
+                                ) : <span className="font-black text-blue-700 dark:text-blue-300">{financial.formatVisual(item.currentTotal, currencySymbol)}</span>}
+                              </td>
+                            </>
+                          )}
+
+                          {showAccumulated && (
+                            <>
+                              <td className="p-2 text-center border-r border-slate-100 dark:border-slate-800 bg-emerald-50/10 dark:bg-emerald-900/10 font-bold text-slate-500 dark:text-slate-400 font-mono">{item.type === 'item' ? item.accumulatedQuantity : '-'}</td>
+                              <td className="p-2 text-right border-r border-slate-100 dark:border-slate-800 bg-emerald-50/10 dark:bg-emerald-900/10 font-black text-emerald-700 dark:text-emerald-400 whitespace-nowrap">{financial.formatVisual(item.accumulatedTotal, currencySymbol)}</td>
+                              <td className="p-2 text-center border-r border-slate-100 dark:border-slate-800 bg-emerald-50/30 dark:bg-emerald-900/20 font-black text-emerald-800 dark:text-emerald-100 text-[10px]">{item.accumulatedPercentage}%</td>
+                            </>
+                          )}
+
+                          {showBalance && (
+                            <>
+                              <td className="p-2 text-center border-r border-slate-100 dark:border-slate-800 bg-rose-50/10 dark:bg-rose-900/10 font-bold text-rose-600/60 dark:text-rose-400/60 font-mono">{item.type === 'item' ? item.balanceQuantity : '-'}</td>
+                              <td className="p-2 text-right bg-rose-50/20 dark:bg-rose-900/10 font-black text-rose-800 dark:text-rose-300 whitespace-nowrap">{financial.formatVisual(item.balanceTotal, currencySymbol)}</td>
+                            </>
+                          )}
+
+                          <td className="p-2 text-center font-black text-slate-700 dark:text-slate-200">{item.accumulatedPercentage}%</td>
+                        </tr>
+                      )}
+>>>>>>> 6b5afb1fea73f4224dfbd1ebe3972ed622b8485e
                     </Draggable>
                   ))}
                   {provided.placeholder}
@@ -404,6 +575,7 @@ export const TreeTable: React.FC<TreeTableProps> = ({
                     {showUnitary && <td colSpan={2} className="p-4 border-r border-white/10 opacity-30 italic text-[8px] text-center">Preços Médios</td>}
                     
                     {showContract && (
+<<<<<<< HEAD
                       <td className="p-4 border-r border-white/10 text-right text-base tracking-tighter whitespace-nowrap">
                         <div className="flex items-center justify-end gap-1">
                           <span className="text-[10px] text-slate-400 font-black">{currencySymbol}</span>
@@ -414,6 +586,21 @@ export const TreeTable: React.FC<TreeTableProps> = ({
                           />
                         </div>
                       </td>
+=======
+                      <>
+                        <td className="p-4 border-r border-white/10"></td>
+                        <td className="p-4 border-r border-white/10 text-right text-base tracking-tighter whitespace-nowrap">
+                          <div className="flex items-center justify-end gap-1">
+                            <span className="text-[10px] text-slate-400 font-black">{currencySymbol}</span>
+                            <GrandTotalInput 
+                              initialValue={totalContract} 
+                              onUpdate={(val: number) => onUpdateGrandTotal({ contract: val })}
+                              disabled={isReadOnly}
+                            />
+                          </div>
+                        </td>
+                      </>
+>>>>>>> 6b5afb1fea73f4224dfbd1ebe3972ed622b8485e
                     )}
 
                     {showPrevious && (
@@ -484,7 +671,11 @@ const PercentageInput = ({ value, onChange, disabled }: { value: number, onChang
       <input 
         disabled={disabled} 
         type="text" 
+<<<<<<< HEAD
         className={`w-12 bg-white dark:bg-slate-950 border border-blue-200 dark:border-blue-800 rounded px-1 py-0.5 text-center text-[10px] font-bold outline-none focus:ring-1 focus:ring-blue-500 ${disabled ? 'text-slate-400 bg-slate-50' : 'text-blue-600 dark:text-blue-400'}`} 
+=======
+        className="w-12 bg-white dark:bg-slate-950 border border-blue-200 dark:border-blue-800 rounded px-1 py-0.5 text-center text-[10px] font-bold text-blue-600 dark:text-blue-400 outline-none focus:ring-1 focus:ring-blue-500" 
+>>>>>>> 6b5afb1fea73f4224dfbd1ebe3972ed622b8485e
         value={localVal} 
         onChange={(e) => setLocalVal(e.target.value.replace(/[^0-9.]/g, ''))}
         onBlur={(e) => {
@@ -507,7 +698,11 @@ const ItemTotalInput = ({ value, onUpdate, disabled, currencySymbol, textColorCl
     <input 
       disabled={disabled} 
       type="text" 
+<<<<<<< HEAD
       className={`w-full bg-transparent text-right font-bold ${textColorClass} outline-none focus:ring-1 focus:ring-indigo-500 rounded px-1 ${disabled ? 'opacity-50' : ''}`} 
+=======
+      className={`w-full bg-transparent text-right font-bold ${textColorClass} outline-none focus:ring-1 focus:ring-indigo-500 rounded px-1`} 
+>>>>>>> 6b5afb1fea73f4224dfbd1ebe3972ed622b8485e
       value={localVal}
       onChange={(e) => setLocalVal(financial.maskCurrency(e.target.value))}
       onBlur={(e) => onUpdate(financial.parseLocaleNumber(e.target.value))}

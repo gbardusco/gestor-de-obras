@@ -1,3 +1,7 @@
+<<<<<<< HEAD
+=======
+
+>>>>>>> 6b5afb1fea73f4224dfbd1ebe3972ed622b8485e
 import { WorkItem, ProjectExpense, Project } from '../types';
 import { financial } from '../utils/math';
 
@@ -77,6 +81,13 @@ export const treeService = {
     return node;
   },
 
+<<<<<<< HEAD
+=======
+  /**
+   * Recalcula todos os itens do projeto garantindo que os preços unitários c/ BDI
+   * estejam sincronizados com o Preço Base (s/ BDI) e o BDI global.
+   */
+>>>>>>> 6b5afb1fea73f4224dfbd1ebe3972ed622b8485e
   forceRecalculate: (items: WorkItem[], bdi: number): WorkItem[] => {
     return items.map(item => {
       if (item.type === 'category') return item;
@@ -167,10 +178,17 @@ export const treeService = {
 
     return items.map(item => {
       if (item.id === sourceId) {
+<<<<<<< HEAD
         return { ...item, parentId: newParentId, order: newOrder } as T;
       }
       if (item.parentId === newParentId && item.order >= newOrder && item.id !== sourceId) {
         return { ...item, order: item.order + 1 } as T;
+=======
+        return { ...item, parentId: newParentId, order: newOrder };
+      }
+      if (item.parentId === newParentId && item.order >= newOrder && item.id !== sourceId) {
+        return { ...item, order: item.order + 1 };
+>>>>>>> 6b5afb1fea73f4224dfbd1ebe3972ed622b8485e
       }
       return item;
     });
@@ -194,8 +212,13 @@ export const treeService = {
     const newOrder = targetItem.order;
 
     return items.map(i => {
+<<<<<<< HEAD
       if (i.id === item.id) return { ...i, order: newOrder } as T;
       if (i.id === targetItem.id) return { ...i, order: oldOrder } as T;
+=======
+      if (i.id === item.id) return { ...i, order: newOrder };
+      if (i.id === targetItem.id) return { ...i, order: oldOrder };
+>>>>>>> 6b5afb1fea73f4224dfbd1ebe3972ed622b8485e
       return i;
     });
   }
