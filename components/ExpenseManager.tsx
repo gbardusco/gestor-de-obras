@@ -54,15 +54,7 @@ export const ExpenseManager: React.FC<ExpenseManagerProps> = ({
 
   const projectedBalance = financial.round(stats.revenue - stats.totalOut);
 
-  // Árvore processada para exibição na tabela (apenas da aba ativa)
-  const currentExpenses = useMemo(() => {
-    if (activeTab === 'overview') return [];
-    const filtered = expenses.filter(e => e.type === activeTab);
-    const tree = treeService.buildTree(filtered);
-    return tree.map((root, idx) => treeService.processExpensesRecursive(root as ProjectExpense, '', idx));
-  }, [expenses, activeTab]);
-
-  // Lista de categorias (grupos) para o dropdown do modal, respeitando o tipo (MO/MAT/RE)
+  // Filtramos apenas as categorias do tipo ativo (MO, MAT ou RE) para o dropdown do modal
   const processedExpenseCategories = useMemo(() => {
     const filterTab = activeTab === 'overview' ? 'material' : activeTab;
     const filtered = expenses.filter(e => e.type === filterTab);
@@ -71,6 +63,13 @@ export const ExpenseManager: React.FC<ExpenseManagerProps> = ({
     const allIds = new Set<string>(filtered.map(e => e.id));
     const flattened = treeService.flattenTree(processed, allIds);
     return flattened.filter(e => e.itemType === 'category');
+  }, [expenses, activeTab]);
+
+  const currentExpenses = useMemo(() => {
+    if (activeTab === 'overview') return [];
+    const filtered = expenses.filter(e => e.type === activeTab);
+    const tree = treeService.buildTree(filtered);
+    return tree.map((root, idx) => treeService.processExpensesRecursive(root as ProjectExpense, '', idx));
   }, [expenses, activeTab]);
 
   const flattenedExpenses = useMemo(() =>
@@ -171,14 +170,14 @@ export const ExpenseManager: React.FC<ExpenseManagerProps> = ({
         <div className="flex items-center gap-2">
           {activeTab !== 'overview' && (
             <div className="flex items-center gap-2">
-              <button
-                onClick={() => { setModalItemType('category'); setEditingExpense(null); setTargetParentId(null); setIsModalOpen(true); }}
+              <button 
+                onClick={() => { setModalItemType('category'); setEditingExpense(null); setTargetParentId(null); setIsModalOpen(true); }} 
                 className="flex items-center gap-2 px-4 py-3 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-[9px] font-black uppercase tracking-widest border border-slate-200 dark:border-slate-700 shadow-sm hover:bg-slate-50 transition-all"
               >
                 <FolderPlus size={14} /> Grupo
               </button>
-              <button
-                onClick={() => { setModalItemType('item'); setEditingExpense(null); setTargetParentId(null); setIsModalOpen(true); }}
+              <button 
+                onClick={() => { setModalItemType('item'); setEditingExpense(null); setTargetParentId(null); setIsModalOpen(true); }} 
                 className="px-5 py-3 bg-indigo-600 text-white font-black uppercase tracking-widest text-[9px] rounded-xl shadow-lg hover:scale-105 transition-transform"
               >
                 Lançamento
@@ -186,8 +185,8 @@ export const ExpenseManager: React.FC<ExpenseManagerProps> = ({
             </div>
           )}
           <div className="w-px h-6 bg-slate-200 dark:bg-slate-800 mx-1" />
-
-          <button
+          
+          <button 
             onClick={() => window.print()}
             className="flex items-center gap-2 px-5 py-3 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-[9px] font-black uppercase tracking-widest border border-slate-200 dark:border-slate-700 shadow-sm hover:bg-slate-50 transition-all"
           >
@@ -236,10 +235,10 @@ export const ExpenseManager: React.FC<ExpenseManagerProps> = ({
       )}
 
       {importSummary && (
-        <ExpenseImportReviewModal
-          summary={importSummary}
-          onClose={() => setImportSummary(null)}
-          onConfirm={confirmImport}
+        <ExpenseImportReviewModal 
+          summary={importSummary} 
+          onClose={() => setImportSummary(null)} 
+          onConfirm={confirmImport} 
         />
       )}
 
@@ -262,40 +261,40 @@ const ExpenseImportReviewModal = ({ summary, onClose, onConfirm }: { summary: Ex
     <div className="bg-white dark:bg-slate-900 w-full max-w-xl rounded-[2.5rem] p-8 border border-slate-200 dark:border-slate-800 shadow-2xl flex flex-col gap-6" onClick={e => e.stopPropagation()}>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="p-3 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 rounded-2xl"><UploadCloud size={24} /></div>
+          <div className="p-3 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 rounded-2xl"><UploadCloud size={24}/></div>
           <div>
             <h2 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-tight">Revisar Importação</h2>
             <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Planilha Financeira Processada</p>
           </div>
         </div>
-        <button onClick={onClose} className="p-2 text-slate-400 hover:bg-slate-50 rounded-xl transition-all"><X size={20} /></button>
+        <button onClick={onClose} className="p-2 text-slate-400 hover:bg-slate-50 rounded-xl transition-all"><X size={20}/></button>
       </div>
 
       <div className="grid grid-cols-3 gap-4">
         <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl text-center border border-slate-100 dark:border-slate-700">
-          <p className="text-2xl font-black text-blue-600">{summary.stats.byType.labor}</p>
-          <p className="text-[8px] font-black uppercase text-slate-400">Mão de Obra</p>
+           <p className="text-2xl font-black text-blue-600">{summary.stats.byType.labor}</p>
+           <p className="text-[8px] font-black uppercase text-slate-400">Mão de Obra</p>
         </div>
         <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl text-center border border-slate-100 dark:border-slate-700">
-          <p className="text-2xl font-black text-indigo-600">{summary.stats.byType.material}</p>
-          <p className="text-[8px] font-black uppercase text-slate-400">Materiais</p>
+           <p className="text-2xl font-black text-indigo-600">{summary.stats.byType.material}</p>
+           <p className="text-[8px] font-black uppercase text-slate-400">Materiais</p>
         </div>
         <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl text-center border border-slate-100 dark:border-slate-700">
-          <p className="text-2xl font-black text-emerald-600">{summary.stats.byType.revenue}</p>
-          <p className="text-[8px] font-black uppercase text-slate-400">Receitas</p>
+           <p className="text-2xl font-black text-emerald-600">{summary.stats.byType.revenue}</p>
+           <p className="text-[8px] font-black uppercase text-slate-400">Receitas</p>
         </div>
       </div>
 
       <div className="p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800 rounded-2xl flex gap-3">
-        <AlertCircle size={20} className="text-amber-500 shrink-0" />
-        <p className="text-[10px] font-medium text-amber-700 dark:text-amber-400 leading-tight">
-          Ao confirmar, os registros de Mão de Obra, Materiais e Receitas do sistema serão **SUBSTITUÍDOS** pelos dados desta planilha para evitar duplicações.
-        </p>
+         <AlertCircle size={20} className="text-amber-500 shrink-0" />
+         <p className="text-[10px] font-medium text-amber-700 dark:text-amber-400 leading-tight">
+           Ao confirmar, os registros de Mão de Obra, Materiais e Receitas do sistema serão **SUBSTITUÍDOS** pelos dados desta planilha para evitar duplicações.
+         </p>
       </div>
 
       <div className="flex gap-3">
-        <button onClick={onClose} className="flex-1 py-4 text-slate-400 font-black uppercase text-[10px] tracking-widest hover:bg-slate-50 rounded-2xl">Cancelar</button>
-        <button onClick={onConfirm} className="flex-1 py-4 bg-indigo-600 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-xl shadow-indigo-500/20 active:scale-95 transition-all">Confirmar e Importar</button>
+         <button onClick={onClose} className="flex-1 py-4 text-slate-400 font-black uppercase text-[10px] tracking-widest hover:bg-slate-50 rounded-2xl">Cancelar</button>
+         <button onClick={onConfirm} className="flex-1 py-4 bg-indigo-600 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-xl shadow-indigo-500/20 active:scale-95 transition-all">Confirmar e Importar</button>
       </div>
     </div>
   </div>

@@ -122,7 +122,7 @@ export const TreeTable: React.FC<TreeTableProps> = ({
   const showBalance = view === 'full';
 
   const calculateConsolidatedColSpan = () => {
-    let base = 4; // ITEM + EAP (Descrição) + UND + QTD
+    let base = 3; // ITEM + EAP (Descrição) + UND
     if (showMover) base++;
     if (showAcoes) base++;
     if (showFonte) base++;
@@ -130,13 +130,9 @@ export const TreeTable: React.FC<TreeTableProps> = ({
     return base;
   };
 
-  // Cálculo de totais baseado na raiz (depth 0) da árvore filtrada ou completa
   const rootItems = data.filter(i => i.depth === 0);
-  const totalContractCalculated = financial.sum(rootItems.map(i => i.contractTotal));
-  const totalCurrentCalculated = financial.sum(rootItems.map(i => i.currentTotal));
-
-  const totalContract = contractTotalOverride ?? totalContractCalculated;
-  const totalCurrent = currentTotalOverride ?? totalCurrentCalculated;
+  const totalContract = contractTotalOverride ?? financial.sum(rootItems.map(i => i.contractTotal));
+  const totalCurrent = currentTotalOverride ?? financial.sum(rootItems.map(i => i.currentTotal));
 
   return (
     <div className="flex flex-col gap-4">
@@ -190,7 +186,7 @@ export const TreeTable: React.FC<TreeTableProps> = ({
                 <th rowSpan={2} className="p-4 border-r border-slate-800 dark:border-slate-900 w-18">Qtd</th>
                 
                 {showUnitary && <th colSpan={2} className="p-2 border-r border-slate-800 dark:border-slate-900 bg-slate-800/50">Unitário ({currencySymbol})</th>}
-                {showContract && <th className="p-2 border-r border-slate-800 dark:border-slate-900 bg-slate-800/30">Contrato</th>}
+                {showContract && <th className="p-2 border-r border-slate-800 dark:border-slate-800 bg-slate-800/30">Contrato</th>}
                 {showPrevious && <th colSpan={2} className="p-2 border-r border-slate-800 dark:border-slate-900 bg-amber-900/20">Anterior</th>}
                 {showCurrent && <th colSpan={3} className="p-2 border-r border-slate-800 dark:border-slate-900 bg-blue-900/20">Período</th>}
                 {showAccumulated && <th colSpan={3} className="p-2 border-r border-slate-800 dark:border-slate-900 bg-emerald-900/20">Acumulado</th>}
@@ -237,7 +233,8 @@ export const TreeTable: React.FC<TreeTableProps> = ({
               </tr>
             </thead>
             
-            <Droppable droppableId="wbs-tree" direction="vertical" isDragDisabled={isReadOnly} isCombineEnabled={!isReadOnly}>
+            {/* Fix: Changed isDragDisabled to isDropDisabled on Droppable component */}
+            <Droppable droppableId="wbs-tree" direction="vertical" isDropDisabled={isReadOnly} isCombineEnabled={!isReadOnly}>
               {(provided) => (
                 <tbody 
                   {...provided.droppableProps} 
@@ -401,7 +398,7 @@ export const TreeTable: React.FC<TreeTableProps> = ({
 
             <tfoot className="bg-slate-950 dark:bg-black text-white font-black text-xs sticky bottom-0 z-40 shadow-2xl">
               <tr className="border-t border-white/20">
-                <td colSpan={calculateConsolidatedColSpan()} className="p-5 text-right uppercase tracking-[0.2em] text-[10px] border-r border-white/10">Consolidado Total da Planilha:</td>
+                <td colSpan={calculateConsolidatedColSpan() + 1} className="p-5 text-right uppercase tracking-[0.2em] text-[10px] border-r border-white/10">Consolidado Total da Planilha:</td>
                 
                 {showUnitary && <td colSpan={2} className="p-4 border-r border-white/10 opacity-30 italic text-[8px] text-center">Médias Unitárias</td>}
                 
