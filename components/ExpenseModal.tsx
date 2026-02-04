@@ -21,6 +21,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
   currencySymbol = 'R$'
 }) => {
   const isRevenue = expenseType === 'revenue';
+  const isLabor = expenseType === 'labor';
   const [activeItemType, setActiveItemType] = useState<ItemType>(initialItemType);
 
   const [formData, setFormData] = useState<Partial<ProjectExpense>>({
@@ -126,7 +127,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
         <div className={`px-8 py-6 border-b flex items-center justify-between shrink-0 ${isRevenue ? 'bg-emerald-50 dark:bg-emerald-900/10' : 'bg-indigo-50 dark:bg-indigo-900/10'}`}>
           <div className="flex items-center gap-4">
             <div className={`p-3 rounded-2xl text-white ${isRevenue ? 'bg-emerald-600' : 'bg-indigo-600'}`}>
-              {isCategory ? <Layers size={24} /> : (isRevenue ? <Landmark size={24} /> : <ReceiptText size={24} />)}
+              {isCategory ? <Layers size={24} /> : (isRevenue ? <Landmark size={24} /> : (isLabor ? <Users size={24} /> : <ReceiptText size={24} />))}
             </div>
             <div>
               <h2 className="text-xl font-black dark:text-white tracking-tight">{editingItem ? 'Editar' : 'Novo'} {isCategory ? 'Grupo' : 'Lançamento'}</h2>
@@ -168,18 +169,20 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
                       </select>
                     </div>
                   </div>
-                  <div>
-                    <label className="text-[10px] font-black text-slate-400 uppercase mb-2 block tracking-widest ml-1">Status Manual</label>
-                    <select
-                      className="w-full px-5 py-4 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-xs font-black uppercase outline-none focus:border-indigo-500"
-                      value={formData.status}
-                      onChange={e => setFormData({ ...formData, status: e.target.value as ExpenseStatus })}
-                    >
-                      <option value="PENDING">Pendente</option>
-                      {!isRevenue && <option value="PAID">Pago / Liquidado</option>}
-                      <option value="DELIVERED">{isRevenue ? 'Entregue' : 'Entregue / Concluído'}</option>
-                    </select>
-                  </div>
+                  {!isCategory && (
+                    <div>
+                      <label className="text-[10px] font-black text-slate-400 uppercase mb-2 block tracking-widest ml-1">Status Manual</label>
+                      <select
+                        className="w-full px-5 py-4 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-xs font-black uppercase outline-none focus:border-indigo-500"
+                        value={formData.status}
+                        onChange={e => setFormData({ ...formData, status: e.target.value as ExpenseStatus })}
+                      >
+                        <option value="PENDING">Pendente</option>
+                        {!isRevenue && <option value="PAID">Pago / Liquidado</option>}
+                        {!isLabor && <option value="DELIVERED">{isRevenue ? 'Entregue' : 'Entregue / Concluído'}</option>}
+                      </select>
+                    </div>
+                  )}
                 </div>
 
                 <div>
@@ -257,7 +260,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
 
                   {!isRevenue && (
                     <ExpenseAttachmentZone
-                      label="1. Comprovante de Pagamento"
+                      label={isLabor ? "1. Recibo de Pagamento" : "1. Comprovante de Pagamento"}
                       requiredStatus="PAID"
                       currentFile={formData.paymentProof}
                       onUpload={(base64) => setFormData({ ...formData, paymentProof: base64 })}
@@ -265,17 +268,19 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
                     />
                   )}
 
-                  <ExpenseAttachmentZone
-                    label={isRevenue ? "1. Nota Fiscal / Comprovante" : "2. Nota Fiscal / Fatura"}
-                    requiredStatus="DELIVERED"
-                    currentFile={formData.invoiceDoc}
-                    onUpload={(base64) => setFormData({ ...formData, invoiceDoc: base64 })}
-                    onRemove={() => setFormData({ ...formData, invoiceDoc: undefined })}
-                  />
+                  {!isLabor && (
+                    <ExpenseAttachmentZone
+                      label={isRevenue ? "1. Nota Fiscal / Comprovante" : "2. Nota Fiscal / Fatura"}
+                      requiredStatus="DELIVERED"
+                      currentFile={formData.invoiceDoc}
+                      onUpload={(base64) => setFormData({ ...formData, invoiceDoc: base64 })}
+                      onRemove={() => setFormData({ ...formData, invoiceDoc: undefined })}
+                    />
+                  )}
 
                   <div className="animate-in slide-in-from-top-2">
                     <label className="text-[10px] font-black text-slate-400 uppercase mb-2 block tracking-widest ml-1">
-                      {isRevenue ? 'Data de Faturamento' : 'Data de Entrega'}
+                      {isRevenue ? 'Data de Faturamento' : isLabor ? 'Data de Pagamento' : 'Data de Entrega'}
                     </label>
                     <input
                       type="date"
