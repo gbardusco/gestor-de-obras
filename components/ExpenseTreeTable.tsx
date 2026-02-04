@@ -2,8 +2,8 @@
 import React from 'react';
 import { ProjectExpense } from '../types';
 import { financial } from '../utils/math';
-import { 
-  ChevronRight, ChevronDown, Trash2, Edit3, Layers, 
+import {
+  ChevronRight, ChevronDown, Trash2, Edit3, Layers,
   Calendar, Truck, CheckCircle2, Circle, GripVertical, Clock, Landmark, Tag, FileText, Download, Receipt
 } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
@@ -25,7 +25,7 @@ interface ExpenseTreeTableProps {
   currencySymbol?: string;
 }
 
-export const ExpenseTreeTable: React.FC<ExpenseTreeTableProps> = ({ 
+export const ExpenseTreeTable: React.FC<ExpenseTreeTableProps> = ({
   data, expandedIds, onToggle, onEdit, onDelete, onAddChild, onUpdateTotal, onUpdateUnitPrice, onTogglePaid, onReorder, onMoveManual, isReadOnly, currencySymbol = 'R$'
 }) => {
   const isRevenueTable = data.some(d => d.type === 'revenue');
@@ -53,6 +53,7 @@ export const ExpenseTreeTable: React.FC<ExpenseTreeTableProps> = ({
             <th className="p-4 border-r border-white/5 w-16 text-center">Und</th>
             <th className="p-4 border-r border-white/5 w-20 text-center">Qtd</th>
             <th className="p-4 border-r border-white/5 w-32 text-right">Unitário</th>
+            <th className="p-4 border-r border-white/5 w-28 text-right">Desconto</th>
             <th className="p-4 w-32 text-right">Total</th>
           </tr>
         </thead>
@@ -63,36 +64,36 @@ export const ExpenseTreeTable: React.FC<ExpenseTreeTableProps> = ({
                 <div className="p-1 text-slate-300 group-hover:text-indigo-500 transition-colors"><GripVertical size={14} /></div>
               </td>
               <td className="p-2 border-r border-slate-100 dark:border-slate-800 text-center">
-                 {item.itemType === 'item' && (
-                   <div className="flex justify-center">
-                      {item.status === 'DELIVERED' ? (
-                        <div className="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 flex items-center justify-center" title="Entregue">
-                          <Truck size={14}/>
-                        </div>
-                      ) : item.status === 'PAID' ? (
-                        <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 flex items-center justify-center" title="Pago">
-                          <CheckCircle2 size={14}/>
-                        </div>
-                      ) : (
-                        <div className="w-8 h-8 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-600 flex items-center justify-center" title="Pendente">
-                          <Clock size={14}/>
-                        </div>
-                      )}
-                   </div>
-                 )}
+                {item.itemType === 'item' && (
+                  <div className="flex justify-center">
+                    {item.status === 'DELIVERED' ? (
+                      <div className="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 flex items-center justify-center" title="Entregue">
+                        <Truck size={14} />
+                      </div>
+                    ) : item.status === 'PAID' ? (
+                      <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 flex items-center justify-center" title="Pago">
+                        <CheckCircle2 size={14} />
+                      </div>
+                    ) : (
+                      <div className="w-8 h-8 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-600 flex items-center justify-center" title="Pendente">
+                        <Clock size={14} />
+                      </div>
+                    )}
+                  </div>
+                )}
               </td>
               <td className="p-2 border-r border-slate-100 dark:border-slate-800">
                 <div className="flex items-center justify-center gap-1 opacity-40 group-hover:opacity-100 transition-opacity">
-                  <button onClick={() => onEdit(item)} className="p-1.5 text-slate-400 hover:text-blue-600 rounded-lg" title="Editar"><Edit3 size={14}/></button>
-                  
+                  <button onClick={() => onEdit(item)} className="p-1.5 text-slate-400 hover:text-blue-600 rounded-lg" title="Editar"><Edit3 size={14} /></button>
+
                   {item.itemType === 'item' && item.invoiceDoc && (
-                    <button onClick={() => handleDownloadDoc(item.invoiceDoc!, `NF_${item.description}.pdf`)} className="p-1.5 text-emerald-400 hover:text-emerald-600 rounded-lg" title="Baixar Nota Fiscal"><Receipt size={14}/></button>
+                    <button onClick={() => handleDownloadDoc(item.invoiceDoc!, `NF_${item.description}.pdf`)} className="p-1.5 text-emerald-400 hover:text-emerald-600 rounded-lg" title="Baixar Nota Fiscal"><Receipt size={14} /></button>
                   )}
                   {item.itemType === 'item' && item.paymentProof && (
-                    <button onClick={() => handleDownloadDoc(item.paymentProof!, `COMPR_${item.description}.pdf`)} className="p-1.5 text-blue-400 hover:text-blue-600 rounded-lg" title="Baixar Comprovante"><Download size={14}/></button>
+                    <button onClick={() => handleDownloadDoc(item.paymentProof!, `COMPR_${item.description}.pdf`)} className="p-1.5 text-blue-400 hover:text-blue-600 rounded-lg" title="Baixar Comprovante"><Download size={14} /></button>
                   )}
 
-                  <button onClick={() => onDelete(item.id)} className="p-1.5 text-rose-300 hover:text-rose-600 rounded-lg" title="Excluir"><Trash2 size={14}/></button>
+                  <button onClick={() => onDelete(item.id)} className="p-1.5 text-rose-300 hover:text-rose-600 rounded-lg" title="Excluir"><Trash2 size={14} /></button>
                 </div>
               </td>
               <td className="p-2 border-r border-slate-100 dark:border-slate-800">
@@ -103,33 +104,41 @@ export const ExpenseTreeTable: React.FC<ExpenseTreeTableProps> = ({
                     </button>
                   ) : <div className="w-6 h-px bg-slate-200 dark:bg-slate-700" />}
                   <div className="flex flex-col min-w-0">
-                     <span className={`truncate ${item.itemType === 'category' ? 'uppercase text-[10px] font-black' : 'text-slate-600 dark:text-slate-300'}`}>{item.description}</span>
-                     {item.itemType === 'item' && <span className="text-[8px] font-bold text-slate-400 uppercase">{item.entityName || 'Sem Fornecedor'}</span>}
+                    <span className={`truncate ${item.itemType === 'category' ? 'uppercase text-[10px] font-black' : 'text-slate-600 dark:text-slate-300'}`}>{item.description}</span>
+                    {item.itemType === 'item' && <span className="text-[8px] font-bold text-slate-400 uppercase">{item.entityName || 'Sem Fornecedor'}</span>}
                   </div>
                 </div>
               </td>
               <td className="p-2 border-r border-slate-100 dark:border-slate-800 text-[10px] text-slate-500">
-                 {item.itemType === 'item' ? (
-                   <div className="space-y-0.5">
-                     <p>Lançado: {financial.formatDate(item.date)}</p>
-                     {item.deliveryDate && <p className="text-emerald-600 font-bold">Entrega: {financial.formatDate(item.deliveryDate)}</p>}
-                   </div>
-                 ) : '—'}
+                {item.itemType === 'item' ? (
+                  <div className="space-y-0.5">
+                    <p>Lançado: {financial.formatDate(item.date)}</p>
+                    {item.deliveryDate && <p className="text-emerald-600 font-bold">Entrega: {financial.formatDate(item.deliveryDate)}</p>}
+                  </div>
+                ) : '—'}
               </td>
               <td className="p-2 text-center border-r border-slate-100 dark:border-slate-800 font-black text-slate-400 uppercase text-[9px]">{item.unit || '-'}</td>
               <td className="p-2 text-center border-r border-slate-100 dark:border-slate-800 font-mono">{item.itemType === 'item' ? item.quantity : '-'}</td>
               <td className="p-2 text-right border-r border-slate-100 dark:border-slate-800 text-slate-400 font-mono">
                 {item.itemType === 'item' ? financial.formatVisual(item.unitPrice, currencySymbol) : '-'}
               </td>
+              <td className="p-2 text-right border-r border-slate-100 dark:border-slate-800 text-rose-500 font-mono">
+                {item.itemType === 'item' && (item.discountValue || item.discountPercentage) ? (
+                  <div className="flex flex-col items-end">
+                    <span className="font-bold">-{financial.formatVisual(item.discountValue || 0, currencySymbol)}</span>
+                    <span className="text-[8px] opacity-60">({item.discountPercentage || 0}%)</span>
+                  </div>
+                ) : '-'}
+              </td>
               <td className="p-2 text-right">
-                 <span className={`font-black ${isRevenueTable ? 'text-emerald-600' : 'text-slate-800 dark:text-slate-100'}`}>{financial.formatVisual(item.amount, currencySymbol)}</span>
+                <span className={`font-black ${isRevenueTable ? 'text-emerald-600' : 'text-slate-800 dark:text-slate-100'}`}>{financial.formatVisual(item.amount, currencySymbol)}</span>
               </td>
             </tr>
           ))}
         </tbody>
         <tfoot className="bg-slate-900 dark:bg-black text-white font-black text-xs sticky bottom-0 z-20 shadow-2xl">
           <tr className="border-t border-white/20">
-            <td colSpan={8} className="p-4 text-right uppercase tracking-[0.2em] text-[9px] border-r border-white/10 opacity-70">
+            <td colSpan={9} className="p-4 text-right uppercase tracking-[0.2em] text-[9px] border-r border-white/10 opacity-70">
               Total Consolidado da Tabela:
             </td>
             <td className="p-4 text-right text-sm tracking-tighter whitespace-nowrap">
