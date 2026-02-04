@@ -10,6 +10,7 @@ import { PlanningView } from './PlanningView';
 import { JournalView } from './JournalView';
 import { PrintReport } from './PrintReport';
 import { PrintExpenseReport } from './PrintExpenseReport';
+import { PrintPlanningReport } from './PrintPlanningReport'; // Importação adicionada
 import { WorkItemModal } from './WorkItemModal';
 import { treeService } from '../services/treeService';
 import { projectService } from '../services/projectService';
@@ -19,7 +20,7 @@ import { financial } from '../utils/math';
 import { 
   Layers, BarChart3, Coins, FileText, Sliders, 
   Undo2, Redo2, Lock, Calendar, BookOpen,
-  CheckCircle2, ArrowRight, History, Edit2, Printer, HardHat,
+  CheckCircle2, ArrowRight, History, Edit2, HardHat,
   RotateCcw, AlertTriangle, LockOpen
 } from 'lucide-react';
 
@@ -172,15 +173,6 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
             </div>
 
             <div className="flex items-center gap-3 shrink-0">
-              {tab === 'expenses' && (
-                <button 
-                  onClick={() => window.print()}
-                  className="flex items-center gap-2 px-5 py-3 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-2xl text-[10px] font-black uppercase tracking-widest border border-slate-200 dark:border-slate-700 shadow-sm hover:bg-slate-50 transition-all"
-                >
-                  <Printer size={14} /> Relatório Financeiro
-                </button>
-              )}
-
               <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
                 <button disabled={!canUndo || isViewingHistory} onClick={onUndo} className="p-2 hover:bg-white dark:hover:bg-slate-700 rounded-lg disabled:opacity-30 transition-all"><Undo2 size={16}/></button>
                 <button disabled={!canRedo || isViewingHistory} onClick={onRedo} className="p-2 hover:bg-white dark:hover:bg-slate-700 rounded-lg disabled:opacity-30 transition-all"><Redo2 size={16}/></button>
@@ -336,20 +328,31 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
         </div>
       </div>
 
-      <PrintReport 
-        project={project} 
-        companyName={project.companyName || globalSettings.defaultCompanyName}
-        companyCnpj={project.companyCnpj || globalSettings.companyCnpj}
-        data={printData.flattened} 
-        expenses={project.expenses} 
-        stats={printData.stats as any} 
-      />
+      {/* RENDERIZAÇÃO CONDICIONAL DOS RELATÓRIOS PARA IMPRESSÃO */}
+      {tab === 'expenses' && (
+        <PrintExpenseReport 
+          project={project}
+          expenses={project.expenses}
+          stats={expenseStats}
+        />
+      )}
+      
+      {tab === 'planning' && (
+        <PrintPlanningReport 
+          project={project}
+        />
+      )}
 
-      <PrintExpenseReport 
-        project={project}
-        expenses={project.expenses}
-        stats={expenseStats}
-      />
+      {(tab === 'wbs' || tab === 'stats' || tab === 'journal' || tab === 'documents' || tab === 'branding') && (
+        <PrintReport 
+          project={project} 
+          companyName={project.companyName || globalSettings.defaultCompanyName}
+          companyCnpj={project.companyCnpj || globalSettings.companyCnpj}
+          data={printData.flattened} 
+          expenses={project.expenses} 
+          stats={printData.stats as any} 
+        />
+      )}
 
       {showConfirmClose && (
         <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-300">

@@ -53,9 +53,6 @@ export interface Supplier {
   order: number;
 }
 
-/**
- * Interface para distribuição de valores planejados e realizados por período no cronograma.
- */
 export interface PeriodDistribution {
   plannedPercent: number;
   actualPercent?: number;
@@ -65,7 +62,6 @@ export interface ProjectPlanning {
   tasks: PlanningTask[];
   forecasts: MaterialForecast[];
   milestones: Milestone[];
-  // Fix: Adicionada propriedade schedule para suportar o cronograma físico-financeiro e resolver erro de compilação
   schedule?: Record<string, Record<string, PeriodDistribution>>;
 }
 
@@ -92,6 +88,7 @@ export interface MaterialForecast {
   unit: string;
   estimatedDate: string;
   status: ForecastStatus;
+  isPaid?: boolean;
   order: number;
 }
 
@@ -106,7 +103,7 @@ export interface ProjectJournal {
   entries: JournalEntry[];
 }
 
-export type JournalCategory = 'PROGRESS' | 'FINANCIAL' | 'INCIDENT' | 'WEATHER';
+export type JournalCategory = 'PROGRESS' | 'FINANCIAL' | 'INCIDENT' | 'WEATHER' | 'LOGISTICS';
 export type WeatherType = 'sunny' | 'rainy' | 'cloudy' | 'storm';
 
 export interface JournalEntry {
@@ -147,19 +144,6 @@ export interface CompanyCertificate {
   fileData?: string;
   status: 'valid' | 'warning' | 'expired';
 }
-
-export const DEFAULT_THEME: PDFTheme = {
-  fontFamily: 'Inter',
-  primary: '#000000',
-  accent: '#2563eb',
-  accentText: '#ffffff',
-  border: '#000000',
-  currencySymbol: 'R$',
-  header: { bg: '#0f172a', text: '#ffffff' },
-  category: { bg: '#f1f5f9', text: '#000000' },
-  footer: { bg: '#0f172a', text: '#ffffff' },
-  kpiHighlight: { bg: '#eff6ff', text: '#1d4ed8' }
-};
 
 export interface GlobalSettings {
   defaultCompanyName: string;
@@ -246,6 +230,7 @@ export interface ProjectAsset {
 }
 
 export type ExpenseType = 'labor' | 'material' | 'revenue';
+export type ExpenseStatus = 'PENDING' | 'PAID' | 'SHIPPED' | 'DELIVERED';
 
 export interface ProjectExpense {
   id: string;
@@ -256,6 +241,7 @@ export interface ProjectExpense {
   order: number;
   date: string; 
   paymentDate?: string; 
+  deliveryDate?: string;
   description: string; 
   entityName: string; 
   unit: string;
@@ -265,6 +251,22 @@ export interface ProjectExpense {
   discountPercentage?: number;
   amount: number; 
   isPaid?: boolean; 
+  status: ExpenseStatus;
+  paymentProof?: string; // Base64 do comprovante
+  invoiceDoc?: string;   // Base64 da NF
   linkedWorkItemId?: string;
   children?: ProjectExpense[];
 }
+
+export const DEFAULT_THEME: PDFTheme = {
+  fontFamily: 'Inter',
+  primary: '#000000',
+  accent: '#2563eb',
+  accentText: '#ffffff',
+  border: '#000000',
+  currencySymbol: 'R$',
+  header: { bg: '#0f172a', text: '#ffffff' },
+  category: { bg: '#f1f5f9', text: '#000000' },
+  footer: { bg: '#0f172a', text: '#ffffff' },
+  kpiHighlight: { bg: '#eff6ff', text: '#1d4ed8' }
+};

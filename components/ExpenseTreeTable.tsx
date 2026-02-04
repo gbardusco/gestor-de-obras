@@ -1,5 +1,6 @@
+
 import React from 'react';
-import { ProjectExpense } from '../types';
+import { ProjectExpense, ExpenseStatus } from '../types';
 import { financial } from '../utils/math';
 import { 
   ChevronRight, 
@@ -13,13 +14,14 @@ import {
   Truck,
   CheckCircle2,
   Circle,
-  ArrowRightLeft,
   Users,
   GripVertical,
-  Clock,
   Landmark,
   ChevronUp,
-  Tag
+  Package,
+  PackageCheck,
+  CreditCard,
+  Paperclip
 } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 
@@ -64,6 +66,28 @@ export const ExpenseTreeTable: React.FC<ExpenseTreeTableProps> = ({
     onReorder(sourceId, targetItem.id, 'after');
   };
 
+  const StatusBadge = ({ status, proof, invoice }: { status: ExpenseStatus, proof?: string, invoice?: string }) => {
+    const config = {
+      PENDING: { icon: <Circle size={14} />, color: 'text-slate-400', label: 'Lançado' },
+      PAID: { icon: <CreditCard size={14} />, color: 'text-indigo-500', label: 'Pago' },
+      SHIPPED: { icon: <Truck size={14} />, color: 'text-amber-500', label: 'Trânsito' },
+      DELIVERED: { icon: <PackageCheck size={14} />, color: 'text-emerald-500', label: 'Entregue' }
+    };
+    const c = config[status] || config.PENDING;
+    
+    return (
+      <div className="flex items-center gap-2">
+        <div className={`${c.color}`} title={c.label}>{c.icon}</div>
+        {(proof || invoice) && (
+          <div className="flex gap-0.5">
+             {proof && <Paperclip size={10} className="text-indigo-400" title="Possui Comprovante" />}
+             {invoice && <Paperclip size={10} className="text-emerald-400" title="Possui NF" />}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const totalTable = financial.sum(data.filter(i => i.depth === 0).map(i => i.amount));
 
   return (
@@ -73,18 +97,16 @@ export const ExpenseTreeTable: React.FC<ExpenseTreeTableProps> = ({
           <thead className={`${isRevenueTable ? 'bg-emerald-950 dark:bg-emerald-900/20' : 'bg-slate-900 dark:bg-black'} text-white sticky top-0 z-20`}>
             <tr className="uppercase tracking-widest font-black text-[9px] opacity-80">
               <th className="p-4 border-r border-white/5 w-16 text-center">Ordem</th>
-              <th className="p-4 border-r border-white/5 w-16 text-center">Status</th>
+              <th className="p-4 border-r border-white/5 w-16 text-center">Fluxo</th>
               <th className="p-4 border-r border-white/5 w-24 text-center">Ações</th>
               <th className="p-4 border-r border-white/5 w-20 text-center">WBS</th>
               <th className="p-4 border-r border-white/5 text-left min-w-[300px]">
                 {isRevenueTable ? 'Receita / Descritivo' : 'Insumo / Despesa'}
               </th>
               <th className="p-4 border-r border-white/5 w-44 text-left">
-                {isRevenueTable ? 'Datas (Emissão/Recebido)' : 'Datas (Gasto/Pgto)'}
+                {isRevenueTable ? 'Datas' : 'Gasto / Pgto / Entrega'}
               </th>
-              <th className="p-4 border-r border-white/5 w-48 text-left">
-                {isRevenueTable ? 'Origem' : 'Entidade'}
-              </th>
+              <th className="p-4 border-r border-white/5 w-48 text-left">Entidade</th>
               <th className="p-4 border-r border-white/5 w-16 text-center">Und</th>
               <th className="p-4 border-r border-white/5 w-20 text-center">Qtd</th>
               <th className="p-4 border-r border-white/5 w-28 text-right">Unitário</th>
@@ -101,31 +123,18 @@ export const ExpenseTreeTable: React.FC<ExpenseTreeTableProps> = ({
                       <tr 
                         ref={provided.innerRef}
                         {...provided.draggableProps}
-                        className={`group transition-all ${item.itemType === 'category' ? (isRevenueTable ? 'bg-emerald-50/30 dark:bg-emerald-900/10' : 'bg-slate-50/80 dark:bg-slate-800/40') : (isRevenueTable ? 'hover:bg-emerald-50/40' : 'hover:bg-indigo-50/40 dark:hover:bg-indigo-900/10')} ${item.itemType === 'category' ? 'font-bold' : ''} ${item.isPaid ? 'opacity-70 grayscale-[0.3]' : ''} ${snapshot.isDragging ? 'dragging-row' : ''}`}
+                        className={`group transition-all ${item.itemType === 'category' ? (isRevenueTable ? 'bg-emerald-50/30 dark:bg-emerald-900/10' : 'bg-slate-50/80 dark:bg-slate-800/40') : (isRevenueTable ? 'hover:bg-emerald-50/40' : 'hover:bg-indigo-50/40 dark:hover:bg-indigo-900/10')} ${item.itemType === 'category' ? 'font-bold' : ''} ${item.isPaid || item.status === 'DELIVERED' ? 'opacity-70 grayscale-[0.3]' : ''} ${snapshot.isDragging ? 'dragging-row shadow-2xl z-50' : ''}`}
                       >
                         <td className="p-2 border-r border-slate-100 dark:border-slate-800 text-center">
                           <div className="flex items-center justify-center gap-1">
                             <div {...provided.dragHandleProps} className={`p-1 transition-colors cursor-grab active:cursor-grabbing ${isRevenueTable ? 'text-emerald-200 hover:text-emerald-500' : 'text-slate-300 hover:text-indigo-500'}`}>
                               <GripVertical size={14} />
                             </div>
-                            {!isReadOnly && (
-                              <div className="flex flex-col">
-                                <button onClick={() => onMoveManual(item.id, 'up')} className="text-slate-300 hover:text-indigo-500 transition-colors"><ChevronUp size={12}/></button>
-                                <button onClick={() => onMoveManual(item.id, 'down')} className="text-slate-300 hover:text-indigo-500 transition-colors"><ChevronDown size={12}/></button>
-                              </div>
-                            )}
                           </div>
                         </td>
                         <td className="p-2 border-r border-slate-100 dark:border-slate-800 text-center">
                           {item.itemType === 'item' && (
-                            <button 
-                              disabled={isReadOnly}
-                              onClick={() => onTogglePaid(item.id)}
-                              className={`p-2 rounded-xl transition-all ${item.isPaid ? 'text-emerald-500 bg-emerald-50 dark:bg-emerald-900/20' : 'text-slate-300 hover:text-indigo-500'}`}
-                              title={isRevenueTable ? (item.isPaid ? "Recebido" : "Marcar como Recebido") : (item.isPaid ? "Pago" : "Marcar como Pago")}
-                            >
-                              {item.isPaid ? <CheckCircle2 size={18} /> : <Circle size={18} />}
-                            </button>
+                             <StatusBadge status={item.status} proof={item.paymentProof} invoice={item.invoiceDoc} />
                           )}
                         </td>
                         <td className="p-2 border-r border-slate-100 dark:border-slate-800">
@@ -146,29 +155,26 @@ export const ExpenseTreeTable: React.FC<ExpenseTreeTableProps> = ({
                             {item.itemType === 'category' ? <Layers size={14} className={isRevenueTable ? 'text-emerald-500' : 'text-indigo-500'} /> : (
                               item.type === 'revenue' ? <Landmark size={14} className="text-emerald-500 flex-shrink-0" /> : 
                               item.type === 'labor' ? <Users size={14} className="text-blue-400 flex-shrink-0" /> : 
-                              <Truck size={14} className="text-slate-300 dark:text-slate-500 flex-shrink-0" />
+                              <Package size={14} className="text-slate-300 dark:text-slate-500 flex-shrink-0" />
                             )}
 
-                            <span className={`truncate ${item.itemType === 'category' ? 'uppercase text-[10px] font-black dark:text-slate-100' : 'text-slate-600 dark:text-slate-300'} ${item.isPaid ? 'line-through decoration-emerald-500/30' : ''}`}>{item.description}</span>
-                            {item.itemType === 'category' && !isReadOnly && (
-                              <div className="ml-auto lg:opacity-0 group-hover:opacity-100 flex items-center gap-1 transition-opacity">
-                                <button onClick={() => onAddChild(item.id, 'category')} className={`p-1.5 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-500 dark:text-indigo-400 rounded-lg hover:bg-indigo-600 hover:text-white transition-all`} title="Nova Subpasta"><FolderPlus size={14} /></button>
-                                <button onClick={() => onAddChild(item.id, 'item')} className={`p-1.5 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-500 dark:text-emerald-400 rounded-lg hover:bg-emerald-600 hover:text-white transition-all`} title="Novo Lançamento / Insumo"><FilePlus size={14} /></button>
-                              </div>
-                            )}
+                            <span className={`truncate ${item.itemType === 'category' ? 'uppercase text-[10px] font-black dark:text-slate-100' : 'text-slate-600 dark:text-slate-300'} ${item.status === 'DELIVERED' ? 'text-emerald-600 font-bold' : ''}`}>{item.description}</span>
                           </div>
                         </td>
                         <td className="p-2 border-r border-slate-100 dark:border-slate-800">
                           {item.itemType === 'item' ? (
                             <div className="flex flex-col gap-0.5">
-                              <div className="flex items-center gap-1 text-[10px] text-slate-500 dark:text-slate-400">
-                                <Calendar size={10} className="shrink-0" /> 
-                                <span>{isRevenueTable ? 'Emissão' : 'Gasto'}: {financial.formatDate(item.date)}</span>
+                              <div className="flex items-center gap-1 text-[9px] text-slate-400">
+                                <Calendar size={10} /> {financial.formatDate(item.date)}
                               </div>
                               {item.paymentDate && (
-                                <div className={`flex items-center gap-1 text-[9px] font-bold ${isRevenueTable ? 'text-emerald-600' : 'text-blue-600'}`}>
-                                  <Clock size={9} className="shrink-0" /> 
-                                  <span>{isRevenueTable ? 'Recebido' : 'Pgto'}: {financial.formatDate(item.paymentDate)}</span>
+                                <div className="flex items-center gap-1 text-[9px] font-bold text-indigo-500">
+                                  <CreditCard size={10} /> {financial.formatDate(item.paymentDate)}
+                                </div>
+                              )}
+                              {item.deliveryDate && (
+                                <div className="flex items-center gap-1 text-[9px] font-bold text-emerald-500">
+                                  <Package size={10} /> {financial.formatDate(item.deliveryDate)}
                                 </div>
                               )}
                             </div>
@@ -180,54 +186,19 @@ export const ExpenseTreeTable: React.FC<ExpenseTreeTableProps> = ({
                         <td className="p-2 text-center border-r border-slate-100 dark:border-slate-800 font-black text-slate-400 dark:text-slate-500 uppercase text-[9px]">{item.unit || '-'}</td>
                         <td className="p-2 text-center border-r border-slate-100 dark:border-slate-800 font-mono dark:text-slate-300">{item.itemType === 'item' ? item.quantity : '-'}</td>
                         <td className="p-2 text-right border-r border-slate-100 dark:border-slate-800 text-slate-400 dark:text-slate-500 font-mono">
-                          {item.itemType === 'item' ? (
-                            <input 
-                              disabled={isReadOnly}
-                              type="text" 
-                              className="w-full bg-transparent text-right font-mono outline-none focus:ring-1 focus:ring-indigo-500 rounded px-1" 
-                              key={`${item.id}-up-${item.unitPrice}`}
-                              defaultValue={financial.formatVisual(item.unitPrice, currencySymbol).replace(currencySymbol, '').trim()} 
-                              onBlur={(e) => onUpdateUnitPrice(item.id, financial.parseLocaleNumber(e.target.value))} 
-                            />
-                          ) : '-'}
+                           {item.itemType === 'item' ? financial.formatVisual(item.unitPrice, currencySymbol) : '-'}
                         </td>
                         <td className="p-2 text-right border-r border-slate-100 dark:border-slate-800 font-mono text-rose-500/80">
-                          {item.itemType === 'item' && item.discountValue ? (
-                            <div className="flex flex-col items-end">
-                              <span className="font-bold">-{financial.formatVisual(item.discountValue, currencySymbol).replace(currencySymbol, '').trim()}</span>
-                              <span className="text-[8px] font-black">{item.discountPercentage}% OFF</span>
-                            </div>
-                          ) : '-'}
+                          {item.itemType === 'item' && item.discountValue ? financial.formatVisual(item.discountValue, currencySymbol) : '-'}
                         </td>
                         <td className="p-2 text-right">
-                           {item.itemType === 'item' ? (
-                             <input 
-                               disabled={isReadOnly}
-                               type="text" 
-                               className={`w-full bg-transparent text-right font-black outline-none focus:ring-1 focus:ring-indigo-500 rounded px-1 ${isRevenueTable ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-800 dark:text-slate-100'}`} 
-                               key={`${item.id}-amt-${item.amount}`}
-                               defaultValue={financial.formatVisual(item.amount, currencySymbol).replace(currencySymbol, '').trim()} 
-                               onBlur={(e) => onUpdateTotal(item.id, financial.parseLocaleNumber(e.target.value))} 
-                             />
-                           ) : <span className={`font-black ${isRevenueTable ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-800 dark:text-slate-100'}`}>{financial.formatVisual(item.amount, currencySymbol)}</span>}
+                           <span className={`font-black ${isRevenueTable ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-800 dark:text-slate-100'}`}>{financial.formatVisual(item.amount, currencySymbol)}</span>
                         </td>
                       </tr>
                     )}
                   </Draggable>
                 ))}
                 {provided.placeholder}
-
-                <tr className={`${isRevenueTable ? 'bg-emerald-950' : 'bg-slate-950 dark:bg-black'} text-white font-black text-xs sticky bottom-0 z-10 shadow-2xl`}>
-                  <td colSpan={5} className="p-4 text-right uppercase tracking-[0.2em] text-[10px] border-r border-white/10">
-                    {isRevenueTable ? 'Total de Receitas' : 'Total de Despesas'}:
-                  </td>
-                  <td colSpan={6} className="p-4 border-r border-white/10 opacity-30 italic text-[9px]">
-                    Soma líquida consolidada (considerando abatimentos e descontos)
-                  </td>
-                  <td className={`p-4 text-right text-base tracking-tighter ${isRevenueTable ? 'text-emerald-400' : 'text-rose-400'}`}>
-                    {financial.formatVisual(totalTable, currencySymbol)}
-                  </td>
-                </tr>
               </tbody>
             )}
           </Droppable>

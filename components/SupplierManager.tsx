@@ -42,14 +42,18 @@ export const SupplierManager: React.FC<SupplierManagerProps> = ({ suppliers, onU
     };
   }, [suppliers]);
 
+  // Fix: Explicitly ensure mapped items are treated as object types for spread operation
   const handleDragEnd = (result: DropResult) => {
     if (!result.destination) return;
     const items = Array.from(suppliers);
     const [reorderedItem] = items.splice(result.source.index, 1);
-    items.splice(result.destination.index, 0, reorderedItem);
     
-    const updated = items.map((item, index) => ({ ...item, order: index }));
-    onUpdateSuppliers(updated);
+    if (reorderedItem) {
+      items.splice(result.destination.index, 0, reorderedItem);
+      // Fixed: Casting item to Supplier to satisfy "Spread types may only be created from object types" check
+      const updated = items.map((item, index) => ({ ...(item as Supplier), order: index }));
+      onUpdateSuppliers(updated);
+    }
   };
 
   const handleDelete = (id: string) => {
@@ -60,8 +64,11 @@ export const SupplierManager: React.FC<SupplierManagerProps> = ({ suppliers, onU
 
   const handleSave = (data: Partial<Supplier>) => {
     if (editingSupplier) {
-      onUpdateSuppliers(suppliers.map(s => s.id === editingSupplier.id ? { ...s, ...data } : s));
+      // Fix: Capture ID in a local variable to maintain narrowing inside map callback
+      const targetId = editingSupplier.id;
+      onUpdateSuppliers(suppliers.map(s => s.id === targetId ? { ...s, ...data } : s));
     } else {
+      // Fix: Simplified assignment and removed redundant casting
       const newSupplier: Supplier = {
         id: crypto.randomUUID(),
         name: data.name || 'Novo Fornecedor',
@@ -73,7 +80,6 @@ export const SupplierManager: React.FC<SupplierManagerProps> = ({ suppliers, onU
         rating: data.rating || 0,
         notes: data.notes || '',
         order: suppliers.length,
-        ...data
       };
       onUpdateSuppliers([...suppliers, newSupplier]);
     }
@@ -215,36 +221,38 @@ export const SupplierManager: React.FC<SupplierManagerProps> = ({ suppliers, onU
   );
 };
 
+// --- SUB-COMPONENTS ---
+
 const StatCard = ({ label, value, icon, color }: any) => {
-  const colors: any = { indigo: 'text-indigo-600 dark:text-indigo-400', amber: 'text-amber-600 dark:text-amber-400', emerald: 'text-emerald-600 dark:text-emerald-400' };
+  const colors: any = {
+    indigo: 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/20 border-indigo-100 dark:border-indigo-800',
+    amber: 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 border-amber-100 dark:border-amber-800',
+    emerald: 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 border-emerald-100 dark:border-emerald-800'
+  };
   return (
-    <div className="p-6 rounded-[2.5rem] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between h-36">
-       <div className="flex justify-between items-start">
-          <div className="p-3 bg-slate-50 dark:bg-slate-800 text-slate-400 rounded-2xl">{icon}</div>
-          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{label}</span>
-       </div>
-       <p className={`text-2xl font-black tracking-tighter ${colors[color]}`}>{value}</p>
+    <div className="bg-white dark:bg-slate-900 p-6 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between h-32">
+      <div className="flex justify-between items-start">
+        <div className={`p-2 rounded-lg ${colors[color]}`}>{icon}</div>
+        <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">{label}</span>
+      </div>
+      <p className={`text-xl font-black tracking-tighter ${colors[color].split(' ')[0]}`}>{value}</p>
     </div>
   );
 };
 
-const RatingStars = ({ rating }: { rating: number }) => (
-  <div className="flex items-center gap-0.5">
-    {[1, 2, 3, 4, 5].map(star => (
-      <Star 
-        key={star} 
-        size={12} 
-        className={star <= rating ? 'fill-amber-400 text-amber-400' : 'text-slate-200 dark:text-slate-800'} 
-      />
-    ))}
-  </div>
-);
-
-const getCategoryColor = (cat: Supplier['category']) => {
-  switch(cat) {
+const getCategoryColor = (category: Supplier['category']) => {
+  switch (category) {
     case 'Material': return 'bg-indigo-600';
-    case 'Serviço': return 'bg-emerald-600';
-    case 'Locação': return 'bg-blue-600';
+    case 'Serviço': return 'bg-blue-600';
+    case 'Locação': return 'bg-amber-600';
     default: return 'bg-slate-600';
   }
 };
+
+const RatingStars = ({ rating }: { rating: number }) => (
+  <div className="flex gap-0.5">
+    {[1, 2, 3, 4, 5].map(s => (
+      <Star key={s} size={12} className={s <= rating ? 'fill-amber-400 text-amber-400' : 'text-slate-200 dark:text-slate-800'} />
+    ))}
+  </div>
+);

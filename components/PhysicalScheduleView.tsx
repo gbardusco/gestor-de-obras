@@ -32,9 +32,11 @@ export const PhysicalScheduleView: React.FC<PhysicalScheduleViewProps> = ({ proj
   }, [startMonth, numMonths]);
 
   const treeData = useMemo(() => {
-    const tree = treeService.buildTree(project.items);
+    // Fix: Explicitly type buildTree call to ensure inferred types align with WorkItem for processRecursive
+    const tree = treeService.buildTree<WorkItem>(project.items);
     const processed = tree.map((root, idx) => treeService.processRecursive(root, '', idx, project.bdi));
-    const allIds = new Set(project.items.map(i => i.id));
+    // Fix: Explicitly typed the Set constructor to ensure allIds is Set<string>
+    const allIds = new Set<string>(project.items.map(i => i.id));
     return treeService.flattenTree(processed, allIds);
   }, [project.items, project.bdi]);
 
@@ -153,7 +155,7 @@ export const PhysicalScheduleView: React.FC<PhysicalScheduleViewProps> = ({ proj
                     </td>
                     {periods.map(p => {
                       const distribution = schedule[item.id]?.[p];
-                      // Fix: Correct property name from 'plannedPhysical' to 'plannedPercent' as defined in PeriodDistribution interface
+                      // Corrected planned value calculation using plannedPercent property from PeriodDistribution
                       const plannedValue = isCat ? 0 : (item.contractTotal * (distribution?.plannedPercent || 0) / 100);
                       
                       return (
@@ -219,7 +221,8 @@ export const PhysicalScheduleView: React.FC<PhysicalScheduleViewProps> = ({ proj
                <h3 className="text-xs font-black uppercase tracking-widest text-slate-800 dark:text-white">Pico de Desembolso</h3>
             </div>
             <p className="text-2xl font-black text-slate-800 dark:text-white tracking-tighter">
-               {financial.formatVisual(Math.max(...Object.values(periodTotals)), 'R$')}
+               {/* Fix: Cast Object.values to number[] to satisfy Math.max spread argument type requirement */}
+               {financial.formatVisual(Math.max(...(Object.values(periodTotals) as number[])), 'R$')}
             </p>
             <p className="text-[9px] font-bold text-slate-400 uppercase mt-2">Mês de maior custo operacional</p>
          </div>

@@ -270,8 +270,11 @@ export const excelService = {
             const total = itemType === 'item' ? parseVal(row[10]) : 0;
             let expenseDate = new Date().toISOString().split('T')[0];
             if (itemType === 'item' && row[3] instanceof Date) { expenseDate = row[3].toISOString().split('T')[0]; } else if (itemType === 'item' && row[3]) { const d = new Date(row[3]); if (!isNaN(d.getTime())) expenseDate = d.toISOString().split('T')[0]; }
+            
+            // Fix: Add missing required 'status' property
+            const isPaidInExcel = String(row[11] || "").toUpperCase().startsWith('S') || String(row[11] || "").toUpperCase() === 'SIM';
             const expense: ProjectExpense = {
-              id: crypto.randomUUID(), parentId: null, type, itemType, wbs, order: idx, date: expenseDate, description: String(row[4] || "Importado"), entityName: itemType === 'item' ? String(row[5] || "") : "", unit: String(row[6] || ""), quantity: qty || 1, unitPrice: unitPrice || (total + disc), discountValue: disc, discountPercentage: 0, amount: total || (qty * unitPrice - disc), isPaid: String(row[11] || "").toUpperCase().startsWith('S') || String(row[11] || "").toUpperCase() === 'SIM'
+              id: crypto.randomUUID(), parentId: null, type, itemType, wbs, order: idx, date: expenseDate, description: String(row[4] || "Importado"), entityName: itemType === 'item' ? String(row[5] || "") : "", unit: String(row[6] || ""), quantity: qty || 1, unitPrice: unitPrice || (total + disc), discountValue: disc, discountPercentage: 0, amount: total || (qty * unitPrice - disc), isPaid: isPaidInExcel, status: isPaidInExcel ? 'PAID' : 'PENDING'
             };
             importedExpenses.push(expense);
             if (wbs) wbsMap.set(wbs, expense);
