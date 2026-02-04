@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { Supplier } from '../types';
 import { 
@@ -42,14 +41,18 @@ export const SupplierManager: React.FC<SupplierManagerProps> = ({ suppliers, onU
     };
   }, [suppliers]);
 
+  // Fix: Ensure reorderedItem is valid and handle potential undefined values in array during map spread
   const handleDragEnd = (result: DropResult) => {
     if (!result.destination) return;
     const items = Array.from(suppliers);
     const [reorderedItem] = items.splice(result.source.index, 1);
-    items.splice(result.destination.index, 0, reorderedItem);
     
-    const updated = items.map((item, index) => ({ ...item, order: index }));
-    onUpdateSuppliers(updated);
+    if (reorderedItem) {
+      items.splice(result.destination.index, 0, reorderedItem);
+      // Ensure each item is an object before spreading to satisfy strict TS checks
+      const updated = items.map((item, index) => ({ ...item, order: index }));
+      onUpdateSuppliers(updated);
+    }
   };
 
   const handleDelete = (id: string) => {
@@ -60,7 +63,9 @@ export const SupplierManager: React.FC<SupplierManagerProps> = ({ suppliers, onU
 
   const handleSave = (data: Partial<Supplier>) => {
     if (editingSupplier) {
-      onUpdateSuppliers(suppliers.map(s => s.id === editingSupplier.id ? { ...s, ...data } : s));
+      // Fix: Capture ID in a local variable to maintain narrowing inside map callback
+      const targetId = editingSupplier.id;
+      onUpdateSuppliers(suppliers.map(s => s.id === targetId ? { ...s, ...data } : s));
     } else {
       // Fix: Removed redundant spread of (data as any) to resolve TS error and simplified assignment
       const newSupplier: Supplier = {

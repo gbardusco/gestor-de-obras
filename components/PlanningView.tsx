@@ -146,7 +146,6 @@ export const PlanningView: React.FC<PlanningViewProps> = ({
         </div>
 
         <div className="flex bg-slate-100 dark:bg-slate-800 p-1.5 rounded-2xl gap-1 overflow-x-auto no-scrollbar">
-          {/* Fix: SubTabBtn defined below */}
           <SubTabBtn active={activeSubTab === 'tasks'} onClick={() => setActiveSubTab('tasks')} label="Quadro Kanban" icon={<ListChecks size={14}/>} />
           <SubTabBtn active={activeSubTab === 'forecast'} onClick={() => setActiveSubTab('forecast')} label="Suprimentos" icon={<Boxes size={14}/>} />
           <SubTabBtn active={activeSubTab === 'milestones'} onClick={() => setActiveSubTab('milestones')} label="Cronograma" icon={<Target size={14}/>} />
@@ -230,7 +229,6 @@ export const PlanningView: React.FC<PlanningViewProps> = ({
         {activeSubTab === 'forecast' && (
           <div className="space-y-8 animate-in fade-in">
              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {/* Fix: ForecastKpi defined below */}
                 <ForecastKpi label="Total em Suprimentos" value={forecastStats.total} icon={<Boxes size={20}/>} color="indigo" sub="Previsão global de gastos" />
                 <ForecastKpi label="Pendente de Compra" value={forecastStats.pending} icon={<Clock size={20}/>} color="amber" sub="Ainda não efetivado" />
                 <ForecastKpi label="Efetivado/Local" value={forecastStats.ordered} icon={<CheckCircle2 size={20}/>} color="emerald" sub="Lançado no financeiro" />
@@ -311,7 +309,6 @@ export const PlanningView: React.FC<PlanningViewProps> = ({
                                   </td>
                                   <td className="py-5">
                                     <div className="flex gap-1 justify-center">
-                                       {/* Fix: StatusCircle defined below */}
                                        <StatusCircle active={f.status === 'pending'} onClick={() => onUpdatePlanning(planningService.updateForecast(planning, f.id, { status: 'pending' }))} icon={<AlertCircle size={12}/>} color="amber" label="Pendente" />
                                        <StatusCircle active={f.status === 'ordered'} onClick={() => onUpdatePlanning(planningService.updateForecast(planning, f.id, { status: 'ordered' }))} icon={<ShoppingCart size={12}/>} color="blue" label="Comprado" />
                                        <StatusCircle active={f.status === 'delivered'} onClick={() => onUpdatePlanning(planningService.updateForecast(planning, f.id, { status: 'delivered' }))} icon={<Truck size={12}/>} color="emerald" label="No Local" />
@@ -385,7 +382,6 @@ export const PlanningView: React.FC<PlanningViewProps> = ({
                 </div>
              </div>
            ) : (
-             /* Fix: CalendarView defined below */
              <CalendarView milestones={planning.milestones} onEdit={setEditingMilestone} />
            )}
         </div>
@@ -404,7 +400,6 @@ export const PlanningView: React.FC<PlanningViewProps> = ({
       )}
 
       {(editingTask || isAddingTask) && (
-        /* Fix: TaskModal defined below */
         <TaskModal 
           task={editingTask} 
           initialStatus={isAddingTask}
@@ -419,7 +414,6 @@ export const PlanningView: React.FC<PlanningViewProps> = ({
       )}
 
       {(editingMilestone || isAddingMilestone) && (
-        /* Fix: MilestoneModal defined below */
         <MilestoneModal 
           milestone={editingMilestone}
           onClose={() => { setEditingMilestone(null); setIsAddingMilestone(false); }}
@@ -433,7 +427,6 @@ export const PlanningView: React.FC<PlanningViewProps> = ({
       )}
 
       {confirmingForecast && (
-        /* Fix: ConfirmForecastModal defined below */
         <ConfirmForecastModal 
           forecast={confirmingForecast} 
           onClose={() => setConfirmingForecast(null)} 
@@ -447,7 +440,76 @@ export const PlanningView: React.FC<PlanningViewProps> = ({
 
 // --- SUB-COMPONENTS ---
 
-// Fix: Adicionado componente SubTabBtn para alternar abas de planejamento
+// Fix: Definição do componente ForecastAddModal (estava faltando)
+const ForecastAddModal = ({ onClose, onSave, allWorkItems }: any) => {
+  const [data, setData] = useState({
+    description: '',
+    quantityNeeded: 1,
+    unitPrice: 0,
+    unit: 'un',
+    estimatedDate: new Date().toISOString().split('T')[0],
+    categoryId: '' 
+  });
+
+  return (
+    <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in" onClick={onClose}>
+      <div className="bg-white dark:bg-slate-900 w-full max-w-lg rounded-[2.5rem] p-8 border border-slate-200 dark:border-slate-800 shadow-2xl" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center gap-4 mb-8">
+           <div className="p-3 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 rounded-2xl"><Boxes size={24}/></div>
+           <div>
+             <h2 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-tight">Novo Insumo</h2>
+             <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Pré-Cotação de Material</p>
+           </div>
+        </div>
+
+        <div className="space-y-5">
+           <div>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2 ml-1">Descrição do Material</label>
+              <input autoFocus className="w-full px-5 py-4 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-sm font-black outline-none focus:border-indigo-500 transition-all" value={data.description} onChange={e => setData({...data, description: e.target.value})} placeholder="Ex: Areia Média Lavada" />
+           </div>
+
+           <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2 ml-1">Vínculo com EAP (Opcional)</label>
+                <div className="relative">
+                   <Layers className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+                   <select className="w-full pl-10 pr-4 py-4 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-xs font-bold outline-none appearance-none focus:border-indigo-500" value={data.categoryId} onChange={e => setData({...data, categoryId: e.target.value})}>
+                     <option value="">Sem vínculo</option>
+                     {allWorkItems.filter((i: any) => i.type === 'item').map((wi: any) => <option key={wi.id} value={wi.id}>{wi.wbs} - {wi.name}</option>)}
+                   </select>
+                </div>
+              </div>
+              <div>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2 ml-1">Previsão Compra</label>
+                <input type="date" className="w-full px-4 py-4 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-xs font-black outline-none focus:border-indigo-500" value={data.estimatedDate} onChange={e => setData({...data, estimatedDate: e.target.value})} />
+              </div>
+           </div>
+
+           <div className="grid grid-cols-3 gap-4">
+              <div>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2 ml-1">Un</label>
+                <input className="w-full px-4 py-4 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-xs font-black text-center outline-none focus:border-indigo-500 transition-all" value={data.unit} onChange={e => setData({...data, unit: e.target.value})} />
+              </div>
+              <div>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2 ml-1">Qtd</label>
+                <input type="number" className="w-full px-4 py-4 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-xs font-black text-center outline-none focus:border-indigo-500 transition-all" value={data.quantityNeeded} onChange={e => setData({...data, quantityNeeded: parseFloat(e.target.value) || 0})} />
+              </div>
+              <div>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2 ml-1">Preço Est.</label>
+                <input type="number" className="w-full px-4 py-4 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-xs font-black text-right outline-none focus:border-indigo-500 transition-all" value={data.unitPrice} onChange={e => setData({...data, unitPrice: parseFloat(e.target.value) || 0})} />
+              </div>
+           </div>
+        </div>
+
+        <div className="flex gap-3 pt-8">
+           <button onClick={onClose} className="flex-1 py-4 text-slate-400 font-black uppercase text-[10px] tracking-widest hover:bg-slate-50 rounded-2xl">Cancelar</button>
+           <button onClick={() => onSave(data)} disabled={!data.description} className="flex-1 py-4 bg-indigo-600 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-xl shadow-indigo-500/20 active:scale-95 transition-all">Confirmar Insumo</button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const SubTabBtn = ({ active, onClick, label, icon }: any) => (
   <button 
     onClick={onClick} 
@@ -459,7 +521,6 @@ const SubTabBtn = ({ active, onClick, label, icon }: any) => (
   </button>
 );
 
-// Fix: Adicionado componente ForecastKpi para os cards de estatísticas de suprimentos
 const ForecastKpi = ({ label, value, icon, color, sub }: any) => {
   const colors: any = {
     indigo: 'text-indigo-600 bg-indigo-50 dark:bg-indigo-950/40 border-indigo-100 dark:border-indigo-800',
@@ -480,7 +541,6 @@ const ForecastKpi = ({ label, value, icon, color, sub }: any) => {
   );
 };
 
-// Fix: Adicionado componente StatusCircle para os toggles de status dos suprimentos
 const StatusCircle = ({ active, onClick, icon, color, label }: any) => {
   const colors: any = {
     amber: active ? 'bg-amber-500 text-white' : 'bg-slate-100 text-slate-400',
@@ -497,7 +557,6 @@ const StatusCircle = ({ active, onClick, icon, color, label }: any) => {
   );
 };
 
-// Fix: Adicionado componente CalendarView para visualização do cronograma
 const CalendarView = ({ milestones, onEdit }: { milestones: Milestone[], onEdit: (m: Milestone) => void }) => {
   return (
     <div className="bg-white dark:bg-slate-900 p-8 rounded-[3.5rem] border border-slate-200 dark:border-slate-800 shadow-sm">
@@ -511,7 +570,6 @@ const CalendarView = ({ milestones, onEdit }: { milestones: Milestone[], onEdit:
   );
 };
 
-// Fix: Adicionado componente TaskModal para criação/edição de tarefas
 const TaskModal = ({ task, initialStatus, onClose, onSave }: any) => {
   const [desc, setDesc] = useState(task?.description || '');
   const [status, setStatus] = useState<TaskStatus>(task?.status || initialStatus || 'todo');
@@ -522,26 +580,25 @@ const TaskModal = ({ task, initialStatus, onClose, onSave }: any) => {
       <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-[2.5rem] p-8 border border-slate-200 dark:border-slate-800 shadow-2xl" onClick={e => e.stopPropagation()}>
         <h2 className="text-xl font-black mb-6 dark:text-white uppercase tracking-tight">{task ? 'Editar Tarefa' : 'Nova Tarefa'}</h2>
         <div className="space-y-4">
-          <textarea autoFocus className="w-full px-5 py-4 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-sm font-bold outline-none focus:border-indigo-500" value={desc} onChange={e => setDesc(e.target.value)} placeholder="O que precisa ser feito?" />
+          <textarea autoFocus className="w-full px-5 py-4 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-sm font-bold outline-none focus:border-indigo-500 transition-all" value={desc} onChange={e => setDesc(e.target.value)} placeholder="O que precisa ser feito?" />
           <div className="grid grid-cols-2 gap-4">
-            <select className="px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-xs font-bold" value={status} onChange={e => setStatus(e.target.value as any)}>
+            <select className="px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-xs font-bold outline-none" value={status} onChange={e => setStatus(e.target.value as any)}>
               <option value="todo">Planejado</option>
               <option value="doing">Executando</option>
               <option value="done">Concluído</option>
             </select>
-            <input type="date" className="px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-xs font-bold" value={date} onChange={e => setDate(e.target.value)} />
+            <input type="date" className="px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-xs font-bold outline-none" value={date} onChange={e => setDate(e.target.value)} />
           </div>
         </div>
         <div className="flex gap-3 mt-8">
            <button onClick={onClose} className="flex-1 py-4 text-slate-400 font-black uppercase text-[10px]">Cancelar</button>
-           <button onClick={() => onSave({ description: desc, status, dueDate: date })} className="flex-1 py-4 bg-indigo-600 text-white rounded-2xl font-black uppercase text-[10px] shadow-lg">Salvar</button>
+           <button onClick={() => onSave({ description: desc, status, dueDate: date })} className="flex-1 py-4 bg-indigo-600 text-white rounded-2xl font-black uppercase text-[10px] shadow-lg active:scale-95 transition-all">Salvar</button>
         </div>
       </div>
     </div>
   );
 };
 
-// Fix: Adicionado componente MilestoneModal para metas do cronograma
 const MilestoneModal = ({ milestone, onClose, onSave }: any) => {
   const [title, setTitle] = useState(milestone?.title || '');
   const [date, setDate] = useState(milestone?.date?.split('T')[0] || new Date().toISOString().split('T')[0]);
@@ -551,19 +608,18 @@ const MilestoneModal = ({ milestone, onClose, onSave }: any) => {
       <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-[2.5rem] p-8 border border-slate-200 dark:border-slate-800 shadow-2xl" onClick={e => e.stopPropagation()}>
         <h2 className="text-xl font-black mb-6 dark:text-white uppercase tracking-tight">{milestone ? 'Editar Meta' : 'Nova Meta'}</h2>
         <div className="space-y-4">
-          <input autoFocus className="w-full px-5 py-4 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-sm font-bold" value={title} onChange={e => setTitle(e.target.value)} placeholder="Título da Meta" />
-          <input type="date" className="w-full px-5 py-4 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-sm font-bold" value={date} onChange={e => setDate(e.target.value)} />
+          <input autoFocus className="w-full px-5 py-4 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-sm font-bold outline-none focus:border-indigo-500 transition-all" value={title} onChange={e => setTitle(e.target.value)} placeholder="Título da Meta" />
+          <input type="date" className="w-full px-5 py-4 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-sm font-bold outline-none focus:border-indigo-500 transition-all" value={date} onChange={e => setDate(e.target.value)} />
         </div>
         <div className="flex gap-3 mt-8">
            <button onClick={onClose} className="flex-1 py-4 text-slate-400 font-black uppercase text-[10px]">Cancelar</button>
-           <button onClick={() => onSave({ title, date })} className="flex-1 py-4 bg-indigo-600 text-white rounded-2xl font-black uppercase text-[10px] shadow-lg">Salvar</button>
+           <button onClick={() => onSave({ title, date })} className="flex-1 py-4 bg-indigo-600 text-white rounded-2xl font-black uppercase text-[10px] shadow-lg active:scale-95 transition-all">Salvar</button>
         </div>
       </div>
     </div>
   );
 };
 
-// Fix: Adicionado componente ConfirmForecastModal para efetivar compra de suprimentos
 const ConfirmForecastModal = ({ forecast, onClose, onConfirm, financialCategories }: any) => {
   const [parentId, setParentId] = useState<string | null>(null);
   return (
@@ -588,7 +644,7 @@ const ConfirmForecastModal = ({ forecast, onClose, onConfirm, financialCategorie
         </div>
         <div className="flex gap-3">
            <button onClick={onClose} className="flex-1 py-4 text-slate-400 font-black uppercase text-[10px]">Cancelar</button>
-           <button onClick={() => onConfirm(parentId)} className="flex-1 py-4 bg-emerald-600 text-white rounded-2xl font-black uppercase text-[10px] shadow-lg">Confirmar e Lançar</button>
+           <button onClick={() => onConfirm(parentId)} className="flex-1 py-4 bg-emerald-600 text-white rounded-2xl font-black uppercase text-[10px] shadow-lg active:scale-95 transition-all">Confirmar e Lançar</button>
         </div>
       </div>
     </div>
