@@ -1,6 +1,7 @@
 
 import { useState, useCallback, useEffect } from 'react';
-import { Project, ProjectGroup, GlobalSettings, WorkItem, ProjectExpense, BiddingProcess, Supplier } from '../types';
+// Added CompanyCertificate to the imported types
+import { Project, ProjectGroup, GlobalSettings, BiddingProcess, Supplier, CompanyCertificate } from '../types';
 import { journalService } from '../services/journalService';
 
 interface State {
@@ -22,83 +23,124 @@ const INITIAL_SETTINGS: GlobalSettings = {
   certificates: []
 };
 
+const MAX_HISTORY = 20;
+
 export const useProjectState = () => {
   const [present, setPresent] = useState<State>(() => {
     const saved = localStorage.getItem('promeasure_v4_data');
     if (saved) {
-      const parsed = JSON.parse(saved);
-      return {
-        ...parsed,
-        projects: (parsed.projects || []).map((p: any) => ({
-          ...p,
-          workforce: p.workforce || [],
-          expenses: (p.expenses || []).map((e: any) => ({
-            ...e,
-            status: e.status || (e.isPaid ? 'PAID' : 'PENDING')
+      try {
+        const parsed = JSON.parse(saved);
+        return {
+          ...parsed,
+          projects: (parsed.projects || []).map((p: any) => ({
+            ...p,
+            workforce: p.workforce || [],
+            expenses: (p.expenses || []).map((e: any) => ({
+              ...e,
+              status: e.status || (e.isPaid ? 'PAID' : 'PENDING')
+            }))
           }))
-        }))
-      };
+        };
+      } catch (e) {
+        console.error("Erro ao carregar dados salvos:", e);
+      }
     }
     return { projects: [], biddings: [], groups: [], suppliers: [], activeProjectId: null, activeBiddingId: null, globalSettings: INITIAL_SETTINGS };
   });
 
+  const [past, setPast] = useState<State[]>([]);
+  const [future, setFuture] = useState<State[]>([]);
+
   useEffect(() => {
-    localStorage.setItem('promeasure_v4_data', JSON.stringify(present));
+    try {
+      localStorage.setItem('promeasure_v4_data', JSON.stringify(present));
+    } catch (e) {
+      if (e instanceof DOMException && e.name === 'QuotaExceededError') {
+        alert("CRÍTICO: Limite excedido! Remova fotos ou obras antigas.");
+      }
+    }
   }, [present]);
 
-  /**
-   * Atualiza o projeto ativo preservando a imutabilidade absoluta.
-   * COMPLIANCE: Intercepta mudanças para gerar logs automáticos no diário.
-   */
-  const updateActiveProject = useCallback((data: Partial<Project>) => {
+  // Função centralizada para atualizar estado com histórico
+  const commit = useCallback((updater: (prev: State) => State) => {
     setPresent(prev => {
+      const next = updater(prev);
+      // Evita salvar no histórico se não houve mudança real
+      if (JSON.stringify(prev) === JSON.stringify(next)) return prev;
+      
+      setPast(pastPrev => [...pastPrev, prev].slice(-MAX_HISTORY));
+      setFuture([]);
+      return next;
+    });
+  }, []);
+
+  const undo = useCallback(() => {
+    setPresent(prev => {
+      if (past.length === 0) return prev;
+      const previous = past[past.length - 1];
+      const newPast = past.slice(0, past.length - 1);
+      setFuture(f => [prev, ...f].slice(0, MAX_HISTORY));
+      setPast(newPast);
+      return previous;
+    });
+  }, [past]);
+
+  const redo = useCallback(() => {
+    setPresent(prev => {
+      if (future.length === 0) return prev;
+      const next = future[0];
+      const newFuture = future.slice(1);
+      setPast(p => [...p, prev].slice(-MAX_HISTORY));
+      setFuture(newFuture);
+      return next;
+    });
+  }, [future]);
+
+  const updateActiveProject = useCallback((data: Partial<Project>) => {
+    commit(prev => {
       const activeIdx = prev.projects.findIndex(p => p.id === prev.activeProjectId);
       if (activeIdx === -1) return prev;
 
       const active = prev.projects[activeIdx];
       let autoLogs: any[] = [];
+      if (data.expenses) autoLogs = [...autoLogs, ...journalService.checkExpenseStatusDeltas(active.expenses, data.expenses)];
+      if (data.items) autoLogs = [...autoLogs, ...journalService.checkWorkItemDeltas(active.items, data.items)];
 
-      // 1. Detectar mudanças de status em despesas (Suprimentos)
-      if (data.expenses) {
-        autoLogs = [...autoLogs, ...journalService.checkExpenseStatusDeltas(active.expenses, data.expenses)];
-      }
-
-      // 2. Detectar conclusões na EAP (Físico)
-      if (data.items) {
-        autoLogs = [...autoLogs, ...journalService.checkWorkItemDeltas(active.items, data.items)];
-      }
-
-      // Construir o novo estado do projeto
       const updatedProject: Project = { 
         ...active, 
         ...data,
         journal: {
           ...active.journal,
-          // Insere novos logs no topo da lista se houverem deltas
-          entries: autoLogs.length > 0 
-            ? [...autoLogs, ...active.journal.entries] 
-            : active.journal.entries
+          entries: autoLogs.length > 0 ? [...autoLogs, ...active.journal.entries] : active.journal.entries
         }
       };
 
       const updatedProjects = [...prev.projects];
       updatedProjects[activeIdx] = updatedProject;
-
       return { ...prev, projects: updatedProjects };
     });
-  }, []);
+  }, [commit]);
 
   return {
     ...present,
     activeProject: present.projects.find(p => p.id === present.activeProjectId) || null,
     updateActiveProject,
-    setActiveProjectId: (id: string | null) => setPresent(prev => ({ ...prev, activeProjectId: id })),
-    updateProjects: (projects: Project[]) => setPresent(prev => ({ ...prev, projects })),
-    updateGroups: (groups: ProjectGroup[]) => setPresent(prev => ({ ...prev, groups })),
-    updateSuppliers: (suppliers: Supplier[]) => setPresent(prev => ({ ...prev, suppliers })),
-    updateBiddings: (biddings: BiddingProcess[]) => setPresent(prev => ({ ...prev, biddings })),
-    updateCertificates: (certs: any) => setPresent(prev => ({ ...prev, globalSettings: { ...prev.globalSettings, certificates: certs } })),
-    setGlobalSettings: (s: GlobalSettings) => setPresent(prev => ({ ...prev, globalSettings: s })),
-    bulkUpdate: (updates: any) => setPresent(prev => ({ ...prev, ...updates }))
+    undo,
+    redo,
+    canUndo: past.length > 0,
+    canRedo: future.length > 0,
+    setActiveProjectId: (id: string | null) => commit(prev => ({ ...prev, activeProjectId: id })),
+    updateProjects: (projects: Project[]) => commit(prev => ({ ...prev, projects })),
+    updateGroups: (groups: ProjectGroup[]) => commit(prev => ({ ...prev, groups })),
+    updateSuppliers: (suppliers: Supplier[]) => commit(prev => ({ ...prev, suppliers })),
+    updateBiddings: (biddings: BiddingProcess[]) => commit(prev => ({ ...prev, biddings })),
+    // Added updateCertificates to fix the error in App.tsx line 22
+    updateCertificates: (certificates: CompanyCertificate[]) => commit(prev => ({ 
+      ...prev, 
+      globalSettings: { ...prev.globalSettings, certificates } 
+    })),
+    setGlobalSettings: (s: GlobalSettings) => commit(prev => ({ ...prev, globalSettings: s })),
+    bulkUpdate: (updates: Partial<State>) => commit(prev => ({ ...prev, ...updates }))
   };
 };
