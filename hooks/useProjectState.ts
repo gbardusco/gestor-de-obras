@@ -1,6 +1,6 @@
 
 import { useState, useCallback, useEffect } from 'react';
-import { Project, ProjectGroup, MeasurementSnapshot, GlobalSettings, ProjectPlanning, ProjectJournal, WorkItem, ProjectExpense, BiddingProcess, CompanyCertificate, DEFAULT_THEME } from '../types';
+import { Project, ProjectGroup, MeasurementSnapshot, GlobalSettings, ProjectPlanning, ProjectJournal, WorkItem, ProjectExpense, BiddingProcess, CompanyCertificate, DEFAULT_THEME, Supplier } from '../types';
 import { treeService } from '../services/treeService';
 import { journalService } from '../services/journalService';
 import { financial } from '../utils/math';
@@ -9,6 +9,7 @@ interface State {
   projects: Project[];
   biddings: BiddingProcess[];
   groups: ProjectGroup[];
+  suppliers: Supplier[];
   activeProjectId: string | null;
   activeBiddingId: string | null;
   globalSettings: GlobalSettings;
@@ -23,7 +24,6 @@ const INITIAL_SETTINGS: GlobalSettings = {
   certificates: []
 };
 
-// Fix: Add missing 'schedule' property to INITIAL_PLANNING to match ProjectPlanning interface
 const INITIAL_PLANNING: ProjectPlanning = {
   tasks: [],
   forecasts: [],
@@ -43,6 +43,7 @@ export const useProjectState = () => {
       const parsed = JSON.parse(saved);
       return {
         ...parsed,
+        suppliers: parsed.suppliers || [],
         projects: (parsed.projects || []).map((p: any) => ({
           ...p,
           location: p.location || '',
@@ -76,6 +77,7 @@ export const useProjectState = () => {
       projects: [],
       biddings: [],
       groups: [],
+      suppliers: [],
       activeProjectId: null,
       activeBiddingId: null,
       globalSettings: INITIAL_SETTINGS
@@ -112,6 +114,10 @@ export const useProjectState = () => {
   const updateGroups = useCallback((groups: ProjectGroup[]) => {
     bulkUpdate({ groups });
   }, [bulkUpdate]);
+
+  const updateSuppliers = useCallback((suppliers: Supplier[]) => {
+    bulkUpdate({ suppliers });
+  }, [bulkUpdate]);
   
   const updateBiddings = useCallback((biddings: BiddingProcess[]) => {
     bulkUpdate({ biddings });
@@ -131,6 +137,7 @@ export const useProjectState = () => {
     updateActiveProject,
     updateProjects,
     updateGroups,
+    updateSuppliers,
     updateBiddings,
     updateCertificates,
     bulkUpdate,

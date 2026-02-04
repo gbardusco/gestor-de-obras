@@ -40,20 +40,33 @@ export interface WorkItem {
   children?: WorkItem[];
 }
 
-export interface PeriodDistribution {
-  plannedPercent: number; // % física planejada (0-100)
-  actualPercent?: number;  // % física realizada (0-100)
+export interface Supplier {
+  id: string;
+  name: string;
+  cnpj: string;
+  contactName: string;
+  email: string;
+  phone: string;
+  category: 'Material' | 'Serviço' | 'Locação' | 'Outros';
+  rating: number; // 1-5
+  notes: string;
+  order: number;
 }
 
-export interface ItemSchedule {
-  [period: string]: PeriodDistribution; // Key: "YYYY-MM"
+/**
+ * Interface para distribuição de valores planejados e realizados por período no cronograma.
+ */
+export interface PeriodDistribution {
+  plannedPercent: number;
+  actualPercent?: number;
 }
 
 export interface ProjectPlanning {
   tasks: PlanningTask[];
   forecasts: MaterialForecast[];
   milestones: Milestone[];
-  schedule: { [workItemId: string]: ItemSchedule }; // Distribuição por item
+  // Fix: Adicionada propriedade schedule para suportar o cronograma físico-financeiro e resolver erro de compilação
+  schedule?: Record<string, Record<string, PeriodDistribution>>;
 }
 
 export type TaskStatus = 'todo' | 'doing' | 'done';

@@ -20,117 +20,178 @@ export const PrintExpenseReport: React.FC<PrintExpenseReportProps> = ({ project,
 
   const dynamicStyles = `
     @media print {
+      /* Reset global para impressão estável */
       .print-expense-report {
-        font-family: '${theme.fontFamily}', sans-serif !important;
         display: block !important;
+        position: static !important;
         width: 100% !important;
         background: white !important;
         color: black !important;
+        font-family: '${theme.fontFamily}', sans-serif !important;
+        padding: 0 !important;
+        margin: 0 !important;
       }
+
+      .expense-report-container {
+        display: block !important;
+        padding: 10mm !important;
+      }
+
       .expense-table {
         width: 100%;
         border-collapse: collapse;
-        margin-top: 20px;
+        margin-top: 5mm;
+        page-break-after: auto;
       }
+
+      .expense-table thead {
+        display: table-header-group !important;
+      }
+
+      .expense-table tr {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+      }
+
       .expense-table th, .expense-table td {
-        border: 0.5pt solid ${theme.border};
-        padding: 5pt;
-        font-size: 7pt;
+        border: 0.3pt solid ${theme.border} !important;
+        padding: 4pt 3pt !important;
+        font-size: 6.5pt !important;
         text-align: left;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
       }
+
       .expense-table thead th {
-        background-color: ${theme.header.bg};
-        color: ${theme.header.text};
+        background-color: ${theme.header.bg} !important;
+        color: ${theme.header.text} !important;
         font-weight: 900;
         text-transform: uppercase;
+        -webkit-print-color-adjust: exact !important;
       }
-      .row-revenue { background-color: #f0fdf4 !important; }
-      .row-labor { background-color: #eff6ff !important; }
-      .row-material { background-color: #f8fafc !important; }
+
+      .row-revenue { background-color: #f0fdf4 !important; -webkit-print-color-adjust: exact !important; }
+      .row-labor { background-color: #eff6ff !important; -webkit-print-color-adjust: exact !important; }
+      .row-material { background-color: #f8fafc !important; -webkit-print-color-adjust: exact !important; }
+
+      .kpi-grid {
+        display: grid !important;
+        grid-template-columns: repeat(4, 1fr) !important;
+        gap: 3mm !important;
+        margin-bottom: 5mm !important;
+      }
+
+      .kpi-card {
+        padding: 3pt !important;
+        border: 0.3pt solid #ddd !important;
+        border-radius: 4pt !important;
+        text-align: center;
+      }
+
+      .signature-area {
+        margin-top: 15mm !important;
+        display: grid !important;
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 20mm !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+      }
+
+      .signature-block {
+        text-align: center;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+      }
+
+      .signature-line {
+        border-top: 0.3pt solid black !important;
+        margin-bottom: 2pt;
+      }
+
+      /* Esconder elementos desnecessários */
+      .no-print, button { display: none !important; }
     }
   `;
 
   return (
-    <div className="print-expense-report hidden print:block fixed inset-0 z-0 bg-white">
+    <div className="print-expense-report hidden print:block bg-white min-h-screen">
       <style dangerouslySetInnerHTML={{ __html: dynamicStyles }} />
       
-      <div className="p-10">
-        <div className="flex justify-between items-start border-b-2 pb-6 mb-8" style={{ borderColor: theme.primary }}>
+      <div className="expense-report-container">
+        {/* Header Institucional */}
+        <div className="flex justify-between items-end border-b-2 pb-4 mb-6" style={{ borderColor: theme.primary }}>
           <div>
-            <h1 className="text-2xl font-black uppercase" style={{ color: theme.primary }}>{project.companyName}</h1>
-            <p className="text-[8pt] font-bold text-slate-500 uppercase">Relatório de Movimentação Financeira</p>
-            <p className="text-[9pt] font-black mt-2">{project.name}</p>
+            <h1 className="text-xl font-black uppercase leading-none" style={{ color: theme.primary }}>{project.companyName}</h1>
+            <p className="text-[7pt] font-bold text-slate-500 uppercase mt-1">Relatório Consolidado de Fluxo Financeiro</p>
+            <p className="text-[8pt] font-black mt-2 uppercase tracking-tight">{project.name}</p>
           </div>
           <div className="text-right">
-             <p className="text-[8pt] font-bold text-slate-400">Emissão: {new Date().toLocaleDateString('pt-BR')}</p>
-             <p className="text-[10pt] font-black uppercase mt-1">Período Corrente</p>
+             <p className="text-[7pt] font-bold text-slate-400">Emissão: {new Date().toLocaleDateString('pt-BR')}</p>
+             <p className="text-[8pt] font-black uppercase text-indigo-600">Gestão de Custos v0.5</p>
           </div>
         </div>
 
         {/* KPIs Summary */}
-        <div className="grid grid-cols-4 gap-4 mb-10">
-          <div className="p-4 border border-slate-200 rounded-lg">
-            <p className="text-[6pt] font-black text-slate-400 uppercase">Total Recebido</p>
-            <p className="text-[11pt] font-black text-emerald-600">{financial.formatVisual(stats.revenue, currencySymbol)}</p>
+        <div className="kpi-grid grid grid-cols-4 gap-4 mb-6">
+          <div className="kpi-card p-3 border border-slate-100 rounded-lg">
+            <p className="text-[5pt] font-black text-slate-400 uppercase tracking-widest">Total Recebido</p>
+            <p className="text-[10pt] font-black text-emerald-600">{financial.formatVisual(stats.revenue, currencySymbol)}</p>
           </div>
-          <div className="p-4 border border-slate-200 rounded-lg">
-            <p className="text-[6pt] font-black text-slate-400 uppercase">Mão de Obra</p>
-            <p className="text-[11pt] font-black text-blue-600">{financial.formatVisual(stats.labor, currencySymbol)}</p>
+          <div className="kpi-card p-3 border border-slate-100 rounded-lg">
+            <p className="text-[5pt] font-black text-slate-400 uppercase tracking-widest">Mão de Obra</p>
+            <p className="text-[10pt] font-black text-blue-600">{financial.formatVisual(stats.labor, currencySymbol)}</p>
           </div>
-          <div className="p-4 border border-slate-200 rounded-lg">
-            <p className="text-[6pt] font-black text-slate-400 uppercase">Materiais</p>
-            <p className="text-[11pt] font-black text-indigo-600">{financial.formatVisual(stats.material, currencySymbol)}</p>
+          <div className="kpi-card p-3 border border-slate-100 rounded-lg">
+            <p className="text-[5pt] font-black text-slate-400 uppercase tracking-widest">Materiais</p>
+            <p className="text-[10pt] font-black text-indigo-600">{financial.formatVisual(stats.material, currencySymbol)}</p>
           </div>
-          <div className="p-4 border border-slate-200 rounded-lg bg-slate-50">
-            <p className="text-[6pt] font-black text-slate-400 uppercase">Saldo Líquido</p>
-            <p className={`text-[11pt] font-black ${stats.profit >= 0 ? 'text-emerald-700' : 'text-rose-600'}`}>{financial.formatVisual(stats.profit, currencySymbol)}</p>
+          <div className="kpi-card p-3 border border-slate-200 bg-slate-50 rounded-lg">
+            <p className="text-[5pt] font-black text-slate-400 uppercase tracking-widest">Saldo Período</p>
+            <p className={`text-[10pt] font-black ${stats.profit >= 0 ? 'text-emerald-700' : 'text-rose-600'}`}>
+              {financial.formatVisual(stats.profit, currencySymbol)}
+            </p>
           </div>
         </div>
 
+        {/* Tabela Principal */}
         <table className="expense-table">
           <thead>
             <tr>
-              <th>Data</th>
-              <th>Tipo</th>
-              <th>Descrição</th>
-              <th>Entidade/Fornecedor</th>
-              <th>Qtd</th>
-              <th>Un</th>
-              <th style={{ textAlign: 'right' }}>Unitário</th>
-              <th style={{ textAlign: 'right' }}>Total</th>
-              <th style={{ textAlign: 'center' }}>Pago</th>
+              <th style={{ width: '12%' }}>Data</th>
+              <th style={{ width: '8%' }}>Tipo</th>
+              <th style={{ width: '35%' }}>Descrição do Lançamento</th>
+              <th style={{ width: '20%' }}>Fornecedor / Entidade</th>
+              <th style={{ width: '5%', textAlign: 'center' }}>Qtd</th>
+              <th style={{ width: '10%', textAlign: 'right' }}>Unitário</th>
+              <th style={{ width: '10%', textAlign: 'right' }}>Líquido</th>
             </tr>
           </thead>
           <tbody>
             {expenses.filter(e => e.itemType === 'item').map(e => (
               <tr key={e.id} className={e.type === 'revenue' ? 'row-revenue' : (e.type === 'labor' ? 'row-labor' : 'row-material')}>
                 <td>{financial.formatDate(e.date)}</td>
-                <td className="font-bold">{e.type === 'revenue' ? 'ENTRADA' : (e.type === 'labor' ? 'M.O' : 'MAT')}</td>
+                <td className="font-bold">{e.type === 'revenue' ? 'ENT' : (e.type === 'labor' ? 'M.O' : 'MAT')}</td>
                 <td>{e.description}</td>
-                <td>{e.entityName}</td>
-                <td>{e.quantity}</td>
-                <td>{e.unit}</td>
+                <td className="text-slate-600">{e.entityName || '—'}</td>
+                <td style={{ textAlign: 'center' }}>{e.quantity} {e.unit}</td>
                 <td style={{ textAlign: 'right' }}>{financial.formatVisual(e.unitPrice, currencySymbol)}</td>
                 <td style={{ textAlign: 'right' }} className="font-bold">{financial.formatVisual(e.amount, currencySymbol)}</td>
-                <td style={{ textAlign: 'center' }}>{e.isPaid ? 'SIM' : 'NÃO'}</td>
               </tr>
             ))}
           </tbody>
         </table>
 
-        {/* Assinaturas */}
-        <div className="grid grid-cols-2 gap-20 mt-20">
-           <div className="text-center">
-              <div className="border-t border-black pt-2">
-                <p className="text-[7pt] font-black uppercase">Responsável Financeiro</p>
-                <p className="text-[6pt] text-slate-400 font-bold">{project.companyName}</p>
-              </div>
+        {/* Rodapé de Assinaturas */}
+        <div className="signature-area grid grid-cols-2 gap-20 mt-16">
+           <div className="signature-block">
+              <div className="signature-line w-full mb-1"></div>
+              <p className="text-[7pt] font-black uppercase">Responsável Financeiro</p>
+              <p className="text-[6pt] text-slate-400 font-bold uppercase">{project.companyName}</p>
            </div>
-           <div className="text-center">
-              <div className="border-t border-black pt-2">
-                <p className="text-[7pt] font-black uppercase">Diretoria / Gestão</p>
-                <p className="text-[6pt] text-slate-400 font-bold">Assinatura e Carimbo</p>
-              </div>
+           <div className="signature-block">
+              <div className="signature-line w-full mb-1"></div>
+              <p className="text-[7pt] font-black uppercase">Gestão Operacional</p>
+              <p className="text-[6pt] text-slate-400 font-bold uppercase">Conferência e Aprovação</p>
            </div>
         </div>
       </div>

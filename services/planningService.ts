@@ -61,7 +61,7 @@ export const planningService = {
       unit: forecast.unit,
       quantity: forecast.quantityNeeded,
       unitPrice: forecast.unitPrice,
-      isPaid: true, // Se foi efetivado do suprimento, assumimos a transação
+      isPaid: true,
       amount: totalAmount
     };
   },
@@ -136,11 +136,23 @@ export const planningService = {
     const newIdx = direction === 'up' ? idx - 1 : idx + 1;
     if (newIdx < 0 || newIdx >= list.length) return planning;
     
-    const temp = list[idx].order;
-    list[idx].order = list[newIdx].order;
-    list[newIdx].order = temp;
+    // Troca de posições no array
+    const [movedItem] = list.splice(idx, 1);
+    list.splice(newIdx, 0, movedItem);
     
-    return { ...planning, forecasts: list };
+    // Reatribuição de ordens sequenciais para garantir persistência correta
+    const updatedList = list.map((item, i) => ({ ...item, order: i }));
+    
+    return { ...planning, forecasts: updatedList };
+  },
+
+  moveForecast: (planning: ProjectPlanning, sourceIndex: number, destinationIndex: number): ProjectPlanning => {
+    const list = [...planning.forecasts].sort((a, b) => a.order - b.order);
+    const [movedItem] = list.splice(sourceIndex, 1);
+    list.splice(destinationIndex, 0, movedItem);
+
+    const updatedList = list.map((item, i) => ({ ...item, order: i }));
+    return { ...planning, forecasts: updatedList };
   },
 
   deleteForecast: (planning: ProjectPlanning, id: string): ProjectPlanning => ({

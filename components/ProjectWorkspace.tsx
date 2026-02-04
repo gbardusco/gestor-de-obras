@@ -8,8 +8,6 @@ import { ExpenseManager } from './ExpenseManager';
 import { AssetManager } from './AssetManager';
 import { PlanningView } from './PlanningView';
 import { JournalView } from './JournalView';
-import { CostLinkingView } from './CostLinkingView';
-import { PhysicalScheduleView } from './PhysicalScheduleView';
 import { PrintReport } from './PrintReport';
 import { PrintExpenseReport } from './PrintExpenseReport';
 import { WorkItemModal } from './WorkItemModal';
@@ -21,8 +19,8 @@ import { financial } from '../utils/math';
 import { 
   Layers, BarChart3, Coins, FileText, Sliders, 
   Undo2, Redo2, Lock, Calendar, BookOpen,
-  CheckCircle2, ArrowRight, History, ChevronDown, LockOpen, Target, HardHat,
-  RotateCcw, AlertTriangle, X as CloseIcon, Edit2, Link2, Printer, CalendarDays
+  CheckCircle2, ArrowRight, History, Edit2, Printer, HardHat,
+  RotateCcw, AlertTriangle, LockOpen
 } from 'lucide-react';
 
 interface ProjectWorkspaceProps {
@@ -39,7 +37,7 @@ interface ProjectWorkspaceProps {
 export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
   project, globalSettings, onUpdateProject, onCloseMeasurement, canUndo, canRedo, onUndo, onRedo
 }) => {
-  const [tab, setTab] = useState<'wbs' | 'stats' | 'expenses' | 'linking' | 'schedule' | 'planning' | 'journal' | 'documents' | 'branding'>('wbs');
+  const [tab, setTab] = useState<'wbs' | 'stats' | 'expenses' | 'planning' | 'journal' | 'documents' | 'branding'>('wbs');
   const [viewingHistoryIndex, setViewingHistoryIndex] = useState<number | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showConfirmClose, setShowConfirmClose] = useState(false);
@@ -55,7 +53,6 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
     setLocalName(project.name);
   }, [project.name]);
 
-  // Lógica de Drag-to-Scroll Refinada
   const scrollRef = useRef<HTMLDivElement>(null);
   const dragInfo = useRef({ isDragging: false, startX: 0, scrollLeft: 0, totalDelta: 0 });
 
@@ -71,11 +68,9 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
 
   const onMouseMove = (e: React.MouseEvent) => {
     if (!dragInfo.current.isDragging || !scrollRef.current) return;
-    
     const x = e.pageX - scrollRef.current.offsetLeft;
     const walk = (x - dragInfo.current.startX);
     dragInfo.current.totalDelta = Math.abs(walk);
-    
     if (dragInfo.current.totalDelta > 5) {
       scrollRef.current.scrollLeft = dragInfo.current.scrollLeft - walk;
     }
@@ -162,7 +157,6 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
     <>
       <div className="flex-1 flex flex-col overflow-hidden no-print">
         <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex flex-col shrink-0 z-40">
-          
           <div className="flex flex-col md:flex-row items-center justify-between px-6 md:px-10 py-4 gap-4">
             <div className="flex-1 min-w-0 group relative w-full md:w-auto">
               <input 
@@ -242,8 +236,6 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
                   <TabBtn active={tab === 'wbs'} onClick={(e: any) => handleTabClick(e, 'wbs')} label="Planilha" icon={<Layers size={14}/>} />
                   <TabBtn active={tab === 'stats'} onClick={(e: any) => handleTabClick(e, 'stats')} label="Análise" icon={<BarChart3 size={14}/>} />
                   <TabBtn active={tab === 'expenses'} onClick={(e: any) => handleTabClick(e, 'expenses')} label="Financeiro" icon={<Coins size={14}/>} />
-                  <TabBtn active={tab === 'linking'} onClick={(e: any) => handleTabClick(e, 'linking')} label="Conciliação" icon={<Link2 size={14}/>} />
-                  <TabBtn active={tab === 'schedule'} onClick={(e: any) => handleTabClick(e, 'schedule')} label="Cronograma" icon={<CalendarDays size={14}/>} />
                   <TabBtn active={tab === 'planning'} onClick={(e: any) => handleTabClick(e, 'planning')} label="Canteiro" icon={<HardHat size={14}/>} />
                   <TabBtn active={tab === 'journal'} onClick={(e: any) => handleTabClick(e, 'journal')} label="Diário" icon={<BookOpen size={14}/>} />
                   <TabBtn active={tab === 'documents'} onClick={(e: any) => handleTabClick(e, 'documents')} label="Docs" icon={<FileText size={14}/>} />
@@ -309,18 +301,6 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
                 workItems={project.items} 
                 measuredValue={financial.sum(project.items.map(it => it.accumulatedTotal || 0))}
                 onUpdateExpenses={newExpenses => onUpdateProject({ expenses: newExpenses })}
-              />
-            )}
-            {tab === 'linking' && (
-              <CostLinkingView 
-                project={project}
-                onUpdateProject={onUpdateProject}
-              />
-            )}
-            {tab === 'schedule' && (
-              <PhysicalScheduleView 
-                project={project}
-                onUpdatePlanning={p => onUpdateProject({ planning: p })}
               />
             )}
             {tab === 'planning' && (
