@@ -37,6 +37,9 @@ export const ExpenseTreeTable: React.FC<ExpenseTreeTableProps> = ({
     link.click();
   };
 
+  // Cálculo do total consolidado (apenas itens de profundidade 0, pois eles já contém o rollup recursivo)
+  const totalConsolidado = financial.sum(data.filter(i => i.depth === 0).map(i => i.amount));
+
   return (
     <div className={`overflow-x-auto border rounded-3xl bg-white dark:bg-slate-900 shadow-xl transition-colors ${isRevenueTable ? 'border-emerald-100 dark:border-emerald-900/40' : 'border-slate-200 dark:border-slate-800'}`}>
       <table className="min-w-full border-collapse text-[11px]">
@@ -124,6 +127,18 @@ export const ExpenseTreeTable: React.FC<ExpenseTreeTableProps> = ({
             </tr>
           ))}
         </tbody>
+        <tfoot className="bg-slate-900 dark:bg-black text-white font-black text-xs sticky bottom-0 z-20 shadow-2xl">
+          <tr className="border-t border-white/20">
+            <td colSpan={8} className="p-4 text-right uppercase tracking-[0.2em] text-[9px] border-r border-white/10 opacity-70">
+              Total Consolidado da Tabela:
+            </td>
+            <td className="p-4 text-right text-sm tracking-tighter whitespace-nowrap">
+              <span className={`font-black ${isRevenueTable ? 'text-emerald-400' : 'text-indigo-400'}`}>
+                {financial.formatVisual(totalConsolidado, currencySymbol)}
+              </span>
+            </td>
+          </tr>
+        </tfoot>
       </table>
     </div>
   );

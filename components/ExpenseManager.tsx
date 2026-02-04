@@ -136,6 +136,7 @@ export const ExpenseManager: React.FC<ExpenseManagerProps> = ({
       };
       onAdd(newExpense);
     }
+    setIsModalOpen(false);
   };
 
   return (
@@ -164,7 +165,7 @@ export const ExpenseManager: React.FC<ExpenseManagerProps> = ({
           <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 self-center mx-1" />
           <TabTrigger active={activeTab === 'revenue'} onClick={() => setActiveTab('revenue')} label="Entradas" icon={<ArrowUpRight size={14} />} />
           <TabTrigger active={activeTab === 'material'} onClick={() => setActiveTab('material')} label="Materiais" icon={<Truck size={14} />} />
-          <TabTrigger active={activeTab === 'labor'} onClick={() => setActiveTab('labor')} label="Mão de Obra" icon={<Users size={14} />} />
+          <TabTrigger active={activeTab === 'labor'} onClick={() => setActiveTab('labor'} label="Mão de Obra" icon={<Users size={14} />} />
         </div>
 
         <div className="flex items-center gap-2">
@@ -174,7 +175,7 @@ export const ExpenseManager: React.FC<ExpenseManagerProps> = ({
                 onClick={() => { setModalItemType('category'); setEditingExpense(null); setTargetParentId(null); setIsModalOpen(true); }} 
                 className="flex items-center gap-2 px-4 py-3 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-[9px] font-black uppercase tracking-widest border border-slate-200 dark:border-slate-700 shadow-sm hover:bg-slate-50 transition-all"
               >
-                <FolderPlus size={14} /> Grupo
+                <FolderPlus size={14} /> Criar Grupo
               </button>
               <button 
                 onClick={() => { setModalItemType('item'); setEditingExpense(null); setTargetParentId(null); setIsModalOpen(true); }} 
