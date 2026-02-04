@@ -8,7 +8,7 @@ import {
   Trash2, Calendar, AlertCircle, ShoppingCart, Truck, Search,
   Wand2, ArrowUpRight, Ban, ListChecks, Boxes, Target,
   GripVertical, MoreVertical, Edit2, X, Save, Calculator, Wallet, Link,
-  ChevronUp, ChevronDown, List, CalendarDays, Filter
+  ChevronUp, ChevronDown, List, CalendarDays, Filter, Users
 } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 
@@ -79,7 +79,6 @@ export const PlanningView: React.FC<PlanningViewProps> = ({
     setIsAddingTask(null);
   };
 
-  // Fix: Added handleUpdateTask to resolve "Cannot find name 'handleUpdateTask'" error
   const handleUpdateTask = (id: string, data: Partial<PlanningTask>) => {
     const updated = planningService.updateTask(planning, id, data);
     onUpdatePlanning(updated);
@@ -412,7 +411,6 @@ const CalendarView = ({ milestones, onEdit }: { milestones: Milestone[], onEdit:
 
   return (
     <div className="bg-white dark:bg-slate-900 p-8 rounded-[3.5rem] border border-slate-200 dark:border-slate-800 shadow-sm">
-       {/* Fix: Resolved "Property 'Days' does not exist" error by fixing the typo in CalendarDays */}
        <h3 className="text-sm font-black uppercase tracking-widest text-slate-400 mb-8 border-b pb-4 flex items-center gap-2"><CalendarDays size={16}/> {currentMonth}</h3>
        <div className="grid grid-cols-7 gap-2">
           {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map(d => (
@@ -572,6 +570,11 @@ const MilestoneModal = ({ milestone, onClose, onSave }: any) => {
 
 const ConfirmForecastModal = ({ forecast, onClose, onConfirm, financialCategories }: any) => {
   const [selectedParentId, setSelectedParentId] = useState<string | null>(null);
+  const [filterType, setFilterType] = useState<'material' | 'labor'>('material');
+
+  const filteredCategories = useMemo(() => {
+    return financialCategories.filter((c: any) => c.type === filterType);
+  }, [financialCategories, filterType]);
 
   return (
     <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in" onClick={onClose}>
@@ -584,15 +587,31 @@ const ConfirmForecastModal = ({ forecast, onClose, onConfirm, financialCategorie
           Você está efetivando a compra de <strong>{forecast.description}</strong>. <br/> Escolha em qual categoria do **Fluxo de Caixa** este gasto deve ser lançado.
         </p>
 
+        {/* SUB-FILTRO DE TIPO DE CATEGORIA */}
+        <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl mb-6 gap-1">
+           <button 
+             onClick={() => setFilterType('material')} 
+             className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${filterType === 'material' ? 'bg-white dark:bg-slate-700 text-indigo-600 shadow-sm' : 'text-slate-400'}`}
+           >
+             <Truck size={14}/> Materiais
+           </button>
+           <button 
+             onClick={() => setFilterType('labor')} 
+             className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${filterType === 'labor' ? 'bg-white dark:bg-slate-700 text-indigo-600 shadow-sm' : 'text-slate-400'}`}
+           >
+             <Users size={14}/> Mão de Obra
+           </button>
+        </div>
+
         <div className="space-y-4 mb-8">
-           <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block ml-1">Centro de Custo (Financeiro)</label>
+           <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block ml-1">Grupo de Custo ({filterType === 'material' ? 'Materiais' : 'Mão de Obra'})</label>
            <select 
              className="w-full px-5 py-4 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-sm font-black outline-none focus:border-indigo-500 transition-all appearance-none"
              value={selectedParentId || ''}
              onChange={e => setSelectedParentId(e.target.value || null)}
            >
              <option value="">Lançamento Avulso (Sem Categoria)</option>
-             {financialCategories.map((cat: any) => (
+             {filteredCategories.map((cat: any) => (
                <option key={cat.id} value={cat.id}>
                  {cat.wbs} - {cat.description || cat.name}
                </option>
