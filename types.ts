@@ -166,7 +166,8 @@ export interface MaterialForecast {
   status: 'pending' | 'ordered' | 'delivered';
   isPaid: boolean;
   order: number;
-  supplierId?: string; // NOVO: Vínculo dinâmico com a base de fornecedores
+  supplierId?: string;
+  paymentProof?: string; // NOVO: Base64 do comprovante de pagamento
 }
 
 export interface Milestone {

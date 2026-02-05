@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Project, PlanningTask, MaterialForecast, Milestone, WorkItem, TaskStatus, ProjectPlanning, ProjectExpense, Supplier } from '../types';
 import { planningService } from '../services/planningService';
 import { excelService } from '../services/excelService';
@@ -11,9 +11,10 @@ import {
   GripVertical, MoreVertical, Edit2, X, Save, Calculator, Wallet, Link,
   ChevronUp, ChevronDown, List, CalendarDays, Filter, Users, Download, UploadCloud,
   Layers, FlagTriangleRight, Printer, CreditCard, ChevronLeft, ChevronRight,
-  HardHat, Building2, User
+  HardHat, Building2, User, FolderTree, FileCheck, ReceiptText, FileText
 } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
+import { ExpenseAttachmentZone } from './ExpenseAttachmentZone';
 
 interface PlanningViewProps {
   project: Project;
@@ -95,25 +96,26 @@ export const PlanningView: React.FC<PlanningViewProps> = ({
     onUpdatePlanning(updated);
   };
 
-  const handleFinalizePurchase = (forecast: MaterialForecast, parentId: string | null) => {
+  const handleFinalizePurchase = (forecast: MaterialForecast, parentId: string | null, proof?: string) => {
     const expenseData = planningService.prepareExpenseFromForecast(forecast, parentId);
+    if (proof) {
+      expenseData.paymentProof = proof;
+      expenseData.status = 'PAID';
+      expenseData.isPaid = true;
+    }
     onAddExpense(expenseData as ProjectExpense);
-    const updatedPlanning = planningService.updateForecast(planning, forecast.id, { status: 'ordered', isPaid: forecast.isPaid });
+    const updatedPlanning = planningService.updateForecast(planning, forecast.id, { 
+      status: 'ordered', 
+      isPaid: true,
+      paymentProof: proof 
+    });
     onUpdatePlanning(updatedPlanning);
     setConfirmingForecast(null);
   };
 
-  const handleImportPlanning = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    try {
-      const imported = await excelService.parsePlanningExcel(file);
-      onUpdatePlanning(imported);
-    } catch (err) {
-      alert("Erro ao importar planilha de planejamento.");
-    } finally {
-      if (fileInputRef.current) fileInputRef.current.value = "";
-    }
+  const handleViewProof = (proof: string) => {
+    const win = window.open();
+    win?.document.write(`<iframe src="${proof}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`);
   };
 
   const columns: { id: TaskStatus, label: string, color: string }[] = [
@@ -124,7 +126,7 @@ export const PlanningView: React.FC<PlanningViewProps> = ({
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-6 duration-700">
-      <input type="file" ref={fileInputRef} className="hidden" accept=".xlsx, .xls" onChange={handleImportPlanning} />
+      <input type="file" ref={fileInputRef} className="hidden" accept=".xlsx, .xls" />
       
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white dark:bg-slate-900 p-8 rounded-[3rem] border border-slate-200 dark:border-slate-800 shadow-xl">
         <div className="flex items-center gap-5">
@@ -292,21 +294,47 @@ export const PlanningView: React.FC<PlanningViewProps> = ({
                                     </td>
                                     <td className="py-6 px-4 text-left min-w-[250px]">
                                       <div className="flex flex-col gap-1">
-                                        <span className="text-sm font-black dark:text-white leading-tight uppercase">{f.description}</span>
-                                        <div className="flex items-center gap-1.5 text-[9px] font-bold text-indigo-500 uppercase tracking-widest">
-                                          <Building2 size={10} className="shrink-0" />
-                                          {supplier ? supplier.name : 'Fornecedor não vinculado'}
+                                        <div className="flex items-center gap-2">
+                                          <span className="text-sm font-black dark:text-white leading-tight uppercase">{f.description}</span>
+                                          {f.paymentProof && (
+                                            <button onClick={() => handleViewProof(f.paymentProof!)} className="p-1 bg-emerald-50 text-emerald-600 rounded-md hover:bg-emerald-100 transition-colors" title="Ver Comprovante">
+                                              <ReceiptText size={10} />
+                                            </button>
+                                          )}
+                                        </div>
+                                        <div className="flex flex-col gap-0.5">
+                                          <div className="flex items-center gap-1.5 text-[9px] font-bold text-indigo-500 uppercase tracking-widest">
+                                            <Building2 size={10} className="shrink-0" />
+                                            {supplier ? supplier.name : 'Fornecedor não vinculado'}
+                                          </div>
+                                          <div className="flex items-center gap-1.5 text-[8px] font-black text-slate-400 uppercase tracking-widest">
+                                            <Calendar size={9} className="shrink-0" />
+                                            Previsto: {financial.formatDate(f.estimatedDate)}
+                                          </div>
                                         </div>
                                       </div>
                                     </td>
                                     <td className="py-6">
                                       <span className="text-[10px] font-black uppercase text-slate-400">{f.unit}</span>
                                     </td>
-                                    <td className="py-6 font-mono font-bold text-slate-600 dark:text-slate-300">
-                                      {f.quantityNeeded}
+                                    <td className="py-6">
+                                      <input 
+                                        type="number"
+                                        step="any"
+                                        className="w-16 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-lg px-2 py-1 text-center text-[11px] font-black outline-none focus:border-indigo-500 transition-all dark:text-slate-200"
+                                        value={f.quantityNeeded}
+                                        onBlur={(e) => onUpdatePlanning(planningService.updateForecast(planning, f.id, { quantityNeeded: parseFloat(e.target.value) || 0 }))}
+                                        onChange={(e) => {
+                                          const val = e.target.value;
+                                          onUpdatePlanning(planningService.updateForecast(planning, f.id, { quantityNeeded: parseFloat(val) || 0 }));
+                                        }}
+                                      />
                                     </td>
-                                    <td className="py-6 font-mono text-slate-400">
-                                      {financial.formatVisual(f.unitPrice, project.theme?.currencySymbol)}
+                                    <td className="py-6">
+                                      <InlineCurrencyInput 
+                                        value={f.unitPrice} 
+                                        onUpdate={(val: number) => onUpdatePlanning(planningService.updateForecast(planning, f.id, { unitPrice: val }))} 
+                                      />
                                     </td>
                                     <td className="py-6">
                                       <span className="text-sm font-black text-indigo-600 dark:text-indigo-400">
@@ -316,13 +344,19 @@ export const PlanningView: React.FC<PlanningViewProps> = ({
                                     <td className="py-6">
                                       <div className="flex gap-2 justify-center">
                                         <StatusCircle active={f.status === 'pending'} onClick={() => onUpdatePlanning(planningService.updateForecast(planning, f.id, { status: 'pending' }))} icon={<AlertCircle size={12}/>} color="amber" label="Pendente" />
-                                        <StatusCircle active={f.status === 'ordered'} onClick={() => onUpdatePlanning(planningService.updateForecast(planning, f.id, { status: 'ordered' }))} icon={<ShoppingCart size={12}/>} color="blue" label="Comprado" />
+                                        <StatusCircle active={f.status === 'ordered'} onClick={() => setConfirmingForecast(f)} icon={<ShoppingCart size={12}/>} color="blue" label="Comprado" />
                                         <StatusCircle active={f.status === 'delivered'} onClick={() => onUpdatePlanning(planningService.updateForecast(planning, f.id, { status: 'delivered' }))} icon={<Truck size={12}/>} color="emerald" label="No Local" />
                                       </div>
                                     </td>
                                     <td className="py-6">
                                       <button 
-                                        onClick={() => onUpdatePlanning(planningService.updateForecast(planning, f.id, { isPaid: !f.isPaid }))}
+                                        onClick={() => {
+                                          if (!f.isPaid && f.status !== 'ordered') {
+                                            setConfirmingForecast(f);
+                                          } else {
+                                            onUpdatePlanning(planningService.updateForecast(planning, f.id, { isPaid: !f.isPaid }));
+                                          }
+                                        }}
                                         className={`p-2.5 rounded-full transition-all ${f.isPaid ? 'text-emerald-500 bg-emerald-50 dark:bg-emerald-900/30 shadow-sm' : 'text-slate-200 hover:text-rose-400 bg-slate-50 dark:bg-slate-800'}`}
                                       >
                                         {f.isPaid ? <CheckCircle2 size={20}/> : <Circle size={20}/>}
@@ -338,6 +372,9 @@ export const PlanningView: React.FC<PlanningViewProps> = ({
                                           >
                                             <ArrowUpRight size={18}/>
                                           </button>
+                                        )}
+                                        {f.paymentProof && (
+                                          <button onClick={() => handleViewProof(f.paymentProof!)} className="p-2 text-emerald-500 hover:bg-emerald-50 rounded-xl" title="Baixar Comprovante"><Download size={18}/></button>
                                         )}
                                         <button onClick={() => setEditingForecast(f)} className="p-2 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-xl" title="Editar"><Edit2 size={18}/></button>
                                         <button onClick={() => setIsDeletingForecast(f)} className="p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-xl" title="Excluir"><Trash2 size={18}/></button>
@@ -365,7 +402,7 @@ export const PlanningView: React.FC<PlanningViewProps> = ({
         )}
       </DragDropContext>
 
-      {/* MODAL DE CADASTRO/EDIÇÃO DE SUPRIMENTO */}
+      {/* MODAL DE CADASTRO/EDIÇÃO DE SUPRIMENTO (DARK PREMIUM) */}
       {(isAddingForecast || editingForecast) && (
         <ForecastModal 
           onClose={() => { setIsAddingForecast(false); setEditingForecast(null); }}
@@ -384,11 +421,11 @@ export const PlanningView: React.FC<PlanningViewProps> = ({
         />
       )}
 
-      {/* MODAL DE CONFIRMAÇÃO DE EXCLUSÃO */}
+      {/* MODAL DE CONFIRMAÇÃO DE EXCLUSÃO (DARK PREMIUM) */}
       {isDeletingForecast && (
         <div className="fixed inset-0 z-[2100] flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-sm animate-in fade-in duration-300" onClick={() => setIsDeletingForecast(null)}>
           <div className="bg-[#0f111a] w-full max-w-md rounded-[3rem] p-12 shadow-2xl border border-slate-800/50 flex flex-col items-center text-center relative overflow-hidden" onClick={e => e.stopPropagation()}>
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-48 bg-rose-500/10 blur-[100px] pointer-events-none"></div>
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-48 bg-indigo-500/10 blur-[100px] pointer-events-none"></div>
             <div className="relative mb-10">
               <div className="w-24 h-24 bg-slate-800/40 rounded-full flex items-center justify-center border border-slate-700/50">
                  <Trash2 size={36} className="text-rose-500" />
@@ -400,7 +437,7 @@ export const PlanningView: React.FC<PlanningViewProps> = ({
             </p>
             <div className="flex items-center gap-6 w-full">
                <button onClick={() => setIsDeletingForecast(null)} className="flex-1 py-4 text-slate-500 font-black uppercase text-xs tracking-widest hover:text-white transition-colors">Voltar</button>
-               <button onClick={() => { onUpdatePlanning(planningService.deleteForecast(planning, isDeletingForecast.id)); setIsDeletingForecast(null); }} className="flex-[2] py-5 bg-rose-600 hover:bg-rose-50 text-white rounded-[2rem] font-black uppercase text-xs tracking-widest shadow-xl shadow-rose-500/20 active:scale-95 transition-all">Excluir Permanente</button>
+               <button onClick={() => { onUpdatePlanning(planningService.deleteForecast(planning, isDeletingForecast.id)); setIsDeletingForecast(null); }} className="flex-[2] py-5 bg-rose-600 hover:bg-rose-500 text-white rounded-[2rem] font-black uppercase text-xs tracking-widest shadow-xl shadow-rose-500/20 active:scale-95 transition-all">Excluir Permanente</button>
             </div>
           </div>
         </div>
@@ -479,11 +516,12 @@ export const PlanningView: React.FC<PlanningViewProps> = ({
         />
       )}
 
+      {/* MODAL DE EFETIVAR COMPRA (CORRIGIDO E DARK) */}
       {confirmingForecast && (
         <ConfirmForecastModal 
           forecast={confirmingForecast} 
           onClose={() => setConfirmingForecast(null)} 
-          onConfirm={(parentId: string | null) => handleFinalizePurchase(confirmingForecast, parentId)}
+          onConfirm={(parentId: string | null, proof?: string) => handleFinalizePurchase(confirmingForecast, parentId, proof)}
           financialCategories={financialCategories}
         />
       )}
@@ -491,7 +529,7 @@ export const PlanningView: React.FC<PlanningViewProps> = ({
   );
 };
 
-// --- PREMIUM FORECAST MODAL ---
+// --- PREMIUM FORECAST MODAL (DARK) ---
 const ForecastModal = ({ onClose, onSave, allWorkItems, suppliers, editingItem }: any) => {
   const [data, setData] = useState({
     description: editingItem?.description || '',
@@ -501,19 +539,20 @@ const ForecastModal = ({ onClose, onSave, allWorkItems, suppliers, editingItem }
     isPaid: editingItem?.isPaid || false,
     estimatedDate: (editingItem?.estimatedDate || new Date().toISOString()).split('T')[0],
     supplierId: editingItem?.supplierId || '',
-    categoryId: editingItem?.categoryId || '' 
+    categoryId: editingItem?.categoryId || '',
+    paymentProof: editingItem?.paymentProof || ''
   });
 
   return (
     <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-sm animate-in fade-in duration-300" onClick={onClose}>
       <div className="bg-[#0f111a] w-full max-w-2xl rounded-[3rem] border border-slate-800/50 shadow-2xl flex flex-col overflow-hidden max-h-[95vh] relative" onClick={e => e.stopPropagation()}>
-        {/* Efeito de luz de fundo */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-64 bg-indigo-500/5 blur-[120px] pointer-events-none"></div>
         
-        {/* Header Fixo */}
         <div className="p-10 pb-6 shrink-0 flex items-center justify-between z-10">
           <div className="flex items-center gap-5">
-             <div className="p-4 bg-slate-800/60 rounded-3xl border border-slate-700/50 text-indigo-500 shadow-xl"><Boxes size={28}/></div>
+             <div className="p-4 bg-slate-800/60 rounded-3xl border border-slate-700/50 text-indigo-500 shadow-xl">
+                <Boxes size={28}/>
+             </div>
              <div>
                <h2 className="text-2xl font-black text-white uppercase tracking-tighter leading-none">{editingItem ? 'Editar Insumo' : 'Novo Suprimento'}</h2>
                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Inteligência de Aquisições</p>
@@ -522,13 +561,12 @@ const ForecastModal = ({ onClose, onSave, allWorkItems, suppliers, editingItem }
           <button onClick={onClose} className="p-3 text-slate-500 hover:text-white transition-all rounded-2xl hover:bg-slate-800/50"><X size={24}/></button>
         </div>
 
-        {/* Conteúdo com Scroll Interno */}
         <div className="p-10 pt-0 overflow-y-auto custom-scrollbar flex-1 relative z-10 space-y-8">
            <div>
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-3 ml-1">Descrição Técnica do Material</label>
               <input 
                 autoFocus 
-                className="w-full px-8 py-5 rounded-3xl bg-slate-900 border-2 border-slate-800 text-white text-base font-black outline-none focus:border-indigo-600 transition-all placeholder:text-slate-700" 
+                className="w-full px-8 py-5 rounded-3xl bg-slate-900 border-2 border-slate-800 text-white text-base font-black outline-none focus:border-indigo-600 transition-all placeholder:text-slate-800" 
                 value={data.description} 
                 onChange={e => setData({...data, description: e.target.value})} 
                 placeholder="Ex: Cimento Portland CP-II" 
@@ -552,7 +590,7 @@ const ForecastModal = ({ onClose, onSave, allWorkItems, suppliers, editingItem }
                 </div>
               </div>
               <div>
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-3 ml-1">Previsão de Chegada</label>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-3 ml-1">Prevision de Chegada</label>
                 <div className="relative">
                    <Calendar className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
                    <input 
@@ -597,12 +635,14 @@ const ForecastModal = ({ onClose, onSave, allWorkItems, suppliers, editingItem }
               </div>
            </div>
 
-           <div className="flex flex-col sm:flex-row items-center justify-between p-6 bg-slate-800/40 rounded-3xl border border-slate-700/50 gap-6">
+           <div className="flex flex-col sm:flex-row items-center justify-between p-8 bg-slate-900/50 rounded-3xl border border-slate-800 gap-6">
               <div className="flex items-center gap-4">
-                 <div className={`p-4 rounded-2xl ${data.isPaid ? 'bg-emerald-500/20 text-emerald-400' : 'bg-slate-700/50 text-slate-500'} transition-colors shadow-lg`}><CreditCard size={24}/></div>
+                 <div className={`p-4 rounded-2xl ${data.isPaid ? 'bg-emerald-500/20 text-emerald-400' : 'bg-slate-800 text-slate-500'} transition-colors shadow-lg`}>
+                    <CreditCard size={24}/>
+                 </div>
                  <div>
                     <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest leading-none">Estado Financeiro</p>
-                    <p className="text-sm font-bold text-white mt-1.5">{data.isPaid ? 'Pago e Liquidado' : 'Aguardando Pagamento'}</p>
+                    <p className="text-sm font-bold text-white mt-2">{data.isPaid ? 'Pago e Liquidado' : 'Aguardando Pagamento'}</p>
                  </div>
               </div>
               <button 
@@ -613,9 +653,20 @@ const ForecastModal = ({ onClose, onSave, allWorkItems, suppliers, editingItem }
                 <div className={`absolute top-1 w-6 h-6 bg-white rounded-full shadow-md transition-all ${data.isPaid ? 'left-9' : 'left-1'}`} />
               </button>
            </div>
+           
+           {data.paymentProof && (
+             <div className="p-6 bg-emerald-950/20 border border-emerald-900 rounded-3xl flex items-center justify-between">
+                <div className="flex items-center gap-3 text-emerald-500">
+                   <FileCheck size={20}/>
+                   <span className="text-[10px] font-black uppercase tracking-widest">Comprovante Vinculado</span>
+                </div>
+                <button type="button" onClick={() => setData({...data, paymentProof: ''})} className="p-2 text-rose-500 hover:bg-rose-500/10 rounded-xl transition-all">
+                  <X size={16}/>
+                </button>
+             </div>
+           )}
         </div>
 
-        {/* Footer Fixo */}
         <div className="p-10 pt-4 border-t border-slate-800/50 flex items-center gap-6 shrink-0 z-10 bg-[#0f111a]/80 backdrop-blur-sm">
            <button 
             onClick={onClose} 
@@ -822,33 +873,94 @@ const MilestoneModal = ({ milestone, onClose, onSave }: any) => {
   );
 };
 
+// --- CONFIRM PURCHASE MODAL (DARK & COMPACT) ---
 const ConfirmForecastModal = ({ forecast, onClose, onConfirm, financialCategories }: any) => {
   const [parentId, setParentId] = useState<string | null>(null);
+  const [paymentProof, setPaymentProof] = useState<string | undefined>(forecast.paymentProof);
+
   return (
-    <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in" onClick={onClose}>
-      <div className="bg-white dark:bg-slate-900 w-full max-md rounded-[2.5rem] p-8 border border-slate-200 dark:border-slate-800 shadow-2xl" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center gap-4 mb-6">
-           <div className="p-3 bg-indigo-100 text-indigo-600 rounded-2xl"><Wallet size={24}/></div>
-           <div>
-             <h2 className="text-xl font-black dark:text-white uppercase">Efetivar Compra</h2>
-             <p className="text-[10px] text-slate-400 font-bold uppercase">Integrar ao Fluxo Financeiro</p>
+    <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-sm animate-in fade-in duration-300" onClick={onClose}>
+      <div className="bg-[#0f111a] w-full max-w-md rounded-[3rem] p-10 border border-slate-800/50 shadow-2xl flex flex-col items-center relative overflow-hidden text-center" onClick={e => e.stopPropagation()}>
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-48 bg-indigo-500/10 blur-[100px] pointer-events-none"></div>
+        
+        <div className="relative mb-8">
+           <div className="w-20 h-20 bg-slate-800/40 rounded-full flex items-center justify-center border border-slate-700/50">
+              <Wallet size={32} className="text-indigo-500" />
            </div>
         </div>
-        <div className="space-y-4 mb-8">
-           <p className="text-sm text-slate-600 dark:text-slate-400 font-medium">Você está registrando a compra de <strong>{forecast.description}</strong> no valor de <strong>{financial.formatVisual((forecast.quantityNeeded || 0) * (forecast.unitPrice || 0), 'R$')}</strong>.</p>
-           <div>
-              <label className="text-[10px] font-black text-slate-400 uppercase mb-2 block tracking-widest">Grupo de Despesa Alvo</label>
-              <select className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-xs font-bold outline-none" value={parentId || ''} onChange={e => setParentId(e.target.value || null)}>
-                 <option value="">Sem grupo (Raiz)</option>
-                 {financialCategories.map((c: any) => <option key={c.id} value={c.id}>{c.description}</option>)}
-              </select>
+
+        <h2 className="text-2xl font-black text-white uppercase tracking-tighter mb-4">Efetivar Compra</h2>
+        
+        <div className="space-y-6 mb-8 w-full text-center">
+           <p className="text-slate-400 text-base leading-relaxed">
+             Registrar compra de <span className="text-white font-bold">{forecast.description}</span> no valor de <span className="text-indigo-400 font-bold">{financial.formatVisual((forecast.quantityNeeded || 0) * (forecast.unitPrice || 0), 'R$')}</span>.
+           </p>
+           
+           <div className="text-left space-y-6">
+              <div>
+                <label className="text-[10px] font-black text-slate-500 uppercase mb-2 block tracking-widest ml-1">Vincular ao Grupo Financeiro</label>
+                <div className="relative">
+                  <FolderTree className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-600" size={14} />
+                  <select 
+                    className="w-full pl-10 pr-4 py-4 rounded-2xl bg-slate-900 border-2 border-slate-800 text-white text-xs font-bold outline-none appearance-none focus:border-indigo-600 transition-all" 
+                    value={parentId || ''} 
+                    onChange={e => setParentId(e.target.value || null)}
+                  >
+                    <option value="">Sem grupo (Raiz do Financeiro)</option>
+                    {financialCategories.map((c: any) => <option key={c.id} value={c.id}>{c.description}</option>)}
+                  </select>
+                  <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-600 pointer-events-none" size={14} />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                 <ExpenseAttachmentZone 
+                    label="Comprovante de Pagamento (Obrigatório)"
+                    requiredStatus="PAID"
+                    currentFile={paymentProof}
+                    onUpload={(base64) => setPaymentProof(base64)}
+                    onRemove={() => setPaymentProof(undefined)}
+                 />
+                 <p className="text-[8px] text-slate-500 font-bold uppercase text-center italic">
+                   O status só será alterado após o upload do comprovante.
+                 </p>
+              </div>
            </div>
         </div>
-        <div className="flex gap-3">
-           <button onClick={onClose} className="flex-1 py-4 text-slate-400 font-black uppercase text-[10px]">Cancelar</button>
-           <button onClick={() => onConfirm(parentId)} className="flex-1 py-4 bg-emerald-600 text-white rounded-2xl font-black uppercase text-[10px] shadow-lg active:scale-95 transition-all">Confirmar e Lançar</button>
+
+        <div className="flex items-center gap-4 w-full">
+           <button onClick={onClose} className="flex-1 py-4 text-slate-500 font-black uppercase text-xs tracking-widest hover:text-white transition-colors">Voltar</button>
+           <button 
+              onClick={() => onConfirm(parentId, paymentProof)} 
+              disabled={!paymentProof}
+              className="flex-[2] py-4 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-30 disabled:cursor-not-allowed text-white rounded-[1.5rem] font-black uppercase text-xs tracking-widest shadow-xl shadow-emerald-500/20 active:scale-95 transition-all"
+           >
+              Confirmar Lançamento
+           </button>
         </div>
       </div>
+    </div>
+  );
+};
+
+// --- INLINE EDITING HELPERS ---
+const InlineCurrencyInput = ({ value, onUpdate }: { value: number, onUpdate: (val: number) => void }) => {
+  const [localVal, setLocalVal] = useState(financial.formatVisual(value, '').trim());
+  
+  useEffect(() => {
+    setLocalVal(financial.formatVisual(value, '').trim());
+  }, [value]);
+
+  return (
+    <div className="flex items-center justify-center gap-1.5 px-2 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-100 dark:border-slate-700 group hover:border-indigo-400 transition-all">
+      <span className="text-[9px] font-black text-slate-400">R$</span>
+      <input 
+        type="text" 
+        className="w-20 bg-transparent text-right text-[11px] font-black dark:text-slate-200 outline-none" 
+        value={localVal}
+        onChange={(e) => setLocalVal(financial.maskCurrency(e.target.value))}
+        onBlur={(e) => onUpdate(financial.parseLocaleNumber(e.target.value))}
+      />
     </div>
   );
 };
