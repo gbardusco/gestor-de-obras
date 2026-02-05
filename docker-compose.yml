@@ -9,7 +9,7 @@ services:
       - .:/app
       - /app/node_modules
     environment:
-      - VITE_API_URL=https://promedicao.com/api
+      - VITE_API_URL=${VITE_API_URL:-http://localhost:4000}
     depends_on:
       - db
       - backend
@@ -21,9 +21,9 @@ services:
       - "4000:3000"
     environment:
       - DATABASE_URL=postgresql://gestor:gestor@db:5432/gestor_obras?schema=public
-      - JWT_SECRET=change-me
-      - RESEND_API_KEY=change-me
-      - RESEND_FROM_EMAIL=nao-responda@exemplo.com
+      - JWT_SECRET=${JWT_SECRET}
+      - RESEND_API_KEY=${RESEND_API_KEY}
+      - RESEND_FROM_EMAIL=no-reply@promedicao.com
     depends_on:
       - db
 
