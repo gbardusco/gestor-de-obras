@@ -400,7 +400,7 @@ export const PlanningView: React.FC<PlanningViewProps> = ({
             </p>
             <div className="flex items-center gap-6 w-full">
                <button onClick={() => setIsDeletingForecast(null)} className="flex-1 py-4 text-slate-500 font-black uppercase text-xs tracking-widest hover:text-white transition-colors">Voltar</button>
-               <button onClick={() => { onUpdatePlanning(planningService.deleteForecast(planning, isDeletingForecast.id)); setIsDeletingForecast(null); }} className="flex-[2] py-5 bg-rose-600 hover:bg-rose-500 text-white rounded-[2rem] font-black uppercase text-xs tracking-widest shadow-xl shadow-rose-500/20 active:scale-95 transition-all">Excluir Permanente</button>
+               <button onClick={() => { onUpdatePlanning(planningService.deleteForecast(planning, isDeletingForecast.id)); setIsDeletingForecast(null); }} className="flex-[2] py-5 bg-rose-600 hover:bg-rose-50 text-white rounded-[2rem] font-black uppercase text-xs tracking-widest shadow-xl shadow-rose-500/20 active:scale-95 transition-all">Excluir Permanente</button>
             </div>
           </div>
         </div>
@@ -506,24 +506,33 @@ const ForecastModal = ({ onClose, onSave, allWorkItems, suppliers, editingItem }
 
   return (
     <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-sm animate-in fade-in duration-300" onClick={onClose}>
-      <div className="bg-[#0f111a] w-full max-w-2xl rounded-[3rem] p-12 border border-slate-800/50 shadow-2xl overflow-hidden relative" onClick={e => e.stopPropagation()}>
+      <div className="bg-[#0f111a] w-full max-w-2xl rounded-[3rem] border border-slate-800/50 shadow-2xl flex flex-col overflow-hidden max-h-[95vh] relative" onClick={e => e.stopPropagation()}>
+        {/* Efeito de luz de fundo */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-64 bg-indigo-500/5 blur-[120px] pointer-events-none"></div>
         
-        <div className="flex items-center justify-between mb-10">
+        {/* Header Fixo */}
+        <div className="p-10 pb-6 shrink-0 flex items-center justify-between z-10">
           <div className="flex items-center gap-5">
              <div className="p-4 bg-slate-800/60 rounded-3xl border border-slate-700/50 text-indigo-500 shadow-xl"><Boxes size={28}/></div>
              <div>
-               <h2 className="text-2xl font-black text-white uppercase tracking-tighter">{editingItem ? 'Editar Insumo' : 'Novo Suprimento'}</h2>
+               <h2 className="text-2xl font-black text-white uppercase tracking-tighter leading-none">{editingItem ? 'Editar Insumo' : 'Novo Suprimento'}</h2>
                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Inteligência de Aquisições</p>
              </div>
           </div>
-          <button onClick={onClose} className="p-3 text-slate-500 hover:text-white transition-all"><X size={24}/></button>
+          <button onClick={onClose} className="p-3 text-slate-500 hover:text-white transition-all rounded-2xl hover:bg-slate-800/50"><X size={24}/></button>
         </div>
 
-        <div className="space-y-8 relative z-10">
+        {/* Conteúdo com Scroll Interno */}
+        <div className="p-10 pt-0 overflow-y-auto custom-scrollbar flex-1 relative z-10 space-y-8">
            <div>
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-3 ml-1">Descrição Técnica do Material</label>
-              <input autoFocus className="w-full px-8 py-5 rounded-3xl bg-slate-900 border-2 border-slate-800 text-white text-base font-black outline-none focus:border-indigo-600 transition-all placeholder:text-slate-700" value={data.description} onChange={e => setData({...data, description: e.target.value})} placeholder="Ex: Cimento Portland CP-II" />
+              <input 
+                autoFocus 
+                className="w-full px-8 py-5 rounded-3xl bg-slate-900 border-2 border-slate-800 text-white text-base font-black outline-none focus:border-indigo-600 transition-all placeholder:text-slate-700" 
+                value={data.description} 
+                onChange={e => setData({...data, description: e.target.value})} 
+                placeholder="Ex: Cimento Portland CP-II" 
+              />
            </div>
 
            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -531,7 +540,11 @@ const ForecastModal = ({ onClose, onSave, allWorkItems, suppliers, editingItem }
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-3 ml-1">Vínculo de Fornecedor</label>
                 <div className="relative">
                    <Building2 className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
-                   <select className="w-full pl-14 pr-6 py-5 rounded-3xl bg-slate-900 border-2 border-slate-800 text-white text-xs font-bold outline-none appearance-none focus:border-indigo-600 transition-all" value={data.supplierId} onChange={e => setData({...data, supplierId: e.target.value})}>
+                   <select 
+                    className="w-full pl-14 pr-10 py-5 rounded-3xl bg-slate-900 border-2 border-slate-800 text-white text-xs font-bold outline-none appearance-none focus:border-indigo-600 transition-all" 
+                    value={data.supplierId} 
+                    onChange={e => setData({...data, supplierId: e.target.value})}
+                   >
                      <option value="">Não definido (Spot)</option>
                      {suppliers.map((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)}
                    </select>
@@ -542,25 +555,44 @@ const ForecastModal = ({ onClose, onSave, allWorkItems, suppliers, editingItem }
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-3 ml-1">Previsão de Chegada</label>
                 <div className="relative">
                    <Calendar className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
-                   <input type="date" className="w-full pl-14 pr-6 py-5 rounded-3xl bg-slate-900 border-2 border-slate-800 text-white text-xs font-bold outline-none focus:border-indigo-600 transition-all [color-scheme:dark]" value={data.estimatedDate} onChange={e => setData({...data, estimatedDate: e.target.value})} />
+                   <input 
+                    type="date" 
+                    className="w-full pl-14 pr-6 py-5 rounded-3xl bg-slate-900 border-2 border-slate-800 text-white text-xs font-bold outline-none focus:border-indigo-600 transition-all [color-scheme:dark]" 
+                    value={data.estimatedDate} 
+                    onChange={e => setData({...data, estimatedDate: e.target.value})} 
+                   />
                 </div>
               </div>
            </div>
 
-           <div className="grid grid-cols-3 gap-6">
-              <div className="col-span-1">
+           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+              <div>
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-3 text-center">Unidade</label>
-                <input className="w-full px-4 py-5 rounded-3xl bg-slate-900 border-2 border-slate-800 text-white text-sm font-black text-center uppercase outline-none focus:border-indigo-600" value={data.unit} onChange={e => setData({...data, unit: e.target.value})} />
+                <input 
+                  className="w-full px-4 py-5 rounded-3xl bg-slate-900 border-2 border-slate-800 text-white text-sm font-black text-center uppercase outline-none focus:border-indigo-600" 
+                  value={data.unit} 
+                  onChange={e => setData({...data, unit: e.target.value})} 
+                />
               </div>
-              <div className="col-span-1">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-3 text-center">Qtd</label>
-                <input type="number" className="w-full px-4 py-5 rounded-3xl bg-slate-900 border-2 border-slate-800 text-white text-sm font-black text-center outline-none focus:border-indigo-600" value={data.quantityNeeded} onChange={e => setData({...data, quantityNeeded: parseFloat(e.target.value) || 0})} />
+              <div>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-3 text-center">Quantidade</label>
+                <input 
+                  type="number" 
+                  className="w-full px-4 py-5 rounded-3xl bg-slate-900 border-2 border-slate-800 text-white text-sm font-black text-center outline-none focus:border-indigo-600" 
+                  value={data.quantityNeeded} 
+                  onChange={e => setData({...data, quantityNeeded: parseFloat(e.target.value) || 0})} 
+                />
               </div>
-              <div className="col-span-1">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-3 text-right">Preço Unit.</label>
+              <div>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-3 text-right">Preço Unitário</label>
                 <div className="relative">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-600">R$</span>
-                  <input type="number" className="w-full pl-10 pr-6 py-5 rounded-3xl bg-slate-900 border-2 border-slate-800 text-white text-sm font-black text-right outline-none focus:border-indigo-600" value={data.unitPrice} onChange={e => setData({...data, unitPrice: parseFloat(e.target.value) || 0})} />
+                  <span className="absolute left-5 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-600 uppercase">R$</span>
+                  <input 
+                    type="number" 
+                    className="w-full pl-12 pr-6 py-5 rounded-3xl bg-slate-900 border-2 border-slate-800 text-white text-sm font-black text-right outline-none focus:border-indigo-600" 
+                    value={data.unitPrice} 
+                    onChange={e => setData({...data, unitPrice: parseFloat(e.target.value) || 0})} 
+                  />
                 </div>
               </div>
            </div>
@@ -569,8 +601,8 @@ const ForecastModal = ({ onClose, onSave, allWorkItems, suppliers, editingItem }
               <div className="flex items-center gap-4">
                  <div className={`p-4 rounded-2xl ${data.isPaid ? 'bg-emerald-500/20 text-emerald-400' : 'bg-slate-700/50 text-slate-500'} transition-colors shadow-lg`}><CreditCard size={24}/></div>
                  <div>
-                    <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Estado Financeiro</p>
-                    <p className="text-sm font-bold text-white mt-1">{data.isPaid ? 'Pago e Liquidado' : 'Aguardando Pagamento'}</p>
+                    <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest leading-none">Estado Financeiro</p>
+                    <p className="text-sm font-bold text-white mt-1.5">{data.isPaid ? 'Pago e Liquidado' : 'Aguardando Pagamento'}</p>
                  </div>
               </div>
               <button 
@@ -583,9 +615,19 @@ const ForecastModal = ({ onClose, onSave, allWorkItems, suppliers, editingItem }
            </div>
         </div>
 
-        <div className="flex items-center gap-6 mt-12 w-full">
-           <button onClick={onClose} className="flex-1 py-5 text-slate-500 font-black uppercase text-xs tracking-widest hover:text-white transition-colors">Cancelar</button>
-           <button onClick={() => onSave(data)} disabled={!data.description} className="flex-[2] py-6 bg-indigo-600 hover:bg-indigo-500 text-white rounded-[2rem] font-black uppercase text-xs tracking-widest shadow-[0_15px_35px_-10px_rgba(79,70,229,0.5)] active:scale-95 transition-all flex items-center justify-center gap-3">
+        {/* Footer Fixo */}
+        <div className="p-10 pt-4 border-t border-slate-800/50 flex items-center gap-6 shrink-0 z-10 bg-[#0f111a]/80 backdrop-blur-sm">
+           <button 
+            onClick={onClose} 
+            className="flex-1 py-5 text-slate-500 font-black uppercase text-xs tracking-widest hover:text-white transition-colors"
+           >
+             Cancelar
+           </button>
+           <button 
+            onClick={() => onSave(data)} 
+            disabled={!data.description} 
+            className="flex-[2] py-6 bg-indigo-600 hover:bg-indigo-500 text-white rounded-[2rem] font-black uppercase text-xs tracking-widest shadow-[0_15px_35px_-10px_rgba(79,70,229,0.5)] active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-30 disabled:cursor-not-allowed"
+           >
              <Save size={20} /> {editingItem ? 'Atualizar Registro' : 'Confirmar Inclusão'}
            </button>
         </div>
