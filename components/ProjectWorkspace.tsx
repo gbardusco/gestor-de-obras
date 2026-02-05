@@ -4,7 +4,7 @@ import { Project, GlobalSettings, WorkItem } from '../types';
 import {
   Layers, BarChart3, Coins, Users, HardHat, BookOpen, FileText, Sliders,
   CheckCircle2, History, Calendar, Lock, ChevronDown,
-  ArrowRight, Clock, Undo2, Redo2, RotateCcw, AlertTriangle, X, Target, Info
+  ArrowRight, Clock, Undo2, Redo2, RotateCcw, AlertTriangle, X, Target, Info, RefreshCw
 } from 'lucide-react';
 import { WbsView } from './WbsView';
 import { StatsView } from './StatsView';
@@ -39,6 +39,7 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
   const [tab, setTab] = useState<TabID>('wbs');
   const [viewingMeasurementId, setViewingMeasurementId] = useState<'current' | number>('current');
   const [isClosingModalOpen, setIsClosingModalOpen] = useState(false);
+  const [isReopenModalOpen, setIsReopenModalOpen] = useState(false);
 
   const tabsNavRef = useRef<HTMLDivElement>(null);
   const dragStartRef = useRef<{ x: number; scrollLeft: number; moved: boolean } | null>(null);
@@ -68,7 +69,6 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
     setTimeout(() => { dragStartRef.current = null; }, 50);
   };
 
-  // Estatísticas calculadas em tempo real para o modal de fechamento
   const currentStats = useMemo(() =>
     treeService.calculateBasicStats(project.items, project.bdi, project),
     [project]
@@ -83,7 +83,7 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
 
   const isHistoryMode = viewingMeasurementId !== 'current';
 
-  // Lógica crítica: O botão de reabrir aparece apenas se estivermos visualizando o snapshot mais recente do histórico
+  // O botão de reabrir aparece apenas se estivermos visualizando o snapshot mais recente (topo do histórico)
   const isLatestHistory = viewingMeasurementId !== 'current' &&
     project.history &&
     project.history.length > 0 &&
@@ -110,13 +110,11 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
     }
   };
 
-  const handleReopenMeasurement = () => {
-    // Confirmar estorno do encerramento
-    if (window.confirm("CONFIRMAÇÃO DE ESTORNO: Deseja realmente reabrir esta medição? O período atual será descartado e os dados deste snapshot voltarão para o modo de edição.")) {
-      const updated = projectService.reopenLatestMeasurement(project);
-      onUpdateProject(updated);
-      setViewingMeasurementId('current');
-    }
+  const handleConfirmReopen = () => {
+    const updated = projectService.reopenLatestMeasurement(project);
+    onUpdateProject(updated);
+    setViewingMeasurementId('current');
+    setIsReopenModalOpen(false);
   };
 
   const TabBtn: React.FC<{ active: boolean; id: TabID; label: string; icon: React.ReactNode }> = ({ active, id, label, icon }) => (
@@ -185,7 +183,7 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
           ) : (
             <div className="flex items-center gap-2">
               {isLatestHistory && (
-                <button onClick={handleReopenMeasurement} className="flex items-center gap-2 px-5 py-3 bg-white border-2 border-rose-500 text-rose-600 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-rose-50 transition-all shadow-sm">
+                <button onClick={() => setIsReopenModalOpen(true)} className="flex items-center gap-2 px-5 py-3 bg-rose-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-rose-700 active:scale-95 transition-all shadow-xl shadow-rose-500/20">
                   <RotateCcw size={16} /> Reabrir Medição
                 </button>
               )}
@@ -274,6 +272,53 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
                 className="flex-[2] py-4 bg-indigo-600 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-xl shadow-indigo-500/20 active:scale-95 transition-all flex items-center justify-center gap-2"
               >
                 <CheckCircle2 size={18} /> Confirmar e Congelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL DE CONFIRMAÇÃO DE REABERTURA (ESTORNO) */}
+      {isReopenModalOpen && (
+        <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in" onClick={() => setIsReopenModalOpen(false)}>
+          <div className="bg-white dark:bg-slate-900 w-full max-w-xl rounded-[3rem] p-10 shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden relative" onClick={e => e.stopPropagation()}>
+            <div className="absolute top-0 left-0 right-0 h-2 bg-rose-600"></div>
+
+            <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-rose-50 dark:bg-rose-900/30 text-rose-600 rounded-2xl"><RefreshCw size={24} /></div>
+                <div>
+                  <h2 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-tight">Estornar Medição Nº {viewingMeasurementId}</h2>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Reverter Encerramento de Período</p>
+                </div>
+              </div>
+              <button onClick={() => setIsReopenModalOpen(false)} className="p-2 text-slate-300 hover:text-slate-600"><X size={20} /></button>
+            </div>
+
+            <div className="space-y-6">
+              <div className="p-6 bg-rose-50 dark:bg-rose-900/20 border border-rose-100 dark:border-rose-800 rounded-3xl flex gap-4">
+                <AlertTriangle className="text-rose-500 shrink-0" size={24} />
+                <div className="space-y-2">
+                  <p className="text-[11px] font-black text-rose-700 dark:text-rose-400 uppercase tracking-widest">Ação Crítica de Rollback</p>
+                  <p className="text-xs text-rose-800 dark:text-rose-200 leading-relaxed font-medium">
+                    Ao reabrir esta medição, o sistema irá:
+                  </p>
+                  <ul className="text-xs text-rose-700 dark:text-rose-300 list-disc pl-5 space-y-1">
+                    <li>Descartar quaisquer rascunhos de medição do período atual (Nº {project.measurementNumber}).</li>
+                    <li>Restaurar os dados deste snapshot para o modo de edição.</li>
+                    <li>Remover este registro permanentemente do histórico de snapshots.</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-3 mt-10">
+              <button onClick={() => setIsReopenModalOpen(false)} className="flex-1 py-4 text-slate-400 font-black uppercase text-[10px] tracking-widest hover:bg-slate-50 rounded-2xl transition-all">Manter Encerrada</button>
+              <button
+                onClick={handleConfirmReopen}
+                className="flex-[2] py-4 bg-rose-600 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-xl shadow-rose-500/20 active:scale-95 transition-all flex items-center justify-center gap-2"
+              >
+                <RotateCcw size={18} /> Confirmar Reabertura
               </button>
             </div>
           </div>
