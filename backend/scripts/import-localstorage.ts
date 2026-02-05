@@ -12,6 +12,12 @@ interface LocalStorageData {
   globalSettings?: any;
 }
 
+const getLaborTotals = (pagamentos: any[], valorTotal: number) => {
+  const valorPago = pagamentos.reduce((sum, p) => sum + (p.valor || 0), 0);
+  const status = valorPago === 0 ? 'pendente' : valorPago >= valorTotal ? 'pago' : 'parcial';
+  return { valorPago, status };
+};
+
 async function main() {
   const filePath = process.argv[2];
   const instanceName = process.argv[3] || 'Instancia Importada';
@@ -240,6 +246,44 @@ async function main() {
               workforceMemberId: member.id,
             })),
             skipDuplicates: true,
+          });
+        }
+      }
+    }
+
+    if (project.laborContracts?.length) {
+      for (const contract of project.laborContracts) {
+        const pagamentos = contract.pagamentos || [];
+        const totals = getLaborTotals(pagamentos, contract.valorTotal || 0);
+
+        const createdContract = await prisma.laborContract.create({
+          data: {
+            id: contract.id,
+            projectId: created.id,
+            tipo: contract.tipo,
+            descricao: contract.descricao,
+            associadoId: contract.associadoId,
+            valorTotal: contract.valorTotal || 0,
+            valorPago: totals.valorPago,
+            status: totals.status,
+            dataInicio: contract.dataInicio,
+            dataFim: contract.dataFim || null,
+            linkedWorkItemId: contract.linkedWorkItemId || null,
+            observacoes: contract.observacoes || null,
+            ordem: contract.ordem || 0,
+          },
+        });
+
+        if (pagamentos.length) {
+          await prisma.laborPayment.createMany({
+            data: pagamentos.map((pag: any) => ({
+              id: pag.id,
+              data: pag.data,
+              valor: pag.valor,
+              descricao: pag.descricao || '',
+              comprovante: pag.comprovante || null,
+              laborContractId: createdContract.id,
+            })),
           });
         }
       }

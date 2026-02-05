@@ -23,6 +23,7 @@ import { RolesGuard } from './auth/roles.guard';
 import { RolesModule } from './roles/roles.module';
 import { PermissionsModule } from './permissions/permissions.module';
 import { UploadsModule } from './uploads/uploads.module';
+import { LaborContractsModule } from './labor-contracts/labor-contracts.module';
 
 @Module({
   imports: [
@@ -46,6 +47,7 @@ import { UploadsModule } from './uploads/uploads.module';
     RolesModule,
     PermissionsModule,
     UploadsModule,
+    LaborContractsModule,
   ],
   controllers: [AppController],
   providers: [
