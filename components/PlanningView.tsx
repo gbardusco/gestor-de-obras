@@ -165,7 +165,6 @@ export const PlanningView: React.FC<PlanningViewProps> = ({
                 <Printer size={14}/> Imprimir
               </button>
               <div className="h-3 w-px bg-slate-200 dark:bg-slate-700 mx-1" />
-              {/* Botões de Excel Restaurados */}
               <div className="flex items-center gap-1">
                 <button 
                   onClick={() => fileInputRef.current?.click()}
@@ -281,12 +280,20 @@ export const PlanningView: React.FC<PlanningViewProps> = ({
                     <h3 className="text-sm font-black uppercase tracking-widest text-slate-400">Suprimentos e Insumos</h3>
                     <p className="text-[10px] text-slate-500 font-medium mt-1">Gestão proativa de matérias-primas e equipamentos.</p>
                   </div>
-                  <div className="flex flex-wrap items-center gap-4">
+                  <div className="flex flex-wrap items-center gap-3">
+                    {/* Botões de Filtro de Status */}
+                    <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl mr-2">
+                       <button onClick={() => setForecastStatusFilter('all')} className={`px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${forecastStatusFilter === 'all' ? 'bg-white dark:bg-slate-700 text-slate-800 shadow-sm' : 'text-slate-400'}`}>Tudo</button>
+                       <button onClick={() => setForecastStatusFilter('pending')} className={`px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${forecastStatusFilter === 'pending' ? 'bg-amber-500 text-white shadow-lg' : 'text-slate-400'}`}>Pendentes</button>
+                       <button onClick={() => setForecastStatusFilter('ordered')} className={`px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${forecastStatusFilter === 'ordered' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400'}`}>Comprados</button>
+                       <button onClick={() => setForecastStatusFilter('delivered')} className={`px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${forecastStatusFilter === 'delivered' ? 'bg-emerald-600 text-white shadow-lg' : 'text-slate-400'}`}>No Local</button>
+                    </div>
+
                     <div className="relative group">
                       <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={14} />
                       <input 
                         placeholder="Filtrar materiais..."
-                        className="bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 pl-11 pr-4 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest outline-none focus:border-indigo-500 transition-all w-64"
+                        className="bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 pl-11 pr-4 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest outline-none focus:border-indigo-500 transition-all w-48"
                         value={forecastSearch}
                         onChange={e => setForecastSearch(e.target.value)}
                       />
