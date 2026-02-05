@@ -163,6 +163,8 @@ export interface MaterialForecast {
   quantityNeeded: number;
   unitPrice: number;
   estimatedDate: string;
+  purchaseDate?: string;
+  deliveryDate?: string;
   status: 'pending' | 'ordered' | 'delivered';
   isPaid: boolean;
   order: number;
