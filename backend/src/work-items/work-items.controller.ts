@@ -1,7 +1,19 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { WorkItemsService } from './work-items.service';
 import { Roles } from '../auth/roles.decorator';
+import type { AuthenticatedRequest } from '../auth/auth.types';
 
 interface CreateWorkItemBody {
   projectId: string;
@@ -38,12 +50,12 @@ export class WorkItemsController {
   constructor(private readonly workItemsService: WorkItemsService) {}
 
   @Get()
-  findAll(@Query('projectId') projectId: string, @Req() req: any) {
+  findAll(@Query('projectId') projectId: string, @Req() req: AuthenticatedRequest) {
     return this.workItemsService.findAll(projectId, req.user.instanceId);
   }
 
   @Post()
-  create(@Body() body: CreateWorkItemBody, @Req() req: any) {
+  create(@Body() body: CreateWorkItemBody, @Req() req: AuthenticatedRequest) {
     return this.workItemsService.create({
       ...body,
       instanceId: req.user.instanceId,
@@ -51,7 +63,11 @@ export class WorkItemsController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() body: UpdateWorkItemBody, @Req() req: any) {
+  update(
+    @Param('id') id: string,
+    @Body() body: UpdateWorkItemBody,
+    @Req() req: AuthenticatedRequest,
+  ) {
     return this.workItemsService.update({
       ...body,
       id,
@@ -60,7 +76,7 @@ export class WorkItemsController {
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string, @Req() req: any) {
+  remove(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
     return this.workItemsService.remove(id, req.user.instanceId);
   }
 }

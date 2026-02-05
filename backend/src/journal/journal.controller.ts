@@ -1,7 +1,19 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { JournalService } from './journal.service';
 import { Roles } from '../auth/roles.decorator';
+import type { AuthenticatedRequest } from '../auth/auth.types';
 
 interface CreateJournalEntryBody {
   projectId: string;
@@ -23,12 +35,12 @@ export class JournalController {
   constructor(private readonly journalService: JournalService) {}
 
   @Get('entries')
-  listEntries(@Query('projectId') projectId: string, @Req() req: any) {
+  listEntries(@Query('projectId') projectId: string, @Req() req: AuthenticatedRequest) {
     return this.journalService.listEntries(projectId, req.user.instanceId);
   }
 
   @Post('entries')
-  createEntry(@Body() body: CreateJournalEntryBody, @Req() req: any) {
+  createEntry(@Body() body: CreateJournalEntryBody, @Req() req: AuthenticatedRequest) {
     return this.journalService.createEntry({
       ...body,
       instanceId: req.user.instanceId,
@@ -36,12 +48,16 @@ export class JournalController {
   }
 
   @Patch('entries/:id')
-  updateEntry(@Param('id') id: string, @Body() body: UpdateJournalEntryBody, @Req() req: any) {
+  updateEntry(
+    @Param('id') id: string,
+    @Body() body: UpdateJournalEntryBody,
+    @Req() req: AuthenticatedRequest,
+  ) {
     return this.journalService.updateEntry(id, req.user.instanceId, body);
   }
 
   @Delete('entries/:id')
-  deleteEntry(@Param('id') id: string, @Req() req: any) {
+  deleteEntry(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
     return this.journalService.deleteEntry(id, req.user.instanceId);
   }
 }

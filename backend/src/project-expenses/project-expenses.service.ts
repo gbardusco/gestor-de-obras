@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import type { ExpenseStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
 interface CreateExpenseInput {
@@ -17,7 +18,7 @@ interface CreateExpenseInput {
   unitPrice: number;
   amount: number;
   isPaid?: boolean;
-  status?: string;
+  status?: ExpenseStatus;
   paymentDate?: string;
   paymentProof?: string;
   invoiceDoc?: string;
@@ -55,6 +56,8 @@ export class ProjectExpensesService {
 
   async create(input: CreateExpenseInput) {
     await this.ensureProject(input.projectId, input.instanceId);
+    const fallbackStatus: ExpenseStatus = input.isPaid ? 'PAID' : 'PENDING';
+
     return this.prisma.projectExpense.create({
       data: {
         projectId: input.projectId,
@@ -71,7 +74,7 @@ export class ProjectExpensesService {
         unitPrice: input.unitPrice,
         amount: input.amount,
         isPaid: input.isPaid ?? false,
-        status: input.status || (input.isPaid ? 'PAID' : 'PENDING'),
+        status: input.status ?? fallbackStatus,
         paymentDate: input.paymentDate || null,
         paymentProof: input.paymentProof || null,
         invoiceDoc: input.invoiceDoc || null,
@@ -111,7 +114,7 @@ export class ProjectExpensesService {
         unitPrice: input.unitPrice ?? existing.unitPrice,
         amount: input.amount ?? existing.amount,
         isPaid: input.isPaid ?? existing.isPaid,
-        status: input.status ?? existing.status,
+        status: (input.status ?? existing.status) as ExpenseStatus,
         paymentDate: input.paymentDate ?? existing.paymentDate,
         paymentProof: input.paymentProof ?? existing.paymentProof,
         invoiceDoc: input.invoiceDoc ?? existing.invoiceDoc,

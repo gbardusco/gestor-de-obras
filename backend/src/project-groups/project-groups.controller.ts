@@ -1,7 +1,18 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ProjectGroupsService } from './project-groups.service';
 import { Roles } from '../auth/roles.decorator';
+import type { AuthenticatedRequest } from '../auth/auth.types';
 
 interface CreateProjectGroupBody {
   name: string;
@@ -22,12 +33,12 @@ export class ProjectGroupsController {
   constructor(private readonly projectGroupsService: ProjectGroupsService) {}
 
   @Get()
-  findAll(@Req() req: any) {
+  findAll(@Req() req: AuthenticatedRequest) {
     return this.projectGroupsService.findAll(req.user.instanceId);
   }
 
   @Post()
-  create(@Body() body: CreateProjectGroupBody, @Req() req: any) {
+  create(@Body() body: CreateProjectGroupBody, @Req() req: AuthenticatedRequest) {
     return this.projectGroupsService.create({
       ...body,
       instanceId: req.user.instanceId,
@@ -35,7 +46,11 @@ export class ProjectGroupsController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() body: UpdateProjectGroupBody, @Req() req: any) {
+  update(
+    @Param('id') id: string,
+    @Body() body: UpdateProjectGroupBody,
+    @Req() req: AuthenticatedRequest,
+  ) {
     return this.projectGroupsService.update({
       ...body,
       id,
@@ -44,7 +59,7 @@ export class ProjectGroupsController {
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string, @Req() req: any) {
+  remove(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
     return this.projectGroupsService.remove(id, req.user.instanceId);
   }
 }

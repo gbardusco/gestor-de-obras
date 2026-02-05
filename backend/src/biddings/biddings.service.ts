@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
 interface CreateBiddingInput {
@@ -50,8 +51,8 @@ export class BiddingsService {
         ourProposalValue: input.ourProposalValue,
         status: input.status,
         bdi: input.bdi,
-        itemsSnapshot: input.itemsSnapshot || [],
-        assetsSnapshot: input.assetsSnapshot || [],
+        itemsSnapshot: (input.itemsSnapshot ?? []) as Prisma.InputJsonValue,
+        assetsSnapshot: (input.assetsSnapshot ?? []) as Prisma.InputJsonValue,
       },
     });
   }
@@ -74,8 +75,8 @@ export class BiddingsService {
         ourProposalValue: input.ourProposalValue ?? existing.ourProposalValue,
         status: input.status ?? existing.status,
         bdi: input.bdi ?? existing.bdi,
-        itemsSnapshot: input.itemsSnapshot ?? existing.itemsSnapshot,
-        assetsSnapshot: input.assetsSnapshot ?? existing.assetsSnapshot,
+        itemsSnapshot: (input.itemsSnapshot ?? existing.itemsSnapshot) as Prisma.InputJsonValue,
+        assetsSnapshot: (input.assetsSnapshot ?? existing.assetsSnapshot) as Prisma.InputJsonValue,
       },
     });
   }

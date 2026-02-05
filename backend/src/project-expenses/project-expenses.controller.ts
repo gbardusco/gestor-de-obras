@@ -1,7 +1,20 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ProjectExpensesService } from './project-expenses.service';
 import { Roles } from '../auth/roles.decorator';
+import type { ExpenseStatus } from '@prisma/client';
+import type { AuthenticatedRequest } from '../auth/auth.types';
 
 interface CreateExpenseBody {
   projectId: string;
@@ -18,7 +31,7 @@ interface CreateExpenseBody {
   unitPrice: number;
   amount: number;
   isPaid?: boolean;
-  status?: string;
+  status?: ExpenseStatus;
   paymentDate?: string;
   paymentProof?: string;
   invoiceDoc?: string;
@@ -39,12 +52,12 @@ export class ProjectExpensesController {
   constructor(private readonly projectExpensesService: ProjectExpensesService) {}
 
   @Get()
-  findAll(@Query('projectId') projectId: string, @Req() req: any) {
+  findAll(@Query('projectId') projectId: string, @Req() req: AuthenticatedRequest) {
     return this.projectExpensesService.findAll(projectId, req.user.instanceId);
   }
 
   @Post()
-  create(@Body() body: CreateExpenseBody, @Req() req: any) {
+  create(@Body() body: CreateExpenseBody, @Req() req: AuthenticatedRequest) {
     return this.projectExpensesService.create({
       ...body,
       instanceId: req.user.instanceId,
@@ -52,7 +65,11 @@ export class ProjectExpensesController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() body: UpdateExpenseBody, @Req() req: any) {
+  update(
+    @Param('id') id: string,
+    @Body() body: UpdateExpenseBody,
+    @Req() req: AuthenticatedRequest,
+  ) {
     return this.projectExpensesService.update({
       ...body,
       id,
@@ -61,7 +78,7 @@ export class ProjectExpensesController {
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string, @Req() req: any) {
+  remove(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
     return this.projectExpensesService.remove(id, req.user.instanceId);
   }
 }

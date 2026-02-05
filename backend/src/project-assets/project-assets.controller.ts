@@ -1,7 +1,19 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ProjectAssetsService } from './project-assets.service';
 import { Roles } from '../auth/roles.decorator';
+import type { AuthenticatedRequest } from '../auth/auth.types';
 
 interface CreateAssetBody {
   projectId: string;
@@ -21,12 +33,12 @@ export class ProjectAssetsController {
   constructor(private readonly projectAssetsService: ProjectAssetsService) {}
 
   @Get()
-  findAll(@Query('projectId') projectId: string, @Req() req: any) {
+  findAll(@Query('projectId') projectId: string, @Req() req: AuthenticatedRequest) {
     return this.projectAssetsService.findAll(projectId, req.user.instanceId);
   }
 
   @Post()
-  create(@Body() body: CreateAssetBody, @Req() req: any) {
+  create(@Body() body: CreateAssetBody, @Req() req: AuthenticatedRequest) {
     return this.projectAssetsService.create({
       ...body,
       instanceId: req.user.instanceId,
@@ -34,7 +46,11 @@ export class ProjectAssetsController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() body: UpdateAssetBody, @Req() req: any) {
+  update(
+    @Param('id') id: string,
+    @Body() body: UpdateAssetBody,
+    @Req() req: AuthenticatedRequest,
+  ) {
     return this.projectAssetsService.update({
       ...body,
       id,
@@ -43,7 +59,7 @@ export class ProjectAssetsController {
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string, @Req() req: any) {
+  remove(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
     return this.projectAssetsService.remove(id, req.user.instanceId);
   }
 }

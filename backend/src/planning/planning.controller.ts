@@ -1,7 +1,19 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { PlanningService } from './planning.service';
 import { Roles } from '../auth/roles.decorator';
+import type { AuthenticatedRequest } from '../auth/auth.types';
 
 interface CreateTaskBody {
   projectId: string;
@@ -50,12 +62,12 @@ export class PlanningController {
   constructor(private readonly planningService: PlanningService) {}
 
   @Get('tasks')
-  listTasks(@Query('projectId') projectId: string, @Req() req: any) {
+  listTasks(@Query('projectId') projectId: string, @Req() req: AuthenticatedRequest) {
     return this.planningService.listTasks(projectId, req.user.instanceId);
   }
 
   @Post('tasks')
-  createTask(@Body() body: CreateTaskBody, @Req() req: any) {
+  createTask(@Body() body: CreateTaskBody, @Req() req: AuthenticatedRequest) {
     return this.planningService.createTask({
       ...body,
       instanceId: req.user.instanceId,
@@ -63,22 +75,26 @@ export class PlanningController {
   }
 
   @Patch('tasks/:id')
-  updateTask(@Param('id') id: string, @Body() body: UpdateTaskBody, @Req() req: any) {
+  updateTask(
+    @Param('id') id: string,
+    @Body() body: UpdateTaskBody,
+    @Req() req: AuthenticatedRequest,
+  ) {
     return this.planningService.updateTask(id, req.user.instanceId, body);
   }
 
   @Delete('tasks/:id')
-  deleteTask(@Param('id') id: string, @Req() req: any) {
+  deleteTask(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
     return this.planningService.deleteTask(id, req.user.instanceId);
   }
 
   @Get('forecasts')
-  listForecasts(@Query('projectId') projectId: string, @Req() req: any) {
+  listForecasts(@Query('projectId') projectId: string, @Req() req: AuthenticatedRequest) {
     return this.planningService.listForecasts(projectId, req.user.instanceId);
   }
 
   @Post('forecasts')
-  createForecast(@Body() body: CreateForecastBody, @Req() req: any) {
+  createForecast(@Body() body: CreateForecastBody, @Req() req: AuthenticatedRequest) {
     return this.planningService.createForecast({
       ...body,
       instanceId: req.user.instanceId,
@@ -86,22 +102,26 @@ export class PlanningController {
   }
 
   @Patch('forecasts/:id')
-  updateForecast(@Param('id') id: string, @Body() body: UpdateForecastBody, @Req() req: any) {
+  updateForecast(
+    @Param('id') id: string,
+    @Body() body: UpdateForecastBody,
+    @Req() req: AuthenticatedRequest,
+  ) {
     return this.planningService.updateForecast(id, req.user.instanceId, body);
   }
 
   @Delete('forecasts/:id')
-  deleteForecast(@Param('id') id: string, @Req() req: any) {
+  deleteForecast(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
     return this.planningService.deleteForecast(id, req.user.instanceId);
   }
 
   @Get('milestones')
-  listMilestones(@Query('projectId') projectId: string, @Req() req: any) {
+  listMilestones(@Query('projectId') projectId: string, @Req() req: AuthenticatedRequest) {
     return this.planningService.listMilestones(projectId, req.user.instanceId);
   }
 
   @Post('milestones')
-  createMilestone(@Body() body: CreateMilestoneBody, @Req() req: any) {
+  createMilestone(@Body() body: CreateMilestoneBody, @Req() req: AuthenticatedRequest) {
     return this.planningService.createMilestone({
       ...body,
       instanceId: req.user.instanceId,
@@ -109,12 +129,16 @@ export class PlanningController {
   }
 
   @Patch('milestones/:id')
-  updateMilestone(@Param('id') id: string, @Body() body: UpdateMilestoneBody, @Req() req: any) {
+  updateMilestone(
+    @Param('id') id: string,
+    @Body() body: UpdateMilestoneBody,
+    @Req() req: AuthenticatedRequest,
+  ) {
     return this.planningService.updateMilestone(id, req.user.instanceId, body);
   }
 
   @Delete('milestones/:id')
-  deleteMilestone(@Param('id') id: string, @Req() req: any) {
+  deleteMilestone(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
     return this.planningService.deleteMilestone(id, req.user.instanceId);
   }
 }

@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
 interface CreateSnapshotInput {
@@ -41,8 +42,8 @@ export class MeasurementSnapshotsService {
         projectId: input.projectId,
         measurementNumber: input.measurementNumber,
         date: input.date,
-        itemsSnapshot: input.itemsSnapshot,
-        totals: input.totals,
+        itemsSnapshot: input.itemsSnapshot as Prisma.InputJsonValue,
+        totals: input.totals as Prisma.InputJsonValue,
       },
     });
   }
@@ -59,8 +60,8 @@ export class MeasurementSnapshotsService {
       data: {
         measurementNumber: input.measurementNumber ?? existing.measurementNumber,
         date: input.date ?? existing.date,
-        itemsSnapshot: input.itemsSnapshot ?? existing.itemsSnapshot,
-        totals: input.totals ?? existing.totals,
+        itemsSnapshot: (input.itemsSnapshot ?? existing.itemsSnapshot) as Prisma.InputJsonValue,
+        totals: (input.totals ?? existing.totals) as Prisma.InputJsonValue,
       },
     });
   }

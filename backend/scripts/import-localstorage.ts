@@ -170,7 +170,21 @@ async function main() {
           create: {},
         },
       },
+      include: {
+        planning: { select: { id: true } },
+        journal: { select: { id: true } },
+      },
     });
+
+    const planningId = created.planning?.id;
+    if (!planningId) {
+      throw new Error('Projeto importado sem planejamento');
+    }
+
+    const journalId = created.journal?.id;
+    if (!journalId) {
+      throw new Error('Projeto importado sem diario');
+    }
 
     if (project.items?.length) {
       await prisma.workItem.createMany({
@@ -302,7 +316,7 @@ async function main() {
           dueDate: task.dueDate,
           createdAt: task.createdAt,
           completedAt: task.completedAt || null,
-          projectPlanningId: created.planningId,
+          projectPlanningId: planningId,
         })),
       });
     }
@@ -323,7 +337,7 @@ async function main() {
           order: forecast.order || 0,
           supplierId: forecast.supplierId || null,
           paymentProof: forecast.paymentProof || null,
-          projectPlanningId: created.planningId,
+          projectPlanningId: planningId,
         })),
       });
     }
@@ -335,7 +349,7 @@ async function main() {
           title: milestone.title,
           date: milestone.date,
           isCompleted: milestone.isCompleted,
-          projectPlanningId: created.planningId,
+          projectPlanningId: planningId,
         })),
       });
     }
@@ -351,7 +365,7 @@ async function main() {
           description: entry.description,
           weatherStatus: entry.weatherStatus || null,
           photoUrls: entry.photoUrls || [],
-          projectJournalId: created.journalId,
+          projectJournalId: journalId,
         })),
       });
     }

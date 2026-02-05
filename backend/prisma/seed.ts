@@ -1,10 +1,11 @@
 import 'dotenv/config';
 import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
-import { Pool } from 'pg';
+import pg from 'pg';
 import * as bcrypt from 'bcrypt';
 
-const pool = new Pool({
+// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+const pool = new pg.Pool({
   connectionString: process.env.DATABASE_URL,
 });
 const adapter = new PrismaPg(pool);

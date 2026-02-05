@@ -1,7 +1,18 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { SuppliersService } from './suppliers.service';
 import { Roles } from '../auth/roles.decorator';
+import type { AuthenticatedRequest } from '../auth/auth.types';
 
 interface CreateSupplierBody {
   name: string;
@@ -24,17 +35,17 @@ export class SuppliersController {
   constructor(private readonly suppliersService: SuppliersService) {}
 
   @Get()
-  findAll(@Req() req: any) {
+  findAll(@Req() req: AuthenticatedRequest) {
     return this.suppliersService.findAll(req.user.instanceId);
   }
 
   @Get(':id')
-  findById(@Param('id') id: string, @Req() req: any) {
+  findById(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
     return this.suppliersService.findById(id, req.user.instanceId);
   }
 
   @Post()
-  create(@Body() body: CreateSupplierBody, @Req() req: any) {
+  create(@Body() body: CreateSupplierBody, @Req() req: AuthenticatedRequest) {
     return this.suppliersService.create({
       ...body,
       instanceId: req.user.instanceId,
@@ -42,7 +53,11 @@ export class SuppliersController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() body: UpdateSupplierBody, @Req() req: any) {
+  update(
+    @Param('id') id: string,
+    @Body() body: UpdateSupplierBody,
+    @Req() req: AuthenticatedRequest,
+  ) {
     return this.suppliersService.update({
       ...body,
       id,
@@ -51,7 +66,7 @@ export class SuppliersController {
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string, @Req() req: any) {
+  remove(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
     return this.suppliersService.remove(id, req.user.instanceId);
   }
 }

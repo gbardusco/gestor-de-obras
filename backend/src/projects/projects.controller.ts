@@ -1,7 +1,19 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ProjectsService } from './projects.service';
 import { Roles } from '../auth/roles.decorator';
+import type { AuthenticatedRequest } from '../auth/auth.types';
 
 interface CreateProjectBody {
   name: string;
@@ -38,17 +50,17 @@ export class ProjectsController {
   constructor(private readonly projectsService: ProjectsService) {}
 
   @Get()
-  findAll(@Req() req: any, @Query('groupId') groupId?: string) {
+  findAll(@Req() req: AuthenticatedRequest, @Query('groupId') groupId?: string) {
     return this.projectsService.findAll(req.user.instanceId, groupId);
   }
 
   @Get(':id')
-  findById(@Param('id') id: string, @Req() req: any) {
+  findById(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
     return this.projectsService.findById(id, req.user.instanceId);
   }
 
   @Post()
-  create(@Body() body: CreateProjectBody, @Req() req: any) {
+  create(@Body() body: CreateProjectBody, @Req() req: AuthenticatedRequest) {
     return this.projectsService.create({
       ...body,
       instanceId: req.user.instanceId,
@@ -56,7 +68,11 @@ export class ProjectsController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() body: UpdateProjectBody, @Req() req: any) {
+  update(
+    @Param('id') id: string,
+    @Body() body: UpdateProjectBody,
+    @Req() req: AuthenticatedRequest,
+  ) {
     return this.projectsService.update({
       ...body,
       id,
@@ -65,7 +81,7 @@ export class ProjectsController {
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string, @Req() req: any) {
+  remove(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
     return this.projectsService.remove(id, req.user.instanceId);
   }
 }

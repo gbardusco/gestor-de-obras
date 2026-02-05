@@ -1,7 +1,18 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { BiddingsService } from './biddings.service';
 import { Roles } from '../auth/roles.decorator';
+import type { AuthenticatedRequest } from '../auth/auth.types';
 
 interface CreateBiddingBody {
   tenderNumber: string;
@@ -26,17 +37,17 @@ export class BiddingsController {
   constructor(private readonly biddingsService: BiddingsService) {}
 
   @Get()
-  findAll(@Req() req: any) {
+  findAll(@Req() req: AuthenticatedRequest) {
     return this.biddingsService.findAll(req.user.instanceId);
   }
 
   @Get(':id')
-  findById(@Param('id') id: string, @Req() req: any) {
+  findById(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
     return this.biddingsService.findById(id, req.user.instanceId);
   }
 
   @Post()
-  create(@Body() body: CreateBiddingBody, @Req() req: any) {
+  create(@Body() body: CreateBiddingBody, @Req() req: AuthenticatedRequest) {
     return this.biddingsService.create({
       ...body,
       instanceId: req.user.instanceId,
@@ -44,7 +55,11 @@ export class BiddingsController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() body: UpdateBiddingBody, @Req() req: any) {
+  update(
+    @Param('id') id: string,
+    @Body() body: UpdateBiddingBody,
+    @Req() req: AuthenticatedRequest,
+  ) {
     return this.biddingsService.update({
       ...body,
       id,
@@ -53,7 +68,7 @@ export class BiddingsController {
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string, @Req() req: any) {
+  remove(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
     return this.biddingsService.remove(id, req.user.instanceId);
   }
 }

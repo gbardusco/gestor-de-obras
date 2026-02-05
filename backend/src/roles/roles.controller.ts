@@ -1,7 +1,18 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { RolesService } from './roles.service';
 import { Roles } from '../auth/roles.decorator';
+import type { AuthenticatedRequest } from '../auth/auth.types';
 
 interface CreateRoleBody {
   name: string;
@@ -22,12 +33,12 @@ export class RolesController {
   constructor(private readonly rolesService: RolesService) {}
 
   @Get()
-  findAll(@Req() req: any) {
+  findAll(@Req() req: AuthenticatedRequest) {
     return this.rolesService.findAll(req.user.instanceId);
   }
 
   @Post()
-  create(@Body() body: CreateRoleBody, @Req() req: any) {
+  create(@Body() body: CreateRoleBody, @Req() req: AuthenticatedRequest) {
     return this.rolesService.create({
       ...body,
       instanceId: req.user.instanceId,
@@ -35,7 +46,11 @@ export class RolesController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() body: UpdateRoleBody, @Req() req: any) {
+  update(
+    @Param('id') id: string,
+    @Body() body: UpdateRoleBody,
+    @Req() req: AuthenticatedRequest,
+  ) {
     return this.rolesService.update({
       ...body,
       id,
@@ -44,12 +59,16 @@ export class RolesController {
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string, @Req() req: any) {
+  remove(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
     return this.rolesService.remove(id, req.user.instanceId);
   }
 
   @Post(':id/permissions')
-  addPermission(@Param('id') id: string, @Body() body: AddPermissionBody, @Req() req: any) {
+  addPermission(
+    @Param('id') id: string,
+    @Body() body: AddPermissionBody,
+    @Req() req: AuthenticatedRequest,
+  ) {
     return this.rolesService.addPermission({
       roleId: id,
       ...body,
@@ -58,7 +77,11 @@ export class RolesController {
   }
 
   @Delete(':id/permissions/:permissionId')
-  removePermission(@Param('id') id: string, @Param('permissionId') permissionId: string, @Req() req: any) {
+  removePermission(
+    @Param('id') id: string,
+    @Param('permissionId') permissionId: string,
+    @Req() req: AuthenticatedRequest,
+  ) {
     return this.rolesService.removePermission(id, permissionId, req.user.instanceId);
   }
 }

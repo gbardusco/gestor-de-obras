@@ -1,7 +1,19 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { WorkforceService } from './workforce.service';
 import { Roles } from '../auth/roles.decorator';
+import type { AuthenticatedRequest } from '../auth/auth.types';
 
 interface CreateWorkforceBody {
   projectId: string;
@@ -39,12 +51,12 @@ export class WorkforceController {
   constructor(private readonly workforceService: WorkforceService) {}
 
   @Get()
-  findAll(@Query('projectId') projectId: string, @Req() req: any) {
+  findAll(@Query('projectId') projectId: string, @Req() req: AuthenticatedRequest) {
     return this.workforceService.findAll(projectId, req.user.instanceId);
   }
 
   @Post()
-  create(@Body() body: CreateWorkforceBody, @Req() req: any) {
+  create(@Body() body: CreateWorkforceBody, @Req() req: AuthenticatedRequest) {
     return this.workforceService.create({
       ...body,
       instanceId: req.user.instanceId,
@@ -52,7 +64,11 @@ export class WorkforceController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() body: UpdateWorkforceBody, @Req() req: any) {
+  update(
+    @Param('id') id: string,
+    @Body() body: UpdateWorkforceBody,
+    @Req() req: AuthenticatedRequest,
+  ) {
     return this.workforceService.update({
       ...body,
       id,
@@ -61,27 +77,43 @@ export class WorkforceController {
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string, @Req() req: any) {
+  remove(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
     return this.workforceService.remove(id, req.user.instanceId);
   }
 
   @Post(':id/documents')
-  addDocument(@Param('id') id: string, @Body() body: AddDocumentBody, @Req() req: any) {
+  addDocument(
+    @Param('id') id: string,
+    @Body() body: AddDocumentBody,
+    @Req() req: AuthenticatedRequest,
+  ) {
     return this.workforceService.addDocument(id, req.user.instanceId, body);
   }
 
   @Delete(':id/documents/:documentId')
-  removeDocument(@Param('id') id: string, @Param('documentId') documentId: string, @Req() req: any) {
+  removeDocument(
+    @Param('id') id: string,
+    @Param('documentId') documentId: string,
+    @Req() req: AuthenticatedRequest,
+  ) {
     return this.workforceService.removeDocument(id, documentId, req.user.instanceId);
   }
 
   @Post(':id/responsibilities')
-  addResponsibility(@Param('id') id: string, @Body() body: AddResponsibilityBody, @Req() req: any) {
+  addResponsibility(
+    @Param('id') id: string,
+    @Body() body: AddResponsibilityBody,
+    @Req() req: AuthenticatedRequest,
+  ) {
     return this.workforceService.addResponsibility(id, body.workItemId, req.user.instanceId);
   }
 
   @Delete(':id/responsibilities/:workItemId')
-  removeResponsibility(@Param('id') id: string, @Param('workItemId') workItemId: string, @Req() req: any) {
+  removeResponsibility(
+    @Param('id') id: string,
+    @Param('workItemId') workItemId: string,
+    @Req() req: AuthenticatedRequest,
+  ) {
     return this.workforceService.removeResponsibility(id, workItemId, req.user.instanceId);
   }
 }

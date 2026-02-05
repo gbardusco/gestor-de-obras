@@ -1,7 +1,19 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { MeasurementSnapshotsService } from './measurement-snapshots.service';
 import { Roles } from '../auth/roles.decorator';
+import type { AuthenticatedRequest } from '../auth/auth.types';
 
 interface CreateSnapshotBody {
   projectId: string;
@@ -20,12 +32,12 @@ export class MeasurementSnapshotsController {
   constructor(private readonly snapshotsService: MeasurementSnapshotsService) {}
 
   @Get()
-  findAll(@Query('projectId') projectId: string, @Req() req: any) {
+  findAll(@Query('projectId') projectId: string, @Req() req: AuthenticatedRequest) {
     return this.snapshotsService.findAll(projectId, req.user.instanceId);
   }
 
   @Post()
-  create(@Body() body: CreateSnapshotBody, @Req() req: any) {
+  create(@Body() body: CreateSnapshotBody, @Req() req: AuthenticatedRequest) {
     return this.snapshotsService.create({
       ...body,
       instanceId: req.user.instanceId,
@@ -33,7 +45,11 @@ export class MeasurementSnapshotsController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() body: UpdateSnapshotBody, @Req() req: any) {
+  update(
+    @Param('id') id: string,
+    @Body() body: UpdateSnapshotBody,
+    @Req() req: AuthenticatedRequest,
+  ) {
     return this.snapshotsService.update({
       ...body,
       id,
@@ -42,7 +58,7 @@ export class MeasurementSnapshotsController {
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string, @Req() req: any) {
+  remove(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
     return this.snapshotsService.remove(id, req.user.instanceId);
   }
 }

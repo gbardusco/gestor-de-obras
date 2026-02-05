@@ -1,7 +1,19 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { LaborContractsService } from './labor-contracts.service';
 import { Roles } from '../auth/roles.decorator';
+import type { AuthenticatedRequest } from '../auth/auth.types';
 
 interface LaborPaymentBody {
   id?: string;
@@ -34,12 +46,12 @@ export class LaborContractsController {
   constructor(private readonly laborContractsService: LaborContractsService) {}
 
   @Get()
-  findAll(@Query('projectId') projectId: string, @Req() req: any) {
+  findAll(@Query('projectId') projectId: string, @Req() req: AuthenticatedRequest) {
     return this.laborContractsService.findAll(projectId, req.user.instanceId);
   }
 
   @Post()
-  create(@Body() body: CreateLaborContractBody, @Req() req: any) {
+  create(@Body() body: CreateLaborContractBody, @Req() req: AuthenticatedRequest) {
     return this.laborContractsService.create({
       ...body,
       instanceId: req.user.instanceId,
@@ -47,7 +59,11 @@ export class LaborContractsController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() body: UpdateLaborContractBody, @Req() req: any) {
+  update(
+    @Param('id') id: string,
+    @Body() body: UpdateLaborContractBody,
+    @Req() req: AuthenticatedRequest,
+  ) {
     return this.laborContractsService.update({
       ...body,
       id,
@@ -56,7 +72,7 @@ export class LaborContractsController {
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string, @Req() req: any) {
+  remove(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
     return this.laborContractsService.remove(id, req.user.instanceId);
   }
 }

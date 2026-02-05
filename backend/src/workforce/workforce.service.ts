@@ -20,6 +20,7 @@ interface CreateWorkforceInput {
 
 interface UpdateWorkforceInput extends Partial<CreateWorkforceInput> {
   id: string;
+  instanceId: string;
 }
 
 @Injectable()
