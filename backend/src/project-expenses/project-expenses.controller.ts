@@ -25,6 +25,8 @@ interface CreateExpenseBody {
   deliveryDate?: string;
   discountValue?: number;
   discountPercentage?: number;
+  issValue?: number;
+  issPercentage?: number;
   linkedWorkItemId?: string;
 }
 

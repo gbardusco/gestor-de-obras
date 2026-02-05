@@ -207,6 +207,8 @@ async function main() {
         data: project.expenses.map((expense: any) => ({
           ...expense,
           status: expense.status || (expense.isPaid ? 'PAID' : 'PENDING'),
+          issValue: expense.issValue ?? null,
+          issPercentage: expense.issPercentage ?? null,
           projectId: created.id,
         })),
       });

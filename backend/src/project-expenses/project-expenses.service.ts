@@ -24,6 +24,8 @@ interface CreateExpenseInput {
   deliveryDate?: string;
   discountValue?: number;
   discountPercentage?: number;
+  issValue?: number;
+  issPercentage?: number;
   linkedWorkItemId?: string;
 }
 
@@ -76,6 +78,8 @@ export class ProjectExpensesService {
         deliveryDate: input.deliveryDate || null,
         discountValue: input.discountValue ?? null,
         discountPercentage: input.discountPercentage ?? null,
+        issValue: input.issValue ?? null,
+        issPercentage: input.issPercentage ?? null,
         linkedWorkItemId: input.linkedWorkItemId || null,
       },
     });
@@ -114,6 +118,8 @@ export class ProjectExpensesService {
         deliveryDate: input.deliveryDate ?? existing.deliveryDate,
         discountValue: input.discountValue ?? existing.discountValue,
         discountPercentage: input.discountPercentage ?? existing.discountPercentage,
+        issValue: input.issValue ?? existing.issValue,
+        issPercentage: input.issPercentage ?? existing.issPercentage,
         linkedWorkItemId: input.linkedWorkItemId ?? existing.linkedWorkItemId,
       },
     });

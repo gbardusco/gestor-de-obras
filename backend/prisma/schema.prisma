@@ -264,6 +264,8 @@ model ProjectExpense {
   deliveryDate       String?
   discountValue      Float?
   discountPercentage Float?
+  issValue           Float?
+  issPercentage      Float?
   linkedWorkItemId   String?
   projectId          String
   project            Project         @relation(fields: [projectId], references: [id])
