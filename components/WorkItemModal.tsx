@@ -10,7 +10,10 @@ const WorkItemSchema = z.object({
   type: z.enum(['category', 'item']),
   parentId: z.string().nullable().optional(),
   unit: z.string().optional(),
+  cod: z.string().optional(),
+  fonte: z.string().optional(),
   contractQuantity: z.number().min(0, "Mínimo 0"),
+  unitPriceNoBdi: z.number().min(0, "Mínimo 0"),
   unitPrice: z.number().min(0, "Mínimo 0"),
   currentPercentage: z.number().min(0).max(100).optional(),
 }).refine((data) => data.type === 'category' || (data.unit && data.unit.trim().length > 0), {
@@ -33,11 +36,12 @@ export const WorkItemModal: React.FC<WorkItemModalProps> = ({
 }) => {
   const [activeType, setActiveType] = useState<ItemType>(initialType);
   const [formData, setFormData] = useState<Partial<WorkItem>>({
-    name: '', parentId: null, unit: '', contractQuantity: 0, unitPrice: 0
+    name: '', parentId: null, unit: '', contractQuantity: 0, unitPrice: 0, unitPriceNoBdi: 0, cod: '', fonte: ''
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   
   const [strQty, setStrQty] = useState('0,00');
+  const [strPriceNoBdi, setStrPriceNoBdi] = useState('0,00');
   const [strPriceWithBdi, setStrPriceWithBdi] = useState('0,00');
   const [strTotalWithBdi, setStrTotalWithBdi] = useState('0,00');
 
@@ -46,30 +50,41 @@ export const WorkItemModal: React.FC<WorkItemModalProps> = ({
       setFormData(editingItem);
       setActiveType(editingItem.type);
       setStrQty(financial.formatVisual(editingItem.contractQuantity || 0, '').trim());
+      setStrPriceNoBdi(financial.formatVisual(editingItem.unitPriceNoBdi || 0, '').trim());
       setStrPriceWithBdi(financial.formatVisual(editingItem.unitPrice || 0, '').trim());
       setStrTotalWithBdi(financial.formatVisual(editingItem.contractTotal || 0, '').trim());
     } else {
-      setFormData({ name: '', parentId: null, unit: initialType === 'item' ? 'un' : '', contractQuantity: 0, unitPrice: 0 });
+      // Ajustado para começar com fonte vazia
+      setFormData({ name: '', parentId: null, unit: initialType === 'item' ? 'un' : '', contractQuantity: 0, unitPrice: 0, unitPriceNoBdi: 0, cod: '', fonte: '' });
       setActiveType(initialType);
-      setStrQty('0,00'); setStrPriceWithBdi('0,00'); setStrTotalWithBdi('0,00');
+      setStrQty('0,00'); setStrPriceNoBdi('0,00'); setStrPriceWithBdi('0,00'); setStrTotalWithBdi('0,00');
     }
     setErrors({});
   }, [editingItem, initialType, isOpen]);
 
-  const handleNumericChange = (setter: (v: string) => void, val: string, field: 'qty' | 'priceWithBdi' | 'totalWithBdi') => {
+  const handleNumericChange = (setter: (v: string) => void, val: string, field: 'qty' | 'priceNoBdi' | 'priceWithBdi' | 'totalWithBdi') => {
     const masked = financial.maskCurrency(val);
     setter(masked);
 
     const num = financial.parseLocaleNumber(masked);
     const currentQty = field === 'qty' ? num : financial.parseLocaleNumber(strQty);
 
-    if (field === 'priceWithBdi') {
+    if (field === 'priceNoBdi') {
+      const pWithBdi = financial.truncate(num * (1 + projectBdi/100));
+      setStrPriceWithBdi(financial.formatVisual(pWithBdi, '').trim());
+      setStrTotalWithBdi(financial.formatVisual(financial.truncate(pWithBdi * currentQty), '').trim());
+    } 
+    else if (field === 'priceWithBdi') {
+      const pNoBdi = financial.truncate(num / (1 + projectBdi/100));
+      setStrPriceNoBdi(financial.formatVisual(pNoBdi, '').trim());
       setStrTotalWithBdi(financial.formatVisual(financial.truncate(num * currentQty), '').trim());
     }
     else if (field === 'totalWithBdi') {
       if (currentQty > 0) {
         const pWithBdi = financial.truncate(num / currentQty);
+        const pNoBdi = financial.truncate(pWithBdi / (1 + projectBdi/100));
         setStrPriceWithBdi(financial.formatVisual(pWithBdi, '').trim());
+        setStrPriceNoBdi(financial.formatVisual(pNoBdi, '').trim());
       }
     }
     else if (field === 'qty') {
@@ -84,8 +99,8 @@ export const WorkItemModal: React.FC<WorkItemModalProps> = ({
       ...formData,
       type: activeType,
       contractQuantity: financial.parseLocaleNumber(strQty),
-      unitPrice: financial.parseLocaleNumber(strPriceWithBdi),
-      unitPriceNoBdi: financial.parseLocaleNumber(strPriceWithBdi) // Mantemos igual se BDI removido
+      unitPriceNoBdi: financial.parseLocaleNumber(strPriceNoBdi),
+      unitPrice: financial.parseLocaleNumber(strPriceWithBdi)
     };
     
     const result = WorkItemSchema.safeParse(finalData);
@@ -128,18 +143,31 @@ export const WorkItemModal: React.FC<WorkItemModalProps> = ({
             )}
 
             <div className="grid grid-cols-1 gap-5">
-              <div>
-                <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase mb-2 block tracking-widest">Pertence ao Grupo (Hierarquia)</label>
-                <div className="relative">
-                  <FolderTree className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
-                  <select className="w-full pl-11 pr-4 py-3.5 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 dark:text-white text-xs font-bold outline-none appearance-none focus:border-indigo-500 transition-all" value={formData.parentId || ''} onChange={e => setFormData({...formData, parentId: e.target.value || null})}>
-                    <option value="">Nível Raiz (Principal)</option>
-                    {categories.filter(c => c.id !== editingItem?.id).map(cat => (
-                      <option key={cat.id} value={cat.id}>
-                        {"\u00A0".repeat(cat.depth * 3)} {cat.wbs} - {cat.name}
-                      </option>
-                    ))}
-                  </select>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase mb-2 block tracking-widest">Pertence ao Grupo (Hierarquia)</label>
+                  <div className="relative">
+                    <FolderTree className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+                    <select className="w-full pl-11 pr-4 py-3.5 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 dark:text-white text-xs font-bold outline-none appearance-none focus:border-indigo-500 transition-all" value={formData.parentId || ''} onChange={e => setFormData({...formData, parentId: e.target.value || null})}>
+                      <option value="">Nível Raiz (Principal)</option>
+                      {categories.filter(c => c.id !== editingItem?.id).map(cat => (
+                        <option key={cat.id} value={cat.id}>
+                          {"\u00A0".repeat(cat.depth * 3)} {cat.wbs} - {cat.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase mb-2 block tracking-widest">Cód. Interno</label>
+                    <input className="w-full px-4 py-3.5 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 dark:text-white text-xs font-bold outline-none focus:border-indigo-500 transition-all" value={formData.cod} onChange={e => setFormData({...formData, cod: e.target.value})} placeholder="SINAPI..." />
+                  </div>
+                  <div>
+                    <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase mb-2 block tracking-widest">Fonte</label>
+                    <input className="w-full px-4 py-3.5 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 dark:text-white text-xs font-bold outline-none focus:border-indigo-500 transition-all" value={formData.fonte} onChange={e => setFormData({...formData, fonte: e.target.value})} placeholder="Ex: Próprio" />
+                  </div>
                 </div>
               </div>
 
@@ -161,9 +189,16 @@ export const WorkItemModal: React.FC<WorkItemModalProps> = ({
                   </div>
                   
                   <div className="col-span-2 p-5 bg-slate-50 dark:bg-slate-800/40 rounded-3xl border-2 border-slate-100 dark:border-slate-800 space-y-4">
-                    <div className="grid grid-cols-1">
+                    <div className="grid grid-cols-2 gap-5">
                       <div>
-                        <label className="text-[9px] font-black text-emerald-600 dark:text-emerald-500 uppercase mb-2 block tracking-widest">Preço Unitário</label>
+                        <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase mb-2 block tracking-widest">P. Unit S/ BDI</label>
+                        <div className="relative">
+                          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[9px] font-black text-slate-400 dark:text-slate-600">R$</span>
+                          <input type="text" inputMode="decimal" className="w-full pl-10 pr-4 py-3.5 rounded-xl border-2 border-white dark:border-slate-800 bg-white dark:bg-slate-950 dark:text-white text-xs font-black text-right outline-none focus:border-indigo-500 transition-all" value={strPriceNoBdi} onChange={e => handleNumericChange(setStrPriceNoBdi, e.target.value, 'priceNoBdi')} />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-[9px] font-black text-emerald-600 dark:text-emerald-500 uppercase mb-2 block tracking-widest">P. Unit C/ BDI</label>
                         <div className="relative">
                           <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[9px] font-black text-emerald-500/50">R$</span>
                           <input type="text" inputMode="decimal" className="w-full pl-10 pr-4 py-3.5 rounded-xl border-2 border-emerald-100 dark:border-emerald-900/20 bg-emerald-50/30 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400 text-xs font-black text-right outline-none focus:border-emerald-500 transition-all shadow-inner" value={strPriceWithBdi} onChange={e => handleNumericChange(setStrPriceWithBdi, e.target.value, 'priceWithBdi')} />
@@ -172,7 +207,7 @@ export const WorkItemModal: React.FC<WorkItemModalProps> = ({
                     </div>
 
                     <div className="pt-2 border-t border-slate-200 dark:border-slate-700">
-                      <label className="text-[9px] font-black text-indigo-600 dark:text-indigo-400 uppercase mb-2 block tracking-widest text-center">Valor Total Estimado</label>
+                      <label className="text-[9px] font-black text-indigo-600 dark:text-indigo-400 uppercase mb-2 block tracking-widest text-center">Valor Total Contratual</label>
                       <div className="relative max-w-xs mx-auto">
                         <Calculator className="absolute left-6 top-1/2 -translate-y-1/2 text-indigo-400" size={16} />
                         <input type="text" inputMode="decimal" className="w-full pl-12 pr-6 py-3.5 rounded-[1.5rem] border-2 border-indigo-200 dark:border-indigo-900 bg-white dark:bg-slate-950 text-indigo-600 dark:text-indigo-400 text-xl font-black text-right outline-none focus:border-indigo-600 transition-all shadow-lg" value={strTotalWithBdi} onChange={e => handleNumericChange(setStrTotalWithBdi, e.target.value, 'totalWithBdi')} />
