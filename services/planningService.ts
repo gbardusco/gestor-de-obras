@@ -67,6 +67,28 @@ export const planningService = {
     };
   },
 
+  // NOVO: Processamento de Lote
+  processBatchForecasts: (planning: ProjectPlanning, items: any[], commonData: { supplierId?: string, date: string, proof?: string }): ProjectPlanning => {
+    const newForecasts: MaterialForecast[] = items.map((item, idx) => ({
+      id: crypto.randomUUID(),
+      description: item.description || 'Item Sem Descrição',
+      unit: item.unit || 'un',
+      quantityNeeded: item.quantity || 0,
+      unitPrice: item.unitPrice || 0,
+      estimatedDate: commonData.date,
+      status: 'pending',
+      isPaid: false,
+      order: planning.forecasts.length + idx,
+      supplierId: commonData.supplierId,
+      paymentProof: commonData.proof
+    }));
+
+    return {
+      ...planning,
+      forecasts: [...planning.forecasts, ...newForecasts]
+    };
+  },
+
   addTask: (planning: ProjectPlanning, data: Partial<PlanningTask>): ProjectPlanning => {
     const now = new Date().toISOString();
     return {

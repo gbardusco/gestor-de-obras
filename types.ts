@@ -8,12 +8,12 @@ export interface WorkItem {
   type: ItemType;
   wbs: string;
   order: number;
-
+  
   // Especificações Técnicas
   unit: string;
   cod?: string;
   fonte?: string;
-
+  
   // Valores de Contrato
   contractQuantity: number;
   unitPrice: number; // C/ BDI
@@ -21,10 +21,10 @@ export interface WorkItem {
   contractTotal: number;
 
   // Medição
-  previousQuantity: number;
+  previousQuantity: number; 
   previousTotal: number;
-
-  currentQuantity: number;
+  
+  currentQuantity: number; 
   currentTotal: number;
   currentPercentage: number;
 
@@ -32,7 +32,7 @@ export interface WorkItem {
   accumulatedQuantity: number;
   accumulatedTotal: number;
   accumulatedPercentage: number;
-
+  
   // Saldo
   balanceQuantity: number;
   balanceTotal: number;

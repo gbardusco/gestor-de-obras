@@ -12,10 +12,11 @@ import {
   ChevronUp, ChevronDown, List, CalendarDays, Filter, Users, Download, UploadCloud,
   Layers, FlagTriangleRight, Printer, CreditCard, ChevronLeft, ChevronRight,
   HardHat, Building2, User, FolderTree, FileCheck, ReceiptText, FileText, FileSpreadsheet,
-  ArrowRight
+  ArrowRight, FileStack
 } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { ExpenseAttachmentZone } from './ExpenseAttachmentZone';
+import { PurchaseListModal } from './PurchaseListModal';
 
 interface PlanningViewProps {
   project: Project;
@@ -33,6 +34,7 @@ export const PlanningView: React.FC<PlanningViewProps> = ({
   const [editingTask, setEditingTask] = useState<PlanningTask | null>(null);
   const [confirmingForecast, setConfirmingForecast] = useState<MaterialForecast | null>(null);
   const [isAddingForecast, setIsAddingForecast] = useState(false);
+  const [isPurchaseListOpen, setIsPurchaseListOpen] = useState(false);
   const [editingForecast, setEditingForecast] = useState<MaterialForecast | null>(null);
   const [isDeletingForecast, setIsDeletingForecast] = useState<MaterialForecast | null>(null);
   const [isAddingTask, setIsAddingTask] = useState<TaskStatus | null>(null);
@@ -121,6 +123,12 @@ export const PlanningView: React.FC<PlanningViewProps> = ({
     onUpdatePlanning(updatedPlanning);
     setConfirmingForecast(null);
     setForecastStatusFilter('ordered');
+  };
+
+  const handleBatchSave = (items: any[], commonData: { supplierId?: string, date: string, proof?: string }) => {
+    const updated = planningService.processBatchForecasts(planning, items, commonData);
+    onUpdatePlanning(updated);
+    setIsPurchaseListOpen(false);
   };
 
   const handleViewProof = (proof: string) => {
@@ -326,9 +334,14 @@ export const PlanningView: React.FC<PlanningViewProps> = ({
                       />
                     </div>
                     {forecastStatusFilter === 'pending' && (
-                      <button onClick={() => setIsAddingForecast(true)} className="flex items-center gap-2 px-6 py-4 bg-[#0f111a] text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl hover:scale-105 active:scale-95 transition-all">
-                        <Plus size={16} /> Novo Insumo
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button onClick={() => setIsPurchaseListOpen(true)} className="flex items-center gap-2 px-5 py-4 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-2xl text-[10px] font-black uppercase tracking-widest border border-slate-200 dark:border-slate-700 hover:bg-white transition-all shadow-sm">
+                           <FileStack size={16} /> Lista de Compras
+                        </button>
+                        <button onClick={() => setIsAddingForecast(true)} className="flex items-center gap-2 px-6 py-4 bg-[#0f111a] text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl hover:scale-105 active:scale-95 transition-all">
+                          <Plus size={16} /> Novo Insumo
+                        </button>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -528,6 +541,15 @@ export const PlanningView: React.FC<PlanningViewProps> = ({
             setIsAddingForecast(false);
             setEditingForecast(null);
           }}
+        />
+      )}
+
+      {isPurchaseListOpen && (
+        <PurchaseListModal 
+          isOpen={isPurchaseListOpen}
+          onClose={() => setIsPurchaseListOpen(false)}
+          suppliers={suppliers}
+          onSave={handleBatchSave}
         />
       )}
 

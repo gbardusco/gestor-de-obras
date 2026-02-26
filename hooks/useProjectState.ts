@@ -32,12 +32,6 @@ export const useProjectState = () => {
         const parsed = JSON.parse(saved);
         return {
           ...parsed,
-          suppliers: parsed.suppliers || [],
-          groups: parsed.groups || [],
-          biddings: parsed.biddings || [],
-          activeProjectId: parsed.activeProjectId || null,
-          activeBiddingId: parsed.activeBiddingId || null,
-          globalSettings: { ...INITIAL_SETTINGS, ...(parsed.globalSettings || {}) },
           projects: (parsed.projects || []).map((p: any) => ({
             ...p,
             workforce: p.workforce || [],
@@ -73,7 +67,7 @@ export const useProjectState = () => {
     setPresent(prev => {
       const next = updater(prev);
       if (JSON.stringify(prev) === JSON.stringify(next)) return prev;
-
+      
       setPast(pastPrev => [...pastPrev, prev].slice(-MAX_HISTORY));
       setFuture([]);
       return next;
@@ -112,8 +106,8 @@ export const useProjectState = () => {
       if (data.expenses) autoLogs = [...autoLogs, ...journalService.checkExpenseStatusDeltas(active.expenses, data.expenses)];
       if (data.items) autoLogs = [...autoLogs, ...journalService.checkWorkItemDeltas(active.items, data.items)];
 
-      const updatedProject: Project = {
-        ...active,
+      const updatedProject: Project = { 
+        ...active, 
         ...data,
         journal: {
           ...active.journal,
