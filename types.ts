@@ -330,6 +330,42 @@ export interface StockItem {
   order: number;
 }
 
+// --- CONTROLE DE ESTOQUE GLOBAL (PREFEITURA) ---
+export interface GlobalStockMovement {
+  id: string;
+  itemId: string;
+  type: 'entry' | 'exit';
+  quantity: number;
+  date: string;
+  responsible: string;
+  originDestination: string; // Nome da Obra ou "Pátio Central"
+  projectId?: string; // ID da obra se for saída/entrada vinculada
+  notes: string;
+}
+
+export interface GlobalStockItem {
+  id: string;
+  name: string;
+  unit: string;
+  currentQuantity: number;
+  minQuantity: number;
+  averagePrice: number;
+  lastEntryDate: string;
+  status: 'normal' | 'critical' | 'out_of_stock';
+  order: number;
+}
+
+export interface StockRequest {
+  id: string;
+  projectId: string;
+  projectName: string;
+  itemId: string;
+  itemName: string;
+  quantity: number;
+  date: string;
+  status: 'pending' | 'approved' | 'rejected';
+}
+
 // --- PROJETO ---
 export interface Project {
   id: string;

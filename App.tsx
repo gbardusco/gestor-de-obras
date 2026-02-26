@@ -10,16 +10,19 @@ import { SettingsView } from './components/SettingsView';
 import ProjectWorkspace from './components/ProjectWorkspace';
 import { BiddingView } from './components/BiddingView';
 import { SupplierManager } from './components/SupplierManager';
+import { GlobalInventoryView } from './components/GlobalInventoryView';
+import { TraceabilityDashboard } from './components/TraceabilityDashboard';
 
 import { Menu } from 'lucide-react';
 
-type ViewMode = 'global-dashboard' | 'project-workspace' | 'system-settings' | 'bidding-view' | 'supplier-view';
+type ViewMode = 'global-dashboard' | 'project-workspace' | 'system-settings' | 'bidding-view' | 'supplier-view' | 'global-stock' | 'traceability';
 
 const App: React.FC = () => {
   const { 
-    projects, biddings, groups, suppliers, activeProject, activeProjectId, setActiveProjectId, 
+    projects, biddings, groups, suppliers, globalStock, globalMovements, stockRequests, activeProject, activeProjectId, setActiveProjectId, 
     globalSettings, setGlobalSettings,
     updateActiveProject, updateProjects, updateGroups, updateSuppliers, updateBiddings, updateCertificates, bulkUpdate,
+    updateGlobalStock, updateGlobalMovements, updateStockRequests,
     undo, redo, canUndo, canRedo
   } = useProjectState();
 
@@ -97,6 +100,29 @@ const App: React.FC = () => {
 
         {viewMode === 'supplier-view' && <SupplierManager suppliers={suppliers} onUpdateSuppliers={updateSuppliers} />}
 
+        {viewMode === 'global-stock' && (
+          <GlobalInventoryView 
+            stock={globalStock} 
+            movements={globalMovements} 
+            requests={stockRequests}
+            onUpdateStock={updateGlobalStock} 
+            onUpdateMovements={updateGlobalMovements}
+            onUpdateRequests={updateStockRequests}
+          />
+        )}
+
+        {viewMode === 'traceability' && (
+          <TraceabilityDashboard 
+            stock={globalStock} 
+            movements={globalMovements} 
+            projects={projects}
+            requests={stockRequests}
+            onUpdateRequests={updateStockRequests}
+            onUpdateStock={updateGlobalStock}
+            onUpdateMovements={updateGlobalMovements}
+          />
+        )}
+
         {viewMode === 'system-settings' && <SettingsView settings={safeGlobalSettings as any} onUpdate={setGlobalSettings} projectCount={projects.length} />}
 
         {viewMode === 'project-workspace' && activeProject && (
@@ -104,7 +130,11 @@ const App: React.FC = () => {
             project={activeProject}
             globalSettings={safeGlobalSettings as any}
             suppliers={suppliers}
+            globalStock={globalStock}
+            globalMovements={globalMovements}
             onUpdateProject={updateActiveProject}
+            onUpdateGlobalStock={updateGlobalStock}
+            onUpdateGlobalMovements={updateGlobalMovements}
             onCloseMeasurement={handleCloseMeasurement}
             canUndo={canUndo} 
             canRedo={canRedo} 

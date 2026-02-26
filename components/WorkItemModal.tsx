@@ -54,7 +54,6 @@ export const WorkItemModal: React.FC<WorkItemModalProps> = ({
       setStrPriceWithBdi(financial.formatVisual(editingItem.unitPrice || 0, '').trim());
       setStrTotalWithBdi(financial.formatVisual(editingItem.contractTotal || 0, '').trim());
     } else {
-      // Ajustado para começar com fonte vazia
       setFormData({ name: '', parentId: null, unit: initialType === 'item' ? 'un' : '', contractQuantity: 0, unitPrice: 0, unitPriceNoBdi: 0, cod: '', fonte: '' });
       setActiveType(initialType);
       setStrQty('0,00'); setStrPriceNoBdi('0,00'); setStrPriceWithBdi('0,00'); setStrTotalWithBdi('0,00');

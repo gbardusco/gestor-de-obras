@@ -1,6 +1,6 @@
 
 import { useState, useCallback, useEffect } from 'react';
-import { Project, ProjectGroup, GlobalSettings, BiddingProcess, Supplier, CompanyCertificate } from '../types';
+import { Project, ProjectGroup, GlobalSettings, BiddingProcess, Supplier, CompanyCertificate, GlobalStockItem, GlobalStockMovement, StockRequest } from '../types';
 import { journalService } from '../services/journalService';
 
 interface State {
@@ -8,6 +8,9 @@ interface State {
   biddings: BiddingProcess[];
   groups: ProjectGroup[];
   suppliers: Supplier[];
+  globalStock: GlobalStockItem[];
+  globalMovements: GlobalStockMovement[];
+  stockRequests: StockRequest[];
   activeProjectId: string | null;
   activeBiddingId: string | null;
   globalSettings: GlobalSettings;
@@ -24,6 +27,23 @@ const INITIAL_SETTINGS: GlobalSettings = {
 
 const MAX_HISTORY = 20;
 
+const INITIAL_STOCK: GlobalStockItem[] = [
+  { id: 's1', name: 'Cimento CP-II', unit: 'Saco 50kg', currentQuantity: 450, minQuantity: 100, averagePrice: 32.50, lastEntryDate: new Date().toISOString(), status: 'normal', order: 0 },
+  { id: 's2', name: 'Areia Lavada', unit: 'm³', currentQuantity: 15, minQuantity: 20, averagePrice: 120.00, lastEntryDate: new Date().toISOString(), status: 'critical', order: 1 },
+  { id: 's3', name: 'Brita nº 1', unit: 'm³', currentQuantity: 40, minQuantity: 15, averagePrice: 115.00, lastEntryDate: new Date().toISOString(), status: 'normal', order: 2 },
+  { id: 's4', name: 'Tijolo Cerâmico 9x19x19', unit: 'Milheiro', currentQuantity: 8, minQuantity: 5, averagePrice: 850.00, lastEntryDate: new Date().toISOString(), status: 'normal', order: 3 },
+  { id: 's5', name: 'Aço CA-50 10mm', unit: 'Barra 12m', currentQuantity: 120, minQuantity: 50, averagePrice: 65.00, lastEntryDate: new Date().toISOString(), status: 'normal', order: 4 },
+];
+
+const INITIAL_MOVEMENTS: GlobalStockMovement[] = [
+  { id: 'm1', itemId: 's1', type: 'entry', quantity: 500, date: new Date(Date.now() - 86400000 * 2).toISOString(), responsible: 'Almoxarife Central', originDestination: 'Pátio Central', notes: 'Compra via Pregão 01/2024' },
+  { id: 'm2', itemId: 's1', type: 'exit', quantity: 50, date: new Date(Date.now() - 86400000).toISOString(), responsible: 'Eng. João', originDestination: 'Reforma Escola Municipal', notes: 'Fundação' },
+];
+
+const INITIAL_REQUESTS: StockRequest[] = [
+  { id: 'r1', projectId: 'p1', projectName: 'Reforma Escola Municipal', itemId: 's2', itemName: 'Areia Lavada', quantity: 10, date: new Date().toISOString(), status: 'pending' },
+];
+
 export const useProjectState = () => {
   const [present, setPresent] = useState<State>(() => {
     const saved = localStorage.getItem('promeasure_v4_data');
@@ -32,6 +52,9 @@ export const useProjectState = () => {
         const parsed = JSON.parse(saved);
         return {
           ...parsed,
+          globalStock: parsed.globalStock || INITIAL_STOCK,
+          globalMovements: parsed.globalMovements || INITIAL_MOVEMENTS,
+          stockRequests: parsed.stockRequests || INITIAL_REQUESTS,
           projects: (parsed.projects || []).map((p: any) => ({
             ...p,
             workforce: p.workforce || [],
@@ -47,7 +70,18 @@ export const useProjectState = () => {
         console.error("Erro ao carregar dados salvos:", e);
       }
     }
-    return { projects: [], biddings: [], groups: [], suppliers: [], activeProjectId: null, activeBiddingId: null, globalSettings: INITIAL_SETTINGS };
+    return { 
+      projects: [], 
+      biddings: [], 
+      groups: [], 
+      suppliers: [], 
+      globalStock: INITIAL_STOCK, 
+      globalMovements: INITIAL_MOVEMENTS, 
+      stockRequests: INITIAL_REQUESTS, 
+      activeProjectId: null, 
+      activeBiddingId: null, 
+      globalSettings: INITIAL_SETTINGS 
+    };
   });
 
   const [past, setPast] = useState<State[]>([]);
@@ -134,6 +168,9 @@ export const useProjectState = () => {
     updateGroups: (groups: ProjectGroup[]) => commit(prev => ({ ...prev, groups })),
     updateSuppliers: (suppliers: Supplier[]) => commit(prev => ({ ...prev, suppliers })),
     updateBiddings: (biddings: BiddingProcess[]) => commit(prev => ({ ...prev, biddings })),
+    updateGlobalStock: (stock: GlobalStockItem[]) => commit(prev => ({ ...prev, globalStock: stock })),
+    updateGlobalMovements: (movements: GlobalStockMovement[]) => commit(prev => ({ ...prev, globalMovements: movements })),
+    updateStockRequests: (requests: StockRequest[]) => commit(prev => ({ ...prev, stockRequests: requests })),
     updateCertificates: (certificates: CompanyCertificate[]) => commit(prev => ({ 
       ...prev, 
       globalSettings: { ...prev.globalSettings, certificates } 

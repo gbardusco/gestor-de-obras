@@ -55,7 +55,9 @@ export const treeService = {
       }
     } else {
       const bdiFactor = 1 + (projectBdi / 100);
-      node.unitPrice = financial.truncate((node.unitPriceNoBdi || 0) * bdiFactor);
+      // Fallback para unitPrice se unitPriceNoBdi estiver ausente
+      const basePrice = node.unitPriceNoBdi !== undefined ? node.unitPriceNoBdi : (node.unitPrice || 0);
+      node.unitPrice = financial.truncate(basePrice * bdiFactor);
       node.contractTotal = financial.truncate(node.unitPrice * (node.contractQuantity || 0));
       
       node.previousTotal = financial.truncate((node.previousQuantity || 0) * node.unitPrice);
