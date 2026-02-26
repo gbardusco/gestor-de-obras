@@ -72,11 +72,11 @@ export const BlueprintView: React.FC<BlueprintViewProps> = ({
     const updatedItems = project.items.map(it => {
       if (it.id === id) {
         const newUnitPrice = Math.max(0, price);
-        const newUnitPriceNoBdi = financial.truncate(newUnitPrice / (1 + project.bdi/100));
+        // Sem BDI: tratamos o preço unitário como o valor real direto
         return { 
           ...it, 
           unitPrice: newUnitPrice, 
-          unitPriceNoBdi: newUnitPriceNoBdi,
+          unitPriceNoBdi: newUnitPrice,
           contractTotal: financial.truncate(newUnitPrice * it.contractQuantity)
         };
       }
@@ -102,7 +102,7 @@ export const BlueprintView: React.FC<BlueprintViewProps> = ({
           </div>
           <div>
             <h2 className="text-lg font-black uppercase tracking-tight text-slate-800 dark:text-white leading-none">Planilha de Quantitativos</h2>
-            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1.5">Levantamento de Medidas e Orçamento Base (BDI: {project.bdi}%)</p>
+            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1.5">Levantamento de Medidas e Orçamento Base</p>
           </div>
         </div>
 
@@ -228,7 +228,7 @@ export const BlueprintView: React.FC<BlueprintViewProps> = ({
               <tr>
                 <td colSpan={6} className="p-6 text-right uppercase tracking-widest text-[10px] text-slate-400">Total Geral Estimado:</td>
                 <td className="p-6 text-right text-base text-indigo-600 tracking-tighter">
-                  {financial.formatVisual(financial.sum(project.items.filter(i => !i.parentId).map(i => i.contractTotal)), project.theme?.currencySymbol || 'R$')}
+                  {financial.formatVisual(financial.sum(project.items.filter(i => i.type === 'item').map(i => i.contractTotal)), project.theme?.currencySymbol || 'R$')}
                 </td>
                 <td></td>
               </tr>
@@ -251,12 +251,11 @@ export const BlueprintView: React.FC<BlueprintViewProps> = ({
           <div>
             <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Valor Médio/Item</p>
             <p className="text-xl font-black text-slate-800 dark:text-white">
-              {financial.formatVisual(
-                project.items.filter(i => i.type === 'item').length > 0 
-                ? financial.sum(project.items.filter(i => i.type === 'item').map(i => i.contractTotal)) / project.items.filter(i => i.type === 'item').length
-                : 0,
-                project.theme?.currencySymbol || 'R$'
-              )}
+              {(() => {
+                const items = project.items.filter(i => i.type === 'item');
+                const total = financial.sum(items.map(i => i.contractTotal));
+                return financial.formatVisual(items.length > 0 ? total / items.length : 0, project.theme?.currencySymbol || 'R$');
+              })()}
             </p>
           </div>
         </div>
