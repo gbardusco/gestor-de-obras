@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Home, Cog, PlusCircle, Briefcase, Sun, Moon, Menu, HardHat, X, Folder, ChevronRight, ChevronLeft, ChevronDown, Landmark, AlertCircle, Truck, LayoutGrid, Activity } from 'lucide-react';
+import { Home, Cog, PlusCircle, Briefcase, Sun, Moon, Menu, HardHat, X, Folder, ChevronRight, ChevronLeft, ChevronDown, Landmark, AlertCircle, Truck, LayoutGrid, Activity, Tags } from 'lucide-react';
 import { Project, ProjectGroup, CompanyCertificate } from '../types';
 import { biddingService } from '../services/biddingService';
 
@@ -111,6 +111,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <NavItem active={viewMode === 'global-dashboard'} onClick={() => { setViewMode('global-dashboard'); setMobileOpen(false); }} icon={<Home size={18}/>} label="Dashboard" />
           <NavItem active={viewMode === 'global-stock'} onClick={() => { setViewMode('global-stock'); setMobileOpen(false); }} icon={<LayoutGrid size={18}/>} label="Estoque Central" />
           <NavItem active={viewMode === 'traceability'} onClick={() => { setViewMode('traceability'); setMobileOpen(false); }} icon={<Activity size={18}/>} label="Rastreabilidade" />
+          <NavItem active={viewMode === 'task-dictionary'} onClick={() => { setViewMode('task-dictionary'); setMobileOpen(false); }} icon={<Tags size={18}/>} label="Tarefas" />
           <NavItem active={viewMode === 'bidding-view'} onClick={() => { setViewMode('bidding-view'); setMobileOpen(false); }} icon={<Landmark size={18}/>} label="Licitações" badge={hasAlerts} />
           <NavItem active={viewMode === 'supplier-view'} onClick={() => { setViewMode('supplier-view'); setMobileOpen(false); }} icon={<Truck size={18}/>} label="Fornecedores" />
           <NavItem active={viewMode === 'system-settings'} onClick={() => { setViewMode('system-settings'); setMobileOpen(false); }} icon={<Cog size={18}/>} label="Configurações" />

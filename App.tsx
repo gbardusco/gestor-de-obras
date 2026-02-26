@@ -12,17 +12,18 @@ import { BiddingView } from './components/BiddingView';
 import { SupplierManager } from './components/SupplierManager';
 import { GlobalInventoryView } from './components/GlobalInventoryView';
 import { TraceabilityDashboard } from './components/TraceabilityDashboard';
+import { GlobalTaskDictionaryView } from './components/GlobalTaskDictionaryView';
 
 import { Menu } from 'lucide-react';
 
-type ViewMode = 'global-dashboard' | 'project-workspace' | 'system-settings' | 'bidding-view' | 'supplier-view' | 'global-stock' | 'traceability';
+type ViewMode = 'global-dashboard' | 'project-workspace' | 'system-settings' | 'bidding-view' | 'supplier-view' | 'global-stock' | 'traceability' | 'task-dictionary';
 
 const App: React.FC = () => {
   const { 
-    projects, biddings, groups, suppliers, globalStock, globalMovements, stockRequests, purchaseRequests, notifications, activeProject, activeProjectId, setActiveProjectId, 
+    projects, biddings, groups, suppliers, globalStock, globalMovements, stockRequests, purchaseRequests, notifications, globalTaskTags, activeProject, activeProjectId, setActiveProjectId, 
     globalSettings, setGlobalSettings,
     updateActiveProject, updateProjects, updateGroups, updateSuppliers, updateBiddings, updateCertificates, bulkUpdate,
-    updateGlobalStock, updateGlobalMovements, updateStockRequests, updatePurchaseRequests, updateNotifications,
+    updateGlobalStock, updateGlobalMovements, updateStockRequests, updatePurchaseRequests, updateNotifications, updateGlobalTaskTags,
     undo, redo, canUndo, canRedo
   } = useProjectState();
 
@@ -132,6 +133,14 @@ const App: React.FC = () => {
           />
         )}
 
+        {viewMode === 'task-dictionary' && (
+          <GlobalTaskDictionaryView 
+            tags={globalTaskTags}
+            projects={projects}
+            onUpdateTags={updateGlobalTaskTags}
+          />
+        )}
+
         {viewMode === 'system-settings' && <SettingsView settings={safeGlobalSettings as any} onUpdate={setGlobalSettings} projectCount={projects.length} />}
 
         {viewMode === 'project-workspace' && activeProject && (
@@ -141,6 +150,7 @@ const App: React.FC = () => {
             suppliers={suppliers}
             globalStock={globalStock}
             globalMovements={globalMovements}
+            globalTaskTags={globalTaskTags}
             onUpdateProject={updateActiveProject}
             onUpdateGlobalStock={updateGlobalStock}
             onUpdateGlobalMovements={updateGlobalMovements}

@@ -1,6 +1,6 @@
 
 import { useState, useCallback, useEffect } from 'react';
-import { Project, ProjectGroup, GlobalSettings, BiddingProcess, Supplier, CompanyCertificate, GlobalStockItem, GlobalStockMovement, StockRequest, PurchaseRequest, GlobalNotification } from '../types';
+import { Project, ProjectGroup, GlobalSettings, BiddingProcess, Supplier, CompanyCertificate, GlobalStockItem, GlobalStockMovement, StockRequest, PurchaseRequest, GlobalNotification, GlobalTaskTag } from '../types';
 import { journalService } from '../services/journalService';
 
 interface State {
@@ -13,6 +13,7 @@ interface State {
   stockRequests: StockRequest[];
   purchaseRequests: PurchaseRequest[];
   notifications: GlobalNotification[];
+  globalTaskTags: GlobalTaskTag[];
   activeProjectId: string | null;
   activeBiddingId: string | null;
   globalSettings: GlobalSettings;
@@ -74,6 +75,14 @@ const INITIAL_NOTIFICATIONS: GlobalNotification[] = [
   { id: 'n1', title: 'Estoque Crítico', message: 'O item Areia Lavada atingiu o nível mínimo (15/20 m³).', type: 'stock_alert', date: new Date().toISOString(), isRead: false },
 ];
 
+const INITIAL_TASK_TAGS: GlobalTaskTag[] = [
+  { id: 't1', name: 'Alvenaria', createdAt: new Date().toISOString() },
+  { id: 't2', name: 'Elétrica', createdAt: new Date().toISOString() },
+  { id: 't3', name: 'Pintura', createdAt: new Date().toISOString() },
+  { id: 't4', name: 'Hidráulica', createdAt: new Date().toISOString() },
+  { id: 't5', name: 'Fundação', createdAt: new Date().toISOString() },
+];
+
 export const useProjectState = () => {
   const [present, setPresent] = useState<State>(() => {
     const saved = localStorage.getItem('promeasure_v4_data');
@@ -87,11 +96,13 @@ export const useProjectState = () => {
           stockRequests: parsed.stockRequests || INITIAL_REQUESTS,
           purchaseRequests: parsed.purchaseRequests || INITIAL_PURCHASE_REQUESTS,
           notifications: parsed.notifications || INITIAL_NOTIFICATIONS,
+          globalTaskTags: parsed.globalTaskTags || INITIAL_TASK_TAGS,
           projects: (parsed.projects || []).map((p: any) => ({
             ...p,
             workforce: p.workforce || [],
             laborContracts: p.laborContracts || [], // Garantia de inicialização
             stock: p.stock || [], // Garantia de inicialização
+            tasks: p.tasks || [], // Garantia de inicialização
             expenses: (p.expenses || []).map((e: any) => ({
               ...e,
               status: e.status || (e.isPaid ? 'PAID' : 'PENDING')
@@ -112,6 +123,7 @@ export const useProjectState = () => {
       stockRequests: INITIAL_REQUESTS, 
       purchaseRequests: INITIAL_PURCHASE_REQUESTS,
       notifications: INITIAL_NOTIFICATIONS,
+      globalTaskTags: INITIAL_TASK_TAGS,
       activeProjectId: null, 
       activeBiddingId: null, 
       globalSettings: INITIAL_SETTINGS 
@@ -207,6 +219,7 @@ export const useProjectState = () => {
     updateStockRequests: (requests: StockRequest[]) => commit(prev => ({ ...prev, stockRequests: requests })),
     updatePurchaseRequests: (requests: PurchaseRequest[]) => commit(prev => ({ ...prev, purchaseRequests: requests })),
     updateNotifications: (notifications: GlobalNotification[]) => commit(prev => ({ ...prev, notifications })),
+    updateGlobalTaskTags: (tags: GlobalTaskTag[]) => commit(prev => ({ ...prev, globalTaskTags: tags })),
     updateCertificates: (certificates: CompanyCertificate[]) => commit(prev => ({ 
       ...prev, 
       globalSettings: { ...prev.globalSettings, certificates } 

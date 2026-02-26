@@ -387,6 +387,22 @@ export interface GlobalNotification {
   link?: string;
 }
 
+export interface GlobalTaskTag {
+  id: string;
+  name: string;
+  createdAt: string;
+}
+
+export interface ProjectTask {
+  id: string;
+  tagId: string;
+  tagName: string;
+  priority: 'low' | 'medium' | 'high' | 'critical';
+  status: 'pending' | 'in_progress' | 'completed' | 'blocked';
+  notes?: string;
+  updatedAt: string;
+}
+
 export interface StockRequest {
   id: string;
   projectId: string;
@@ -420,6 +436,7 @@ export interface Project {
   planning: ProjectPlanning;
   journal: ProjectJournal;
   stock: StockItem[]; // NOVO: Controle de Estoque
+  tasks: ProjectTask[];
   contractTotalOverride?: number; 
   currentTotalOverride?: number;  
   config: {

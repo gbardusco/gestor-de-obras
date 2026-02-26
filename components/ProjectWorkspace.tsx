@@ -1,10 +1,10 @@
 
 import React, { useState, useMemo, useRef } from 'react';
-import { Project, GlobalSettings, WorkItem, Supplier, GlobalStockItem, GlobalStockMovement } from '../types';
+import { Project, GlobalSettings, WorkItem, Supplier, GlobalStockItem, GlobalStockMovement, GlobalTaskTag } from '../types';
 import {
   Layers, BarChart3, Coins, Users, HardHat, BookOpen, FileText, Sliders,
   CheckCircle2, History, Calendar, Lock, ChevronDown,
-  ArrowRight, Clock, Undo2, Redo2, RotateCcw, AlertTriangle, X, Target, Info, RefreshCw, Briefcase, Package, Ruler, Truck
+  ArrowRight, Clock, Undo2, Redo2, RotateCcw, AlertTriangle, X, Target, Info, RefreshCw, Briefcase, Package, Ruler, Truck, CheckSquare
 } from 'lucide-react';
 import { WbsView } from './WbsView';
 import { StatsView } from './StatsView';
@@ -22,6 +22,7 @@ import { PrintPlanningReport } from './PrintPlanningReport';
 import { InventoryView } from './InventoryView';
 import { BlueprintView } from './BlueprintView';
 import { SiteStockMovementView } from './SiteStockMovementView';
+import { ProjectTaskChecklist } from './ProjectTaskChecklist';
 import { treeService } from '../services/treeService';
 import { projectService } from '../services/projectService';
 import { financial } from '../utils/math';
@@ -33,6 +34,7 @@ interface ProjectWorkspaceProps {
   suppliers: Supplier[];
   globalStock: GlobalStockItem[];
   globalMovements: GlobalStockMovement[];
+  globalTaskTags: GlobalTaskTag[];
   onUpdateProject: (data: Partial<Project>) => void;
   onUpdateGlobalStock: (stock: GlobalStockItem[]) => void;
   onUpdateGlobalMovements: (movements: GlobalStockMovement[]) => void;
@@ -43,10 +45,10 @@ interface ProjectWorkspaceProps {
   onRedo: () => void;
 }
 
-export type TabID = 'wbs' | 'stats' | 'expenses' | 'stock' | 'blueprint' | 'labor-contracts' | 'planning' | 'journal' | 'documents' | 'workforce' | 'branding';
+export type TabID = 'wbs' | 'stats' | 'expenses' | 'stock' | 'checklist' | 'blueprint' | 'labor-contracts' | 'planning' | 'journal' | 'documents' | 'workforce' | 'branding';
 
 const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
-  project, globalSettings, suppliers, globalStock, globalMovements,
+  project, globalSettings, suppliers, globalStock, globalMovements, globalTaskTags,
   onUpdateProject, onUpdateGlobalStock, onUpdateGlobalMovements, onCloseMeasurement,
   canUndo, canRedo, onUndo, onRedo
 }) => {
@@ -224,6 +226,7 @@ const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
       <nav className="no-print bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 shrink-0 sticky top-0 z-20 overflow-hidden">
         <div ref={tabsNavRef} onMouseDown={handleMouseDown} onMouseMove={handleMouseMove} onMouseUp={handleMouseUpOrLeave} onMouseLeave={handleMouseUpOrLeave} className={`px-6 py-3 flex items-center gap-2 overflow-x-auto no-scrollbar cursor-grab active:cursor-grabbing select-none`}>
           <TabBtn active={tab === 'wbs'} id="wbs" label="Planilha EAP" icon={<Layers size={16} />} />
+          <TabBtn active={tab === 'checklist'} id="checklist" label="Checklist" icon={<CheckSquare size={16} />} />
           <TabBtn active={tab === 'blueprint'} id="blueprint" label="Quantitativos" icon={<Ruler size={16} />} />
           <TabBtn active={tab === 'stats'} id="stats" label="Análise Técnica" icon={<BarChart3 size={16} />} />
           <TabBtn active={tab === 'expenses'} id="expenses" label="Fluxo Financeiro" icon={<Coins size={16} />} />
@@ -242,6 +245,7 @@ const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
         <div className="max-w-[1600px] mx-auto">
           {tab === 'wbs' && <WbsView project={{ ...project, items: displayData.items }} onUpdateProject={onUpdateProject} onOpenModal={handleOpenModal} isReadOnly={displayData.isReadOnly} />}
           {tab === 'blueprint' && <BlueprintView project={project} onUpdateProject={onUpdateProject} onOpenModal={handleOpenModal} isReadOnly={displayData.isReadOnly} />}
+          {tab === 'checklist' && <ProjectTaskChecklist project={project} globalTags={globalTaskTags} onUpdateProject={onUpdateProject} />}
           {tab === 'stats' && <StatsView project={{ ...project, items: displayData.items }} />}
           {tab === 'expenses' && <ExpenseManager project={project} expenses={project.expenses} onAdd={(ex) => onUpdateProject({ expenses: [...project.expenses, ex] })} onAddMany={(exs) => onUpdateProject({ expenses: [...project.expenses, ...exs] })} onUpdate={(id, data) => onUpdateProject({ expenses: project.expenses.map(e => e.id === id ? { ...e, ...data } : e) })} onDelete={(id) => onUpdateProject({ expenses: project.expenses.filter(e => e.id !== id) })} workItems={displayData.items} measuredValue={treeService.calculateBasicStats(displayData.items, project.bdi).current} onUpdateExpenses={(exs) => onUpdateProject({ expenses: exs })} isReadOnly={displayData.isReadOnly} />}
           {tab === 'stock' && (

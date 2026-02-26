@@ -32,6 +32,7 @@ export const projectService = {
       entries: []
     },
     stock: [],
+    tasks: [],
     config: { 
       strict: false, 
       printCards: true, 
