@@ -4,7 +4,7 @@ import { Project, GlobalSettings, WorkItem, Supplier } from '../types';
 import {
   Layers, BarChart3, Coins, Users, HardHat, BookOpen, FileText, Sliders,
   CheckCircle2, History, Calendar, Lock, ChevronDown,
-  ArrowRight, Clock, Undo2, Redo2, RotateCcw, AlertTriangle, X, Target, Info, RefreshCw, Briefcase, Package
+  ArrowRight, Clock, Undo2, Redo2, RotateCcw, AlertTriangle, X, Target, Info, RefreshCw, Briefcase, Package, Ruler
 } from 'lucide-react';
 import { WbsView } from './WbsView';
 import { StatsView } from './StatsView';
@@ -20,6 +20,7 @@ import { PrintReport } from './PrintReport';
 import { PrintExpenseReport } from './PrintExpenseReport';
 import { PrintPlanningReport } from './PrintPlanningReport';
 import { InventoryView } from './InventoryView';
+import { SimplifiedWbsView } from './SimplifiedWbsView';
 import { treeService } from '../services/treeService';
 import { projectService } from '../services/projectService';
 import { financial } from '../utils/math';
@@ -37,7 +38,7 @@ interface ProjectWorkspaceProps {
   onRedo: () => void;
 }
 
-export type TabID = 'wbs' | 'stats' | 'expenses' | 'stock' | 'labor-contracts' | 'planning' | 'journal' | 'documents' | 'workforce' | 'branding';
+export type TabID = 'wbs' | 'stats' | 'expenses' | 'stock' | 'blueprint' | 'labor-contracts' | 'planning' | 'journal' | 'documents' | 'workforce' | 'branding';
 
 export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
   project, globalSettings, suppliers, onUpdateProject, onCloseMeasurement,
@@ -217,6 +218,7 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
       <nav className="no-print bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 shrink-0 sticky top-0 z-20 overflow-hidden">
         <div ref={tabsNavRef} onMouseDown={handleMouseDown} onMouseMove={handleMouseMove} onMouseUp={handleMouseUpOrLeave} onMouseLeave={handleMouseUpOrLeave} className={`px-6 py-3 flex items-center gap-2 overflow-x-auto no-scrollbar cursor-grab active:cursor-grabbing select-none`}>
           <TabBtn active={tab === 'wbs'} id="wbs" label="Planilha EAP" icon={<Layers size={16} />} />
+          <TabBtn active={tab === 'blueprint'} id="blueprint" label="Quantitativos" icon={<Ruler size={16} />} />
           <TabBtn active={tab === 'stats'} id="stats" label="Análise Técnica" icon={<BarChart3 size={16} />} />
           <TabBtn active={tab === 'expenses'} id="expenses" label="Fluxo Financeiro" icon={<Coins size={16} />} />
           <TabBtn active={tab === 'stock'} id="stock" label="Estoque" icon={<Package size={16} />} />
@@ -233,6 +235,7 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
       <div className="flex-1 overflow-y-auto p-4 lg:p-8 custom-scrollbar no-print">
         <div className="max-w-[1600px] mx-auto">
           {tab === 'wbs' && <WbsView project={{ ...project, items: displayData.items }} onUpdateProject={onUpdateProject} onOpenModal={handleOpenModal} isReadOnly={displayData.isReadOnly} />}
+          {tab === 'blueprint' && <SimplifiedWbsView project={project} onUpdateProject={onUpdateProject} onOpenModal={handleOpenModal} isReadOnly={displayData.isReadOnly} />}
           {tab === 'stats' && <StatsView project={{ ...project, items: displayData.items }} />}
           {tab === 'expenses' && <ExpenseManager project={project} expenses={project.expenses} onAdd={(ex) => onUpdateProject({ expenses: [...project.expenses, ex] })} onAddMany={(exs) => onUpdateProject({ expenses: [...project.expenses, ...exs] })} onUpdate={(id, data) => onUpdateProject({ expenses: project.expenses.map(e => e.id === id ? { ...e, ...data } : e) })} onDelete={(id) => onUpdateProject({ expenses: project.expenses.filter(e => e.id !== id) })} workItems={displayData.items} measuredValue={treeService.calculateBasicStats(displayData.items, project.bdi).current} onUpdateExpenses={(exs) => onUpdateProject({ expenses: exs })} isReadOnly={displayData.isReadOnly} />}
           {tab === 'stock' && <InventoryView project={project} onUpdateProject={onUpdateProject} />}
