@@ -7,7 +7,7 @@ import { biddingService } from './services/biddingService';
 import { Sidebar } from './components/Sidebar';
 import { DashboardView } from './components/DashboardView';
 import { SettingsView } from './components/SettingsView';
-import { ProjectWorkspace } from './components/ProjectWorkspace';
+import ProjectWorkspace from './components/ProjectWorkspace';
 import { BiddingView } from './components/BiddingView';
 import { SupplierManager } from './components/SupplierManager';
 
