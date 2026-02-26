@@ -21,6 +21,8 @@ export const projectService = {
     expenses: [],
     // Fix: Adding missing 'workforce' property to satisfy 'Project' interface
     workforce: [],
+    // Fix: Adding missing 'laborContracts' property to satisfy 'Project' interface
+    laborContracts: [],
     planning: {
       tasks: [],
       forecasts: [],
@@ -29,6 +31,7 @@ export const projectService = {
     journal: {
       entries: []
     },
+    stock: [],
     config: { 
       strict: false, 
       printCards: true, 

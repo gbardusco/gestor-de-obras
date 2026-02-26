@@ -45,7 +45,7 @@ export const CostLinkingView: React.FC<CostLinkingViewProps> = ({ project, onUpd
     project.expenses.filter(e => e.itemType === 'item' && e.type !== 'revenue' && !e.linkedWorkItemId)
   , [project.expenses]);
 
-  const handleLink = (expenseId: string, workItemId: string | null) => {
+  const handleLink = (expenseId: string, workItemId: string | undefined) => {
     const updatedExpenses = project.expenses.map(e => 
       e.id === expenseId ? { ...e, linkedWorkItemId: workItemId } : e
     );
@@ -137,7 +137,7 @@ export const CostLinkingView: React.FC<CostLinkingViewProps> = ({ project, onUpd
                       {project.expenses.filter(e => e.linkedWorkItemId === item.id).map(exp => (
                         <div key={exp.id} className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-xl group/chip">
                            <span className="text-[10px] font-bold text-slate-600 dark:text-slate-400">{exp.description} ({financial.formatVisual(exp.amount, 'R$')})</span>
-                           <button onClick={() => handleLink(exp.id, null)} className="text-slate-300 hover:text-rose-500 transition-colors"><Link2Off size={12}/></button>
+                           <button onClick={() => handleLink(exp.id, undefined)} className="text-slate-300 hover:text-rose-500 transition-colors"><Link2Off size={12}/></button>
                         </div>
                       ))}
                    </div>

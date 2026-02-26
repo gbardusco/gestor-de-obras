@@ -8,6 +8,7 @@ import {
 import { treeService } from '../services/treeService';
 import { projectService } from '../services/projectService';
 import { DragDropContext, Droppable, Draggable, DropResult, DraggableProvided } from '@hello-pangea/dnd';
+import { LaborContractsManager } from './LaborContractsManager';
 
 interface DashboardViewProps {
   projects: Project[];

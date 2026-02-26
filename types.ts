@@ -62,6 +62,34 @@ export interface WorkforceMember {
   linkedWorkItemIds: string[]; // Vínculo com IDs da EAP para responsabilidade técnica
 }
 
+// --- CONTRATOS DE MÃO DE OBRA ---
+export type LaborContractType = 'empreita' | 'diaria';
+export type LaborPaymentStatus = 'pago' | 'parcial' | 'pendente';
+
+export interface LaborPayment {
+  id: string;
+  data: string;
+  valor: number;
+  descricao: string;
+  comprovante?: string; // Base64
+}
+
+export interface LaborContract {
+  id: string;
+  tipo: LaborContractType;
+  descricao: string;
+  associadoId: string; // FK para WorkforceMember
+  valorTotal: number;
+  valorPago: number;
+  status: LaborPaymentStatus;
+  dataInicio: string;
+  dataFim?: string;
+  pagamentos: LaborPayment[];
+  linkedWorkItemId?: string; // FK para WorkItem
+  observacoes?: string;
+  ordem: number;
+}
+
 // --- TEMA E VISUAL ---
 export interface PDFTheme {
   primary: string;
@@ -138,6 +166,8 @@ export interface ProjectExpense {
   deliveryDate?: string;
   discountValue?: number;
   discountPercentage?: number;
+  issValue?: number; // NOVO: Valor do ISS
+  issPercentage?: number; // NOVO: Alíquota do ISS
   linkedWorkItemId?: string;
   children?: ProjectExpense[];
 }
@@ -196,6 +226,14 @@ export interface ProjectPlanning {
 export type JournalCategory = 'PROGRESS' | 'FINANCIAL' | 'INCIDENT' | 'WEATHER';
 export type WeatherType = 'sunny' | 'cloudy' | 'rainy' | 'storm';
 
+export interface JournalProgressItem {
+  workItemId: string;
+  description: string;
+  wbs: string;
+  status: 'done' | 'partial';
+  responsibleName: string;
+}
+
 export interface JournalEntry {
   id: string;
   timestamp: string;
@@ -205,6 +243,7 @@ export interface JournalEntry {
   description: string;
   weatherStatus?: WeatherType;
   photoUrls: string[];
+  progressChecklist?: JournalProgressItem[]; // NOVO: Checklist técnico
 }
 
 export interface ProjectJournal {
@@ -269,6 +308,28 @@ export interface Supplier {
   order: number;
 }
 
+// --- CONTROLE DE ESTOQUE ---
+export type StockMovementType = 'entry' | 'exit';
+
+export interface StockMovement {
+  id: string;
+  type: StockMovementType;
+  quantity: number;
+  date: string;
+  responsible: string;
+  notes: string;
+}
+
+export interface StockItem {
+  id: string;
+  name: string;
+  unit: string;
+  minQuantity: number;
+  currentQuantity: number;
+  movements: StockMovement[];
+  order: number;
+}
+
 // --- PROJETO ---
 export interface Project {
   id: string;
@@ -287,8 +348,10 @@ export interface Project {
   assets: ProjectAsset[];
   expenses: ProjectExpense[];
   workforce: WorkforceMember[];
+  laborContracts: LaborContract[]; // NOVO
   planning: ProjectPlanning;
   journal: ProjectJournal;
+  stock: StockItem[]; // NOVO: Controle de Estoque
   contractTotalOverride?: number; 
   currentTotalOverride?: number;  
   config: {
