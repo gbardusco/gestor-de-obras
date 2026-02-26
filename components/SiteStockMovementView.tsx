@@ -43,12 +43,9 @@ export const SiteStockMovementView: React.FC<SiteStockMovementViewProps> = ({
     
     const formData = new FormData(e.currentTarget);
     const quantity = Number(formData.get('quantity'));
-    const type = formData.get('type') as 'entry' | 'exit';
+    const type = formData.get('type') as 'exit' | 'entry';
+    const invoiceNumber = formData.get('invoiceNumber') as string;
 
-    // Lógica de Abatimento Visual (Simulada no Global se for saída da obra para o pátio ou consumo)
-    // Na verdade, a instrução diz: "ao registrar uma saída de 50 sacos na Obra X, o saldo global de 500 sacos cairia para 450"
-    // Isso implica que o estoque da obra consome do global.
-    
     if (type === 'exit') {
       if (selectedItem.currentQuantity < quantity) {
         alert("Quantidade solicitada superior ao saldo disponível no Estoque Central.");
@@ -75,10 +72,9 @@ export const SiteStockMovementView: React.FC<SiteStockMovementViewProps> = ({
         projectId: project.id,
         notes: formData.get('notes') as string || 'Consumo em obra'
       };
-      onUpdateGlobalMovements([...globalMovements, newMovement]);
+      onUpdateGlobalMovements([newMovement, ...globalMovements]);
     } else {
       // Entrada na obra vindo do global (ou devolução)
-      // Aqui poderíamos aumentar o global se for devolução, mas a instrução foca no consumo.
       const newMovement: GlobalStockMovement = {
         id: crypto.randomUUID(),
         itemId: selectedItem.id,
@@ -88,9 +84,10 @@ export const SiteStockMovementView: React.FC<SiteStockMovementViewProps> = ({
         responsible: 'Eng. da Obra',
         originDestination: project.name,
         projectId: project.id,
+        invoiceNumber: invoiceNumber || undefined,
         notes: formData.get('notes') as string || 'Recebimento no canteiro'
       };
-      onUpdateGlobalMovements([...globalMovements, newMovement]);
+      onUpdateGlobalMovements([newMovement, ...globalMovements]);
     }
 
     setIsRequestModalOpen(false);
@@ -271,9 +268,15 @@ export const SiteStockMovementView: React.FC<SiteStockMovementViewProps> = ({
                         <input name="quantity" type="number" required className="w-full px-4 py-3 bg-white dark:bg-slate-900 border-2 border-indigo-100 dark:border-indigo-800 rounded-xl text-xs font-bold outline-none" placeholder="0" />
                       </div>
                     </div>
-                    <div className="mt-4 space-y-2">
-                      <label className="text-[9px] font-black text-indigo-400 uppercase tracking-widest">Observações / Local de Uso</label>
-                      <input name="notes" className="w-full px-4 py-3 bg-white dark:bg-slate-900 border-2 border-indigo-100 dark:border-indigo-800 rounded-xl text-xs font-bold outline-none" placeholder="Ex: Laje do Bloco A" />
+                    <div className="mt-4 grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label className="text-[9px] font-black text-indigo-400 uppercase tracking-widest">Nota Fiscal (Opcional)</label>
+                        <input name="invoiceNumber" className="w-full px-4 py-3 bg-white dark:bg-slate-900 border-2 border-indigo-100 dark:border-indigo-800 rounded-xl text-xs font-bold outline-none" placeholder="NF-000" />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[9px] font-black text-indigo-400 uppercase tracking-widest">Observações / Local</label>
+                        <input name="notes" className="w-full px-4 py-3 bg-white dark:bg-slate-900 border-2 border-indigo-100 dark:border-indigo-800 rounded-xl text-xs font-bold outline-none" placeholder="Ex: Laje Bloco A" />
+                      </div>
                     </div>
                   </div>
                 )}

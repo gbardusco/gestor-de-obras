@@ -19,10 +19,10 @@ type ViewMode = 'global-dashboard' | 'project-workspace' | 'system-settings' | '
 
 const App: React.FC = () => {
   const { 
-    projects, biddings, groups, suppliers, globalStock, globalMovements, stockRequests, activeProject, activeProjectId, setActiveProjectId, 
+    projects, biddings, groups, suppliers, globalStock, globalMovements, stockRequests, purchaseRequests, notifications, activeProject, activeProjectId, setActiveProjectId, 
     globalSettings, setGlobalSettings,
     updateActiveProject, updateProjects, updateGroups, updateSuppliers, updateBiddings, updateCertificates, bulkUpdate,
-    updateGlobalStock, updateGlobalMovements, updateStockRequests,
+    updateGlobalStock, updateGlobalMovements, updateStockRequests, updatePurchaseRequests, updateNotifications,
     undo, redo, canUndo, canRedo
   } = useProjectState();
 
@@ -105,9 +105,14 @@ const App: React.FC = () => {
             stock={globalStock} 
             movements={globalMovements} 
             requests={stockRequests}
+            purchaseRequests={purchaseRequests}
+            notifications={notifications}
+            suppliers={suppliers}
             onUpdateStock={updateGlobalStock} 
             onUpdateMovements={updateGlobalMovements}
             onUpdateRequests={updateStockRequests}
+            onUpdatePurchaseRequests={updatePurchaseRequests}
+            onUpdateNotifications={updateNotifications}
           />
         )}
 
@@ -117,7 +122,11 @@ const App: React.FC = () => {
             movements={globalMovements} 
             projects={projects}
             requests={stockRequests}
+            purchaseRequests={purchaseRequests}
+            notifications={notifications}
             onUpdateRequests={updateStockRequests}
+            onUpdatePurchaseRequests={updatePurchaseRequests}
+            onUpdateNotifications={updateNotifications}
             onUpdateStock={updateGlobalStock}
             onUpdateMovements={updateGlobalMovements}
           />

@@ -1,6 +1,6 @@
 
 import { useState, useCallback, useEffect } from 'react';
-import { Project, ProjectGroup, GlobalSettings, BiddingProcess, Supplier, CompanyCertificate, GlobalStockItem, GlobalStockMovement, StockRequest } from '../types';
+import { Project, ProjectGroup, GlobalSettings, BiddingProcess, Supplier, CompanyCertificate, GlobalStockItem, GlobalStockMovement, StockRequest, PurchaseRequest, GlobalNotification } from '../types';
 import { journalService } from '../services/journalService';
 
 interface State {
@@ -11,6 +11,8 @@ interface State {
   globalStock: GlobalStockItem[];
   globalMovements: GlobalStockMovement[];
   stockRequests: StockRequest[];
+  purchaseRequests: PurchaseRequest[];
+  notifications: GlobalNotification[];
   activeProjectId: string | null;
   activeBiddingId: string | null;
   globalSettings: GlobalSettings;
@@ -28,20 +30,48 @@ const INITIAL_SETTINGS: GlobalSettings = {
 const MAX_HISTORY = 20;
 
 const INITIAL_STOCK: GlobalStockItem[] = [
-  { id: 's1', name: 'Cimento CP-II', unit: 'Saco 50kg', currentQuantity: 450, minQuantity: 100, averagePrice: 32.50, lastEntryDate: new Date().toISOString(), status: 'normal', order: 0 },
-  { id: 's2', name: 'Areia Lavada', unit: 'm³', currentQuantity: 15, minQuantity: 20, averagePrice: 120.00, lastEntryDate: new Date().toISOString(), status: 'critical', order: 1 },
-  { id: 's3', name: 'Brita nº 1', unit: 'm³', currentQuantity: 40, minQuantity: 15, averagePrice: 115.00, lastEntryDate: new Date().toISOString(), status: 'normal', order: 2 },
-  { id: 's4', name: 'Tijolo Cerâmico 9x19x19', unit: 'Milheiro', currentQuantity: 8, minQuantity: 5, averagePrice: 850.00, lastEntryDate: new Date().toISOString(), status: 'normal', order: 3 },
-  { id: 's5', name: 'Aço CA-50 10mm', unit: 'Barra 12m', currentQuantity: 120, minQuantity: 50, averagePrice: 65.00, lastEntryDate: new Date().toISOString(), status: 'normal', order: 4 },
+  { 
+    id: 's1', name: 'Cimento CP-II', unit: 'Saco 50kg', currentQuantity: 450, minQuantity: 100, 
+    averagePrice: 32.50, lastPrice: 34.00, lastEntryDate: new Date().toISOString(), 
+    status: 'normal', order: 0, supplierId: 'sup1',
+    priceHistory: [
+      { date: '2024-01-10', price: 30.00, supplierId: 'sup1' },
+      { date: '2024-02-15', price: 31.50, supplierId: 'sup2' },
+      { date: '2024-03-20', price: 34.00, supplierId: 'sup1' },
+    ]
+  },
+  { 
+    id: 's2', name: 'Areia Lavada', unit: 'm³', currentQuantity: 15, minQuantity: 20, 
+    averagePrice: 120.00, lastPrice: 125.00, lastEntryDate: new Date().toISOString(), 
+    status: 'critical', order: 1, supplierId: 'sup2',
+    priceHistory: [
+      { date: '2024-01-05', price: 115.00, supplierId: 'sup2' },
+      { date: '2024-03-10', price: 125.00, supplierId: 'sup2' },
+    ]
+  },
+  { 
+    id: 's3', name: 'Brita nº 1', unit: 'm³', currentQuantity: 40, minQuantity: 15, 
+    averagePrice: 115.00, lastPrice: 118.00, lastEntryDate: new Date().toISOString(), 
+    status: 'normal', order: 2,
+    priceHistory: [{ date: '2024-02-01', price: 115.00 }]
+  },
 ];
 
 const INITIAL_MOVEMENTS: GlobalStockMovement[] = [
-  { id: 'm1', itemId: 's1', type: 'entry', quantity: 500, date: new Date(Date.now() - 86400000 * 2).toISOString(), responsible: 'Almoxarife Central', originDestination: 'Pátio Central', notes: 'Compra via Pregão 01/2024' },
-  { id: 'm2', itemId: 's1', type: 'exit', quantity: 50, date: new Date(Date.now() - 86400000).toISOString(), responsible: 'Eng. João', originDestination: 'Reforma Escola Municipal', notes: 'Fundação' },
+  { id: 'm1', itemId: 's1', type: 'entry', quantity: 500, date: new Date(Date.now() - 86400000 * 2).toISOString(), responsible: 'Almoxarife Central', originDestination: 'Pátio Central', notes: 'Compra via Pregão 01/2024', invoiceNumber: 'NF-1234', supplierId: 'sup1' },
+  { id: 'm2', itemId: 's1', type: 'exit', quantity: 50, date: new Date(Date.now() - 86400000).toISOString(), responsible: 'Eng. João', originDestination: 'Reforma Escola Municipal', notes: 'Fundação', projectId: 'p1' },
 ];
 
 const INITIAL_REQUESTS: StockRequest[] = [
   { id: 'r1', projectId: 'p1', projectName: 'Reforma Escola Municipal', itemId: 's2', itemName: 'Areia Lavada', quantity: 10, date: new Date().toISOString(), status: 'pending' },
+];
+
+const INITIAL_PURCHASE_REQUESTS: PurchaseRequest[] = [
+  { id: 'pr1', itemId: 's2', itemName: 'Areia Lavada', quantity: 50, requestedBy: 'Almoxarife Central', date: new Date().toISOString(), status: 'pending', priority: 'high' },
+];
+
+const INITIAL_NOTIFICATIONS: GlobalNotification[] = [
+  { id: 'n1', title: 'Estoque Crítico', message: 'O item Areia Lavada atingiu o nível mínimo (15/20 m³).', type: 'stock_alert', date: new Date().toISOString(), isRead: false },
 ];
 
 export const useProjectState = () => {
@@ -55,6 +85,8 @@ export const useProjectState = () => {
           globalStock: parsed.globalStock || INITIAL_STOCK,
           globalMovements: parsed.globalMovements || INITIAL_MOVEMENTS,
           stockRequests: parsed.stockRequests || INITIAL_REQUESTS,
+          purchaseRequests: parsed.purchaseRequests || INITIAL_PURCHASE_REQUESTS,
+          notifications: parsed.notifications || INITIAL_NOTIFICATIONS,
           projects: (parsed.projects || []).map((p: any) => ({
             ...p,
             workforce: p.workforce || [],
@@ -78,6 +110,8 @@ export const useProjectState = () => {
       globalStock: INITIAL_STOCK, 
       globalMovements: INITIAL_MOVEMENTS, 
       stockRequests: INITIAL_REQUESTS, 
+      purchaseRequests: INITIAL_PURCHASE_REQUESTS,
+      notifications: INITIAL_NOTIFICATIONS,
       activeProjectId: null, 
       activeBiddingId: null, 
       globalSettings: INITIAL_SETTINGS 
@@ -171,6 +205,8 @@ export const useProjectState = () => {
     updateGlobalStock: (stock: GlobalStockItem[]) => commit(prev => ({ ...prev, globalStock: stock })),
     updateGlobalMovements: (movements: GlobalStockMovement[]) => commit(prev => ({ ...prev, globalMovements: movements })),
     updateStockRequests: (requests: StockRequest[]) => commit(prev => ({ ...prev, stockRequests: requests })),
+    updatePurchaseRequests: (requests: PurchaseRequest[]) => commit(prev => ({ ...prev, purchaseRequests: requests })),
+    updateNotifications: (notifications: GlobalNotification[]) => commit(prev => ({ ...prev, notifications })),
     updateCertificates: (certificates: CompanyCertificate[]) => commit(prev => ({ 
       ...prev, 
       globalSettings: { ...prev.globalSettings, certificates } 

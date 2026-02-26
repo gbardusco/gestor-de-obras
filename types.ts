@@ -331,6 +331,12 @@ export interface StockItem {
 }
 
 // --- CONTROLE DE ESTOQUE GLOBAL (PREFEITURA) ---
+export interface PriceHistoryEntry {
+  date: string;
+  price: number;
+  supplierId?: string;
+}
+
 export interface GlobalStockMovement {
   id: string;
   itemId: string;
@@ -340,6 +346,8 @@ export interface GlobalStockMovement {
   responsible: string;
   originDestination: string; // Nome da Obra ou "Pátio Central"
   projectId?: string; // ID da obra se for saída/entrada vinculada
+  invoiceNumber?: string; // Número da NF
+  supplierId?: string; // Fornecedor da entrada
   notes: string;
 }
 
@@ -350,9 +358,33 @@ export interface GlobalStockItem {
   currentQuantity: number;
   minQuantity: number;
   averagePrice: number;
+  lastPrice: number;
   lastEntryDate: string;
+  supplierId?: string; // Último fornecedor
+  priceHistory: PriceHistoryEntry[];
   status: 'normal' | 'critical' | 'out_of_stock';
   order: number;
+}
+
+export interface PurchaseRequest {
+  id: string;
+  itemId: string;
+  itemName: string;
+  quantity: number;
+  requestedBy: string;
+  date: string;
+  status: 'pending' | 'ordered' | 'completed' | 'cancelled';
+  priority: 'low' | 'medium' | 'high';
+}
+
+export interface GlobalNotification {
+  id: string;
+  title: string;
+  message: string;
+  type: 'stock_alert' | 'purchase_update' | 'system';
+  date: string;
+  isRead: boolean;
+  link?: string;
 }
 
 export interface StockRequest {
