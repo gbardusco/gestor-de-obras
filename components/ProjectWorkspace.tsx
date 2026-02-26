@@ -20,7 +20,7 @@ import { PrintReport } from './PrintReport';
 import { PrintExpenseReport } from './PrintExpenseReport';
 import { PrintPlanningReport } from './PrintPlanningReport';
 import { InventoryView } from './InventoryView';
-import { SimplifiedWbsView } from './SimplifiedWbsView';
+import { SimplifiedWbsView } from './BlueprintView';
 import { treeService } from '../services/treeService';
 import { projectService } from '../services/projectService';
 import { financial } from '../utils/math';

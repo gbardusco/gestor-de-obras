@@ -9,14 +9,14 @@ import {
 } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 
-interface SimplifiedWbsViewProps {
+interface BlueprintViewProps {
   project: Project;
   onUpdateProject: (data: Partial<Project>) => void;
   onOpenModal: (type: ItemType, item: WorkItem | null, parentId: string | null) => void;
   isReadOnly?: boolean;
 }
 
-export const SimplifiedWbsView: React.FC<SimplifiedWbsViewProps> = ({ 
+export const BlueprintView: React.FC<BlueprintViewProps> = ({ 
   project, onUpdateProject, onOpenModal, isReadOnly 
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
