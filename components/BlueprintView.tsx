@@ -31,8 +31,25 @@ export const BlueprintView: React.FC<BlueprintViewProps> = ({
 
   const processedTree = useMemo(() => {
     const tree = treeService.buildTree<WorkItem>(project.items);
-    return tree.map((root, idx) => treeService.processRecursive(root, '', idx, project.bdi));
-  }, [project.items, project.bdi]);
+    // Passamos 0 como BDI para ignorar o BDI nesta view simplificada
+    return tree.map((root, idx) => treeService.processRecursive(root, '', idx, 0));
+  }, [project.items]);
+
+  const allProcessedItems = useMemo(() => {
+    // Flatten de toda a árvore para garantir que pegamos todos os itens, independente de estarem expandidos
+    const allIds = new Set(project.items.map(i => i.id));
+    return treeService.flattenTree(processedTree, allIds);
+  }, [processedTree, project.items]);
+
+  const totalGeral = useMemo(() => {
+    const itemsOnly = allProcessedItems.filter(i => i.type === 'item');
+    return financial.sum(itemsOnly.map(i => i.contractTotal || 0));
+  }, [allProcessedItems]);
+
+  const averageValue = useMemo(() => {
+    const itemsOnly = allProcessedItems.filter(i => i.type === 'item');
+    return itemsOnly.length > 0 ? totalGeral / itemsOnly.length : 0;
+  }, [totalGeral, allProcessedItems]);
 
   const flattenedList = useMemo(() => 
     treeService.flattenTree(processedTree, expandedIds)
@@ -228,7 +245,7 @@ export const BlueprintView: React.FC<BlueprintViewProps> = ({
               <tr>
                 <td colSpan={6} className="p-6 text-right uppercase tracking-widest text-[10px] text-slate-400">Total Geral Estimado:</td>
                 <td className="p-6 text-right text-base text-indigo-600 tracking-tighter">
-                  {financial.formatVisual(financial.sum(project.items.filter(i => i.type === 'item').map(i => i.contractTotal)), project.theme?.currencySymbol || 'R$')}
+                  {financial.formatVisual(totalGeral, project.theme?.currencySymbol || 'R$')}
                 </td>
                 <td></td>
               </tr>
@@ -251,11 +268,7 @@ export const BlueprintView: React.FC<BlueprintViewProps> = ({
           <div>
             <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Valor Médio/Item</p>
             <p className="text-xl font-black text-slate-800 dark:text-white">
-              {(() => {
-                const items = project.items.filter(i => i.type === 'item');
-                const total = financial.sum(items.map(i => i.contractTotal));
-                return financial.formatVisual(items.length > 0 ? total / items.length : 0, project.theme?.currencySymbol || 'R$');
-              })()}
+              {financial.formatVisual(averageValue, project.theme?.currencySymbol || 'R$')}
             </p>
           </div>
         </div>
