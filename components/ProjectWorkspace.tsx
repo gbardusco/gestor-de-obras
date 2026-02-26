@@ -1,333 +1,273 @@
 
-import React, { useState, useMemo, useRef } from 'react';
-import { Project, GlobalSettings, WorkItem, Supplier } from '../types';
-import {
-  Layers, BarChart3, Coins, Users, HardHat, BookOpen, FileText, Sliders,
-  CheckCircle2, History, Calendar, Lock, ChevronDown,
-  ArrowRight, Clock, Undo2, Redo2, RotateCcw, AlertTriangle, X, Target, Info, RefreshCw, Briefcase, Package, Ruler
-} from 'lucide-react';
-import { WbsView } from './WbsView';
-import { StatsView } from './StatsView';
-import { ExpenseManager } from './ExpenseManager';
-import { WorkforceManager } from './WorkforceManager';
-import { LaborContractsManager } from './LaborContractsManager';
-import { PlanningView } from './PlanningView';
-import { JournalView } from './JournalView';
-import { AssetManager } from './AssetManager';
-import { BrandingView } from './BrandingView';
-import { WorkItemModal } from './WorkItemModal';
-import { PrintReport } from './PrintReport';
-import { PrintExpenseReport } from './PrintExpenseReport';
-import { PrintPlanningReport } from './PrintPlanningReport';
-import { InventoryView } from './InventoryView';
-import { SimplifiedWbsView } from './BlueprintView';
+import React, { useState, useMemo, useEffect } from 'react';
+import { Project, WorkItem, ItemType } from '../types';
 import { treeService } from '../services/treeService';
-import { projectService } from '../services/projectService';
 import { financial } from '../utils/math';
-import { expenseService } from '../services/expenseService';
+import { 
+  Plus, Layers, Search, Package, ChevronRight, ChevronDown, 
+  Edit3, Trash2, GripVertical, Calculator, Coins, Ruler
+} from 'lucide-react';
+import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 
-interface ProjectWorkspaceProps {
+interface BlueprintViewProps {
   project: Project;
-  globalSettings: GlobalSettings;
-  suppliers: Supplier[];
   onUpdateProject: (data: Partial<Project>) => void;
-  onCloseMeasurement: () => void;
-  canUndo: boolean;
-  canRedo: boolean;
-  onUndo: () => void;
-  onRedo: () => void;
+  onOpenModal: (type: ItemType, item: WorkItem | null, parentId: string | null) => void;
+  isReadOnly?: boolean;
 }
 
-export type TabID = 'wbs' | 'stats' | 'expenses' | 'stock' | 'blueprint' | 'labor-contracts' | 'planning' | 'journal' | 'documents' | 'workforce' | 'branding';
-
-export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
-  project, globalSettings, suppliers, onUpdateProject, onCloseMeasurement,
-  canUndo, canRedo, onUndo, onRedo
+export const BlueprintView: React.FC<BlueprintViewProps> = ({ 
+  project, onUpdateProject, onOpenModal, isReadOnly 
 }) => {
-  const [tab, setTab] = useState<TabID>('wbs');
-  const [viewingMeasurementId, setViewingMeasurementId] = useState<'current' | number>('current');
-  const [isClosingModalOpen, setIsClosingModalOpen] = useState(false);
-  const [isReopenModalOpen, setIsReopenModalOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(() => {
+    const saved = localStorage.getItem(`exp_simple_wbs_${project.id}`);
+    return saved ? new Set<string>(JSON.parse(saved)) : new Set<string>();
+  });
 
-  const tabsNavRef = useRef<HTMLDivElement>(null);
-  const dragStartRef = useRef<{ x: number; scrollLeft: number; moved: boolean } | null>(null);
+  useEffect(() => {
+    localStorage.setItem(`exp_simple_wbs_${project.id}`, JSON.stringify(Array.from(expandedIds)));
+  }, [expandedIds, project.id]);
 
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [modalType, setModalType] = useState<'category' | 'item'>('item');
-  const [editingItem, setEditingItem] = useState<WorkItem | null>(null);
-  const [targetParentId, setTargetParentId] = useState<string | null>(null);
+  const processedTree = useMemo(() => {
+    const tree = treeService.buildTree<WorkItem>(project.items);
+    return tree.map((root, idx) => treeService.processRecursive(root, '', idx, project.bdi));
+  }, [project.items, project.bdi]);
 
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if (!tabsNavRef.current) return;
-    dragStartRef.current = { x: e.pageX - tabsNavRef.current.offsetLeft, scrollLeft: tabsNavRef.current.scrollLeft, moved: false };
+  const flattenedList = useMemo(() => 
+    treeService.flattenTree(processedTree, expandedIds)
+  , [processedTree, expandedIds]);
+
+  const filteredData = searchQuery.trim() 
+    ? flattenedList.filter(item => item.name.toLowerCase().includes(searchQuery.toLowerCase()) || item.wbs.includes(searchQuery))
+    : flattenedList;
+
+  const handleDragEnd = (result: DropResult) => {
+    if (isReadOnly || !result.destination) return;
+    const sourceId = result.draggableId;
+    const targetIdx = result.destination.index;
+    const targetItem = filteredData[targetIdx];
+    if (!targetItem) return;
+    onUpdateProject({ items: treeService.reorderItems<WorkItem>(project.items, sourceId, targetItem.id, 'after') });
   };
 
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!dragStartRef.current || !tabsNavRef.current) return;
-    e.preventDefault();
-    const x = e.pageX - tabsNavRef.current.offsetLeft;
-    const walk = (x - dragStartRef.current.x) * 1.5;
-    if (Math.abs(x - dragStartRef.current.x) > 5) {
-      dragStartRef.current.moved = true;
-      tabsNavRef.current.scrollLeft = dragStartRef.current.scrollLeft - walk;
-    }
+  const updateItemContractQuantity = (id: string, qty: number) => {
+    if (isReadOnly) return;
+    const updatedItems = project.items.map(it => {
+      if (it.id === id) {
+        const safeQty = Math.max(0, qty);
+        return { 
+          ...it, 
+          contractQuantity: safeQty,
+          contractTotal: financial.truncate(safeQty * it.unitPrice)
+        };
+      }
+      return it;
+    });
+    onUpdateProject({ items: updatedItems });
   };
 
-  const handleMouseUpOrLeave = () => {
-    setTimeout(() => { dragStartRef.current = null; }, 50);
+  const updateItemUnitPrice = (id: string, price: number) => {
+    if (isReadOnly) return;
+    const updatedItems = project.items.map(it => {
+      if (it.id === id) {
+        const newUnitPrice = Math.max(0, price);
+        const newUnitPriceNoBdi = financial.truncate(newUnitPrice / (1 + project.bdi/100));
+        return { 
+          ...it, 
+          unitPrice: newUnitPrice, 
+          unitPriceNoBdi: newUnitPriceNoBdi,
+          contractTotal: financial.truncate(newUnitPrice * it.contractQuantity)
+        };
+      }
+      return it;
+    });
+    onUpdateProject({ items: updatedItems });
   };
 
-  const currentStats = useMemo(() => 
-    treeService.calculateBasicStats(project.items, project.bdi, project), 
-    [project]
-  );
-
-  const expenseStats = useMemo(() => 
-    expenseService.getExpenseStats(project.expenses),
-    [project.expenses]
-  );
-
-  const displayData = useMemo(() => {
-    if (viewingMeasurementId === 'current') return { items: project.items, isReadOnly: false, label: `Medição Nº ${project.measurementNumber}`, date: project.referenceDate };
-    const snapshot = project.history?.find(h => h.measurementNumber === viewingMeasurementId);
-    if (snapshot) return { items: snapshot.items, isReadOnly: true, label: `Medição Nº ${snapshot.measurementNumber}`, date: snapshot.date };
-    return { items: project.items, isReadOnly: false, label: 'Erro', date: '' };
-  }, [project, viewingMeasurementId]);
-
-  const flattenedPrintData = useMemo(() => {
-    const tree = treeService.buildTree<WorkItem>(displayData.items);
-    const processed = tree.map((root, idx) => treeService.processRecursive(root, '', idx, project.bdi));
-    const allIds = new Set<string>(displayData.items.map(i => i.id));
-    return treeService.flattenTree(processed, allIds);
-  }, [displayData.items, project.bdi]);
-
-  const isHistoryMode = viewingMeasurementId !== 'current';
-  
-  const isLatestHistory = viewingMeasurementId !== 'current' && 
-                          project.history && 
-                          project.history.length > 0 && 
-                          viewingMeasurementId === project.history[0].measurementNumber;
-
-  const handleTabClick = (newTab: TabID) => {
-    if (dragStartRef.current?.moved) return;
-    setTab(newTab);
+  const toggleExpand = (id: string) => {
+    const next = new Set(expandedIds);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    setExpandedIds(next);
   };
-
-  const handleOpenModal = (type: 'category' | 'item', item: WorkItem | null, parentId: string | null) => {
-    if (displayData.isReadOnly) return;
-    setModalType(type); setEditingItem(item); setTargetParentId(parentId); setIsModalOpen(true);
-  };
-
-  const handleSaveWorkItem = (data: Partial<WorkItem>) => {
-    if (editingItem) {
-      onUpdateProject({ items: project.items.map(it => it.id === editingItem.id ? { ...it, ...data } : it) });
-    } else {
-      const newItem: WorkItem = {
-        id: crypto.randomUUID(), parentId: targetParentId, name: data.name || '', type: modalType, wbs: '', order: project.items.length, unit: data.unit || 'un', cod: data.cod, fonte: data.fonte, contractQuantity: data.contractQuantity || 0, unitPrice: data.unitPrice || 0, unitPriceNoBdi: data.unitPriceNoBdi || 0, contractTotal: 0, previousQuantity: 0, previousTotal: 0, currentQuantity: 0, currentTotal: 0, currentPercentage: 0, accumulatedQuantity: 0, accumulatedTotal: 0, accumulatedPercentage: 0, balanceQuantity: 0, balanceTotal: 0,
-      };
-      onUpdateProject({ items: [...project.items, newItem] });
-    }
-  };
-
-  const handleConfirmReopen = () => {
-    const updated = projectService.reopenLatestMeasurement(project);
-    onUpdateProject(updated);
-    setViewingMeasurementId('current');
-    setIsReopenModalOpen(false);
-  };
-
-  const TabBtn: React.FC<{ active: boolean; id: TabID; label: string; icon: React.ReactNode }> = ({ active, id, label, icon }) => (
-    <button onMouseUp={() => handleTabClick(id)} className={`flex items-center gap-2.5 px-5 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap shrink-0 select-none cursor-pointer ${active ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20' : 'bg-white dark:bg-slate-900 text-slate-500 hover:text-indigo-600 border border-slate-200 dark:border-slate-800'}`}>
-      <span className={active ? 'text-white' : 'text-slate-400'}>{icon}</span>
-      <span>{label}</span>
-    </button>
-  );
 
   return (
-    <div className="flex-1 flex flex-col min-w-0 overflow-hidden bg-slate-50 dark:bg-slate-950">
-
-      {/* 1. HEADER DE CONTEXTO */}
-      <header className={`no-print border-b p-6 shrink-0 flex flex-col lg:flex-row lg:items-center justify-between gap-6 z-40 transition-colors ${isHistoryMode ? 'bg-amber-50 dark:bg-amber-900/10 border-amber-200' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800'}`}>
-        <div className="flex items-center gap-4 min-w-0">
-          <div className={`p-3 rounded-2xl shrink-0 ${isHistoryMode ? 'bg-amber-100 text-amber-600' : 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600'}`}>
-            {isHistoryMode ? <History size={24} /> : <HardHat size={24} />}
+    <div className="space-y-6 animate-in fade-in duration-500">
+      {/* 1. HEADER */}
+      <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-6 bg-white dark:bg-slate-900 p-6 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-sm">
+        <div className="flex items-center gap-4">
+          <div className="p-3 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 rounded-2xl">
+            <Ruler size={24} />
           </div>
-          <div className="min-w-0">
-            <h1 className="text-xl font-black uppercase tracking-tight text-slate-800 dark:text-white leading-none truncate">{project.name}</h1>
-            <div className="flex flex-wrap items-center gap-3 mt-2">
-              <div className="relative z-50">
-                <select 
-                  className={`pl-8 pr-10 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest appearance-none border-2 outline-none cursor-pointer transition-all ${isHistoryMode ? 'bg-amber-200 border-amber-400 text-amber-900 shadow-sm' : 'bg-slate-100 dark:bg-slate-800 border-transparent text-slate-500 hover:border-indigo-400'}`} 
-                  value={viewingMeasurementId} 
-                  onChange={(e) => setViewingMeasurementId(e.target.value === 'current' ? 'current' : Number(e.target.value))}
-                >
-                  <option value="current">Período Aberto (Nº {project.measurementNumber})</option>
-                  {project.history?.map(h => <option key={h.measurementNumber} value={h.measurementNumber}>Histórico: Medição Nº {h.measurementNumber}</option>)}
-                </select>
-                <div className="absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none opacity-50"><Clock size={12} /></div>
-                <div className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none opacity-50 text-current"><ChevronDown size={14} /></div>
-              </div>
-              <span className="text-[9px] text-slate-400 font-bold uppercase tracking-widest whitespace-nowrap">Ref: {displayData.date}</span>
-              {isHistoryMode && <div className="flex items-center gap-1.5 px-2 py-0.5 bg-amber-200 dark:bg-amber-800 text-amber-800 dark:text-amber-100 rounded-md text-[8px] font-black uppercase shadow-sm"><Lock size={10} /> Arquivo Congelado</div>}
-            </div>
+          <div>
+            <h2 className="text-lg font-black uppercase tracking-tight text-slate-800 dark:text-white leading-none">Planilha de Quantitativos</h2>
+            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1.5">Levantamento de Medidas e Orçamento Base (BDI: {project.bdi}%)</p>
           </div>
         </div>
 
-        <div className="flex items-center gap-3 shrink-0">
-          {!isHistoryMode && (
-            <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 p-1.5 rounded-2xl mr-2 border border-slate-200 dark:border-slate-700 shadow-inner">
-              <button
-                onClick={onUndo}
-                disabled={!canUndo}
-                title="Desfazer (Undo)"
-                className={`p-2.5 rounded-xl transition-all ${canUndo ? 'text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-700 shadow-sm hover:scale-110 active:scale-90' : 'text-slate-300 dark:text-slate-600 opacity-40 cursor-not-allowed'}`}
-              >
-                <Undo2 size={18} />
-              </button>
-              <button
-                onClick={onRedo}
-                disabled={!canRedo}
-                title="Refazer (Redo)"
-                className={`p-2.5 rounded-xl transition-all ${canRedo ? 'text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-700 shadow-sm hover:scale-110 active:scale-90' : 'text-slate-300 dark:text-slate-600 opacity-40 cursor-not-allowed'}`}
-              >
-                <Redo2 size={18} />
-              </button>
-            </div>
-          )}
+        <div className="flex flex-wrap items-center gap-3">
+          <button 
+            disabled={isReadOnly}
+            onClick={() => onOpenModal('item', null, null)} 
+            className="px-6 py-3 bg-indigo-600 text-white font-black uppercase tracking-widest text-[9px] rounded-xl shadow-lg shadow-indigo-500/10 disabled:opacity-30"
+          >
+            <Plus size={14} className="inline mr-1"/> Novo Item
+          </button>
 
-          {!isHistoryMode ? (
-            <button onClick={() => setIsClosingModalOpen(true)} className="flex items-center gap-2 px-6 py-3.5 bg-indigo-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-700 active:scale-95 transition-all shadow-xl shadow-indigo-500/20">
-              <CheckCircle2 size={16} /> Encerrar Período
-            </button>
-          ) : (
-            <div className="flex items-center gap-2">
-              {isLatestHistory && (
-                <button onClick={() => setIsReopenModalOpen(true)} className="flex items-center gap-2 px-5 py-3 bg-white border-2 border-rose-500 text-rose-600 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-rose-50 transition-all shadow-sm">
-                  <RotateCcw size={16} /> Reabrir Medição
-                </button>
+          <div className="relative w-full lg:w-64">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+            <input 
+              placeholder="Buscar item..." 
+              className="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 pl-11 pr-4 py-2.5 rounded-xl text-xs outline-none focus:border-indigo-500 transition-all dark:text-white font-bold"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)} 
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* 2. TABLE */}
+      <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+        <div className="overflow-x-auto custom-scrollbar">
+          <table className="w-full border-collapse text-[11px]">
+            <thead className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800">
+              <tr className="text-[9px] font-black uppercase tracking-widest text-slate-400">
+                <th className="p-4 w-12 text-center">#</th>
+                <th className="p-4 w-20 text-center">Item</th>
+                <th className="p-4 text-left min-w-[300px]">Descrição do Serviço</th>
+                <th className="p-4 w-20 text-center">Und</th>
+                <th className="p-4 w-32 text-center">Quantitativo</th>
+                <th className="p-4 w-32 text-right">Preço Unit.</th>
+                <th className="p-4 w-32 text-right">Total</th>
+                <th className="p-4 w-24 text-center no-print">Ações</th>
+              </tr>
+            </thead>
+            <DragDropContext onDragEnd={handleDragEnd}>
+              <Droppable droppableId="simple-wbs-list">
+                {(provided) => (
+                  <tbody {...provided.droppableProps} ref={provided.innerRef} className="divide-y divide-slate-50 dark:divide-slate-800">
+                    {filteredData.map((item, index) => (
+                      <Draggable key={item.id} draggableId={item.id} index={index} isDragDisabled={isReadOnly}>
+                        {(provided, snapshot) => (
+                          <tr 
+                            ref={provided.innerRef} 
+                            {...provided.draggableProps} 
+                            className={`group transition-colors ${item.type === 'category' ? 'bg-slate-50/30 dark:bg-slate-800/20 font-bold' : 'hover:bg-slate-50/50 dark:hover:bg-slate-800/40'} ${snapshot.isDragging ? 'bg-indigo-50 dark:bg-indigo-900/20 shadow-lg' : ''}`}
+                          >
+                            <td className="p-2 text-center no-print">
+                              <div {...provided.dragHandleProps} className="inline-flex p-1 text-slate-300 hover:text-slate-500 cursor-grab active:cursor-grabbing">
+                                <GripVertical size={14} />
+                              </div>
+                            </td>
+                            <td className="p-4 text-center font-mono text-[10px] text-slate-400">{item.wbs}</td>
+                            <td className="p-4">
+                              <div className="flex items-center gap-2" style={{ marginLeft: `${item.depth * 1.5}rem` }}>
+                                {item.type === 'category' ? (
+                                  <button onClick={() => toggleExpand(item.id)} className="p-1 text-slate-400 hover:text-indigo-600 transition-colors">
+                                    {expandedIds.has(item.id) ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                                  </button>
+                                ) : <div className="w-6" />}
+                                {item.type === 'category' ? <Layers size={14} className="text-indigo-500 shrink-0" /> : <Package size={14} className="text-slate-300 shrink-0" />}
+                                <span className={`truncate ${item.type === 'category' ? 'uppercase text-[10px] font-black text-slate-800 dark:text-white' : 'text-slate-600 dark:text-slate-300 font-medium'}`}>
+                                  {item.name}
+                                </span>
+                              </div>
+                            </td>
+                            <td className="p-4 text-center font-black text-slate-400 uppercase text-[9px]">{item.unit || '-'}</td>
+                            <td className="p-4 text-center">
+                              {item.type === 'item' ? (
+                                <div className="flex items-center justify-center gap-2">
+                                  <input 
+                                    type="number" 
+                                    step="any"
+                                    disabled={isReadOnly}
+                                    className="w-20 bg-slate-100 dark:bg-slate-800 border-transparent focus:bg-white dark:focus:bg-slate-700 border-2 focus:border-indigo-500 rounded-lg px-2 py-1 text-center text-[11px] font-bold outline-none transition-all"
+                                    value={item.contractQuantity}
+                                    onChange={(e) => updateItemContractQuantity(item.id, parseFloat(e.target.value) || 0)}
+                                  />
+                                </div>
+                              ) : '-'}
+                            </td>
+                            <td className="p-4 text-right">
+                              {item.type === 'item' ? (
+                                <div className="flex items-center justify-end gap-1">
+                                  <span className="text-[9px] text-slate-400 font-black">{project.theme?.currencySymbol || 'R$'}</span>
+                                  <input 
+                                    type="text"
+                                    disabled={isReadOnly}
+                                    className="w-24 bg-transparent text-right font-bold text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-500/20 rounded px-1"
+                                    value={financial.formatVisual(item.unitPrice, '').trim()}
+                                    onChange={(e) => {
+                                      const val = financial.parseLocaleNumber(financial.maskCurrency(e.target.value));
+                                      updateItemUnitPrice(item.id, val);
+                                    }}
+                                  />
+                                </div>
+                              ) : '-'}
+                            </td>
+                            <td className="p-4 text-right font-black text-slate-800 dark:text-white">
+                              {financial.formatVisual(item.contractTotal, project.theme?.currencySymbol || 'R$')}
+                            </td>
+                            <td className="p-4 text-center no-print">
+                              <div className="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button onClick={() => onOpenModal(item.type, item, item.parentId)} className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg transition-all"><Edit3 size={14}/></button>
+                                <button onClick={() => onUpdateProject({ items: project.items.filter(it => it.id !== item.id) })} className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-lg transition-all"><Trash2 size={14}/></button>
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </Draggable>
+                    ))}
+                    {provided.placeholder}
+                  </tbody>
+                )}
+              </Droppable>
+            </DragDropContext>
+            <tfoot className="bg-slate-50 dark:bg-slate-800/50 font-black">
+              <tr>
+                <td colSpan={6} className="p-6 text-right uppercase tracking-widest text-[10px] text-slate-400">Total Geral Estimado:</td>
+                <td className="p-6 text-right text-base text-indigo-600 tracking-tighter">
+                  {financial.formatVisual(financial.sum(project.items.filter(i => !i.parentId).map(i => i.contractTotal)), project.theme?.currencySymbol || 'R$')}
+                </td>
+                <td></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+
+      {/* 3. FOOTER INFO */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="bg-white dark:bg-slate-900 p-6 rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-4">
+          <div className="p-3 bg-blue-50 dark:bg-blue-900/30 text-blue-600 rounded-2xl"><Calculator size={20}/></div>
+          <div>
+            <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Total de Itens</p>
+            <p className="text-xl font-black text-slate-800 dark:text-white">{project.items.filter(i => i.type === 'item').length}</p>
+          </div>
+        </div>
+        <div className="bg-white dark:bg-slate-900 p-6 rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-4">
+          <div className="p-3 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 rounded-2xl"><Coins size={20}/></div>
+          <div>
+            <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Valor Médio/Item</p>
+            <p className="text-xl font-black text-slate-800 dark:text-white">
+              {financial.formatVisual(
+                project.items.filter(i => i.type === 'item').length > 0 
+                ? financial.sum(project.items.filter(i => i.type === 'item').map(i => i.contractTotal)) / project.items.filter(i => i.type === 'item').length
+                : 0,
+                project.theme?.currencySymbol || 'R$'
               )}
-              <button onClick={() => setViewingMeasurementId('current')} className="flex items-center gap-2 px-6 py-3.5 bg-white border-2 border-amber-400 text-amber-700 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-amber-50 active:scale-95 transition-all shadow-sm">
-                <ArrowRight size={16} /> Voltar ao Período Atual
-              </button>
-            </div>
-          )}
-        </div>
-      </header>
-
-      {/* 2. SUB-NAVEGAÇÃO */}
-      <nav className="no-print bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 shrink-0 sticky top-0 z-20 overflow-hidden">
-        <div ref={tabsNavRef} onMouseDown={handleMouseDown} onMouseMove={handleMouseMove} onMouseUp={handleMouseUpOrLeave} onMouseLeave={handleMouseUpOrLeave} className={`px-6 py-3 flex items-center gap-2 overflow-x-auto no-scrollbar cursor-grab active:cursor-grabbing select-none`}>
-          <TabBtn active={tab === 'wbs'} id="wbs" label="Planilha EAP" icon={<Layers size={16} />} />
-          <TabBtn active={tab === 'blueprint'} id="blueprint" label="Quantitativos" icon={<Ruler size={16} />} />
-          <TabBtn active={tab === 'stats'} id="stats" label="Análise Técnica" icon={<BarChart3 size={16} />} />
-          <TabBtn active={tab === 'expenses'} id="expenses" label="Fluxo Financeiro" icon={<Coins size={16} />} />
-          <TabBtn active={tab === 'stock'} id="stock" label="Estoque" icon={<Package size={16} />} />
-          <TabBtn active={tab === 'labor-contracts'} id="labor-contracts" label="Contratos M.O." icon={<Briefcase size={16} />} />
-          <TabBtn active={tab === 'planning'} id="planning" label="Canteiro Ágil" icon={<HardHat size={16} />} />
-          <TabBtn active={tab === 'journal'} id="journal" label="Diário de Obra" icon={<BookOpen size={16} />} />
-          <TabBtn active={tab === 'documents'} id="documents" label="Repositório" icon={<FileText size={16} />} />
-          <TabBtn active={tab === 'workforce'} id="workforce" label="Equipe Permanente" icon={<Users size={16} />} />
-          <TabBtn active={tab === 'branding'} id="branding" label="Ajustes" icon={<Sliders size={16} />} />
-        </div>
-      </nav>
-
-      {/* 3. CONTEÚDO DINÂMICO */}
-      <div className="flex-1 overflow-y-auto p-4 lg:p-8 custom-scrollbar no-print">
-        <div className="max-w-[1600px] mx-auto">
-          {tab === 'wbs' && <WbsView project={{ ...project, items: displayData.items }} onUpdateProject={onUpdateProject} onOpenModal={handleOpenModal} isReadOnly={displayData.isReadOnly} />}
-          {tab === 'blueprint' && <SimplifiedWbsView project={project} onUpdateProject={onUpdateProject} onOpenModal={handleOpenModal} isReadOnly={displayData.isReadOnly} />}
-          {tab === 'stats' && <StatsView project={{ ...project, items: displayData.items }} />}
-          {tab === 'expenses' && <ExpenseManager project={project} expenses={project.expenses} onAdd={(ex) => onUpdateProject({ expenses: [...project.expenses, ex] })} onAddMany={(exs) => onUpdateProject({ expenses: [...project.expenses, ...exs] })} onUpdate={(id, data) => onUpdateProject({ expenses: project.expenses.map(e => e.id === id ? { ...e, ...data } : e) })} onDelete={(id) => onUpdateProject({ expenses: project.expenses.filter(e => e.id !== id) })} workItems={displayData.items} measuredValue={treeService.calculateBasicStats(displayData.items, project.bdi).current} onUpdateExpenses={(exs) => onUpdateProject({ expenses: exs })} isReadOnly={displayData.isReadOnly} />}
-          {tab === 'stock' && <InventoryView project={project} onUpdateProject={onUpdateProject} />}
-          {tab === 'labor-contracts' && <LaborContractsManager project={project} onUpdateProject={onUpdateProject} />}
-          {tab === 'workforce' && <WorkforceManager project={project} onUpdateProject={onUpdateProject} />}
-          {tab === 'planning' && <PlanningView project={project} suppliers={suppliers} onUpdatePlanning={(p) => onUpdateProject({ planning: p })} onAddExpense={(ex) => onUpdateProject({ expenses: [...project.expenses, ex] })} categories={displayData.items.filter(i => i.type === 'category')} allWorkItems={displayData.items} />}
-          {tab === 'journal' && <JournalView project={project} onUpdateJournal={(j) => onUpdateProject({ journal: j })} allWorkItems={displayData.items} />}
-          {tab === 'documents' && <AssetManager assets={project.assets} onAdd={(a) => onUpdateProject({ assets: [...project.assets, a] })} onDelete={(id) => onUpdateProject({ assets: project.assets.filter(as => as.id !== id) })} isReadOnly={displayData.isReadOnly} />}
-          {tab === 'branding' && <BrandingView project={project} onUpdateProject={onUpdateProject} isReadOnly={displayData.isReadOnly} />}
-        </div>
-      </div>
-      
-      {/* (Áreas de Impressão e Modais existentes preservados...) */}
-
-      <div className="print-report-area">
-        {tab === 'wbs' && (
-          <PrintReport 
-            project={project}
-            companyName={project.companyName}
-            companyCnpj={project.companyCnpj}
-            data={flattenedPrintData}
-            expenses={project.expenses}
-            stats={currentStats}
-          />
-        )}
-        {tab === 'expenses' && (
-          <PrintExpenseReport 
-            project={project}
-            expenses={project.expenses}
-            stats={expenseStats}
-          />
-        )}
-        {tab === 'planning' && (
-          <PrintPlanningReport 
-            project={project}
-          />
-        )}
-      </div>
-
-      <WorkItemModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSave={handleSaveWorkItem} editingItem={editingItem} type={modalType} categories={treeService.flattenTree(treeService.buildTree(displayData.items.filter(i => i.type === 'category')), new Set(displayData.items.map(i => i.id)))} projectBdi={project.bdi} />
-
-      {isClosingModalOpen && (
-        <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-sm animate-in fade-in duration-300" onClick={() => setIsClosingModalOpen(false)}>
-          <div className="bg-[#0f111a] w-full max-w-lg rounded-[3rem] p-12 shadow-2xl border border-slate-800/50 flex flex-col items-center text-center relative overflow-hidden" onClick={e => e.stopPropagation()}>
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-48 bg-indigo-500/10 blur-[100px] pointer-events-none"></div>
-            <div className="relative mb-10">
-              <div className="w-24 h-24 bg-slate-800/40 rounded-full flex items-center justify-center border border-slate-700/50">
-                 <Lock size={36} className="text-indigo-500" />
-              </div>
-            </div>
-            <h2 className="text-3xl font-black text-white uppercase tracking-tighter mb-6">Finalizar Período?</h2>
-            <div className="space-y-2 mb-12">
-               <p className="text-slate-400 text-lg font-medium leading-relaxed">
-                 A medição <span className="text-white font-bold">#{project.measurementNumber}</span> será congelada no histórico.
-               </p>
-               <p className="text-slate-400 text-lg font-medium leading-relaxed">
-                 O valor total faturado no período é <span className="text-white font-bold">{financial.formatVisual(currentStats.current, project.theme?.currencySymbol)}</span>.
-               </p>
-            </div>
-            <div className="flex items-center gap-6 w-full">
-               <button onClick={() => setIsClosingModalOpen(false)} className="flex-1 py-4 text-slate-500 font-black uppercase text-xs tracking-widest hover:text-white transition-colors">Voltar</button>
-               <button onClick={() => { onCloseMeasurement(); setIsClosingModalOpen(false); }} className="flex-[2] py-5 bg-indigo-600 hover:bg-indigo-50 text-white rounded-[2rem] font-black uppercase text-xs tracking-widest shadow-[0_10px_30px_-10px_rgba(79,70,229,0.5)] active:scale-95 transition-all">Confirmar e abrir próxima</button>
-            </div>
+            </p>
           </div>
         </div>
-      )}
-
-      {isReopenModalOpen && (
-        <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-sm animate-in fade-in duration-300" onClick={() => setIsReopenModalOpen(false)}>
-          <div className="bg-[#0f111a] w-full max-w-lg rounded-[3rem] p-12 shadow-2xl border border-slate-800/50 flex flex-col items-center text-center relative overflow-hidden" onClick={e => e.stopPropagation()}>
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-48 bg-rose-500/10 blur-[100px] pointer-events-none"></div>
-            <div className="relative mb-10">
-              <div className="w-24 h-24 bg-slate-800/40 rounded-full flex items-center justify-center border border-slate-700/50">
-                 <RefreshCw size={36} className="text-rose-500" />
-              </div>
-            </div>
-            <h2 className="text-3xl font-black text-white uppercase tracking-tighter mb-6">Reabrir Medição?</h2>
-            <div className="space-y-4 mb-12">
-               <p className="text-slate-400 text-lg font-medium leading-relaxed">
-                 Deseja realmente reativar a medição <span className="text-white font-bold">#{viewingMeasurementId}</span>?
-               </p>
-               <p className="text-rose-400/80 text-sm font-bold uppercase tracking-widest">
-                 O período atual será descartado e o histórico voltará um passo.
-               </p>
-            </div>
-            <div className="flex items-center gap-6 w-full">
-               <button onClick={() => setIsReopenModalOpen(false)} className="flex-1 py-4 text-slate-500 font-black uppercase text-xs tracking-widest hover:text-white transition-colors">Cancelar</button>
-               <button onClick={handleConfirmReopen} className="flex-[2] py-5 bg-rose-600 hover:bg-rose-50 text-white rounded-[2rem] font-black uppercase text-xs tracking-widest shadow-[0_10px_30px_-10px_rgba(225,29,72,0.5)] active:scale-95 transition-all">Confirmar Reabertura</button>
-            </div>
+        <div className="bg-white dark:bg-slate-900 p-6 rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-4">
+          <div className="p-3 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 rounded-2xl"><Layers size={20}/></div>
+          <div>
+            <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Categorias EAP</p>
+            <p className="text-xl font-black text-slate-800 dark:text-white">{project.items.filter(i => i.type === 'category').length}</p>
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 };
