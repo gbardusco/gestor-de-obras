@@ -360,6 +360,7 @@ export interface GlobalStockItem {
   averagePrice: number;
   lastPrice: number;
   lastEntryDate: string;
+  category?: string; // NOVO: Categoria do Insumo
   supplierId?: string; // Último fornecedor
   priceHistory: PriceHistoryEntry[];
   status: 'normal' | 'critical' | 'out_of_stock';

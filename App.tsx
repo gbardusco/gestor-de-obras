@@ -13,10 +13,11 @@ import { SupplierManager } from './components/SupplierManager';
 import { GlobalInventoryView } from './components/GlobalInventoryView';
 import { TraceabilityDashboard } from './components/TraceabilityDashboard';
 import { GlobalTaskDictionaryView } from './components/GlobalTaskDictionaryView';
+import { GlobalSuppliesIntelligence } from './components/GlobalSuppliesIntelligence';
 
 import { Menu } from 'lucide-react';
 
-type ViewMode = 'global-dashboard' | 'project-workspace' | 'system-settings' | 'bidding-view' | 'supplier-view' | 'global-stock' | 'traceability' | 'task-dictionary';
+type ViewMode = 'global-dashboard' | 'project-workspace' | 'system-settings' | 'bidding-view' | 'supplier-view' | 'global-stock' | 'traceability' | 'task-dictionary' | 'supplies-intelligence';
 
 const App: React.FC = () => {
   const { 
@@ -138,6 +139,16 @@ const App: React.FC = () => {
             tags={globalTaskTags}
             projects={projects}
             onUpdateTags={updateGlobalTaskTags}
+          />
+        )}
+
+        {viewMode === 'supplies-intelligence' && (
+          <GlobalSuppliesIntelligence 
+            stock={globalStock}
+            movements={globalMovements}
+            projects={projects}
+            suppliers={suppliers}
+            purchaseRequests={purchaseRequests}
           />
         )}
 

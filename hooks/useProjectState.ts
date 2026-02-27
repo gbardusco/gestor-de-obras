@@ -34,6 +34,7 @@ const INITIAL_STOCK: GlobalStockItem[] = [
   { 
     id: 's1', name: 'Cimento CP-II', unit: 'Saco 50kg', currentQuantity: 450, minQuantity: 100, 
     averagePrice: 32.50, lastPrice: 34.00, lastEntryDate: new Date().toISOString(), 
+    category: 'Insumos Básicos',
     status: 'normal', order: 0, supplierId: 'sup1',
     priceHistory: [
       { date: '2024-01-10', price: 30.00, supplierId: 'sup1' },
@@ -44,6 +45,7 @@ const INITIAL_STOCK: GlobalStockItem[] = [
   { 
     id: 's2', name: 'Areia Lavada', unit: 'm³', currentQuantity: 15, minQuantity: 20, 
     averagePrice: 120.00, lastPrice: 125.00, lastEntryDate: new Date().toISOString(), 
+    category: 'Insumos Básicos',
     status: 'critical', order: 1, supplierId: 'sup2',
     priceHistory: [
       { date: '2024-01-05', price: 115.00, supplierId: 'sup2' },
@@ -53,6 +55,7 @@ const INITIAL_STOCK: GlobalStockItem[] = [
   { 
     id: 's3', name: 'Brita nº 1', unit: 'm³', currentQuantity: 40, minQuantity: 15, 
     averagePrice: 115.00, lastPrice: 118.00, lastEntryDate: new Date().toISOString(), 
+    category: 'Insumos Básicos',
     status: 'normal', order: 2,
     priceHistory: [{ date: '2024-02-01', price: 115.00 }]
   },
