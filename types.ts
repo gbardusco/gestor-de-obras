@@ -56,6 +56,7 @@ export interface WorkforceMember {
   nome: string;
   cpf_cnpj: string;
   empresa_vinculada: string;
+  contractorId?: string; // NOVO: Vínculo com Empreiteiro Global
   foto?: string;
   cargo: WorkforceRole;
   documentos: StaffDocument[];
@@ -154,6 +155,7 @@ export interface ProjectExpense {
   date: string;
   description: string;
   entityName: string;
+  contractorId?: string; // NOVO: Vínculo com Empreiteiro
   unit: string;
   quantity: number;
   unitPrice: number;
@@ -308,6 +310,26 @@ export interface Supplier {
   order: number;
 }
 
+export interface Contractor {
+  id: string;
+  name: string;
+  cnpj: string;
+  type: 'PJ' | 'Autônomo';
+  city: string;
+  specialty?: string; // Tag do Checklist Global
+  status: 'Ativo' | 'Inativo';
+  documents: string[]; // Nomes dos documentos
+  bankName: string;
+  bankAgency: string;
+  bankAccount: string;
+  pixKey?: string;
+  contactName: string;
+  email: string;
+  phone: string;
+  notes?: string;
+  order: number;
+}
+
 // --- CONTROLE DE ESTOQUE ---
 export type StockMovementType = 'entry' | 'exit';
 
@@ -356,6 +378,7 @@ export interface GlobalStockItem {
   name: string;
   unit: string;
   currentQuantity: number;
+  committedQuantity: number; // NOVO: Itens solicitados mas não retirados
   minQuantity: number;
   averagePrice: number;
   lastPrice: number;
@@ -404,15 +427,33 @@ export interface ProjectTask {
   updatedAt: string;
 }
 
+export type StockRequestStatus = 
+  | 'pending'           // Solicitação inicial
+  | 'partial'           // Atendimento parcial realizado, aguardando restante
+  | 'waiting_supply'    // Sem estoque, aguardando compra/reposição
+  | 'available'         // Saldo recomposto, disponível para retirada
+  | 'completed'         // Totalmente entregue
+  | 'rejected';         // Recusada
+
+export interface StockRequestLog {
+  date: string;
+  message: string;
+  status: StockRequestStatus;
+}
+
 export interface StockRequest {
   id: string;
   projectId: string;
   projectName: string;
   itemId: string;
   itemName: string;
-  quantity: number;
+  requestedQuantity: number;
+  deliveredQuantity: number;
+  pendingQuantity: number;
   date: string;
-  status: 'pending' | 'approved' | 'rejected';
+  status: StockRequestStatus;
+  purchaseRequestId?: string;
+  logs: StockRequestLog[];
 }
 
 // --- PROJETO ---

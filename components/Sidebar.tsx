@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Home, Cog, PlusCircle, Briefcase, Sun, Moon, Menu, HardHat, X, Folder, ChevronRight, ChevronLeft, ChevronDown, Landmark, AlertCircle, Truck, LayoutGrid, Activity, Tags, Zap } from 'lucide-react';
+import { Home, Cog, PlusCircle, Briefcase, Sun, Moon, Menu, HardHat, X, Folder, ChevronRight, ChevronLeft, ChevronDown, Landmark, AlertCircle, Truck, LayoutGrid, Activity, Tags, Zap, Users } from 'lucide-react';
 import { Project, ProjectGroup, CompanyCertificate } from '../types';
 import { biddingService } from '../services/biddingService';
 
@@ -109,12 +109,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
         <nav className="flex-1 p-4 space-y-1 overflow-y-auto custom-scrollbar">
           <NavItem active={viewMode === 'global-dashboard'} onClick={() => { setViewMode('global-dashboard'); setMobileOpen(false); }} icon={<Home size={18}/>} label="Dashboard" />
-          <NavItem active={viewMode === 'global-stock'} onClick={() => { setViewMode('global-stock'); setMobileOpen(false); }} icon={<LayoutGrid size={18}/>} label="Estoque Central" />
+          <NavItem active={viewMode === 'global-stock'} onClick={() => { setViewMode('global-stock'); setMobileOpen(false); }} icon={<LayoutGrid size={18}/>} label="Almoxarifado (Físico)" />
+          <NavItem active={viewMode === 'supplies-intelligence'} onClick={() => { setViewMode('supplies-intelligence'); setMobileOpen(false); }} icon={<Zap size={18}/>} label="Insumos (Financeiro)" />
           <NavItem active={viewMode === 'traceability'} onClick={() => { setViewMode('traceability'); setMobileOpen(false); }} icon={<Activity size={18}/>} label="Rastreabilidade" />
-          <NavItem active={viewMode === 'supplies-intelligence'} onClick={() => { setViewMode('supplies-intelligence'); setMobileOpen(false); }} icon={<Zap size={18}/>} label="Inteligência de Suprimentos" />
           <NavItem active={viewMode === 'task-dictionary'} onClick={() => { setViewMode('task-dictionary'); setMobileOpen(false); }} icon={<Tags size={18}/>} label="Dicionário de Tarefas" />
           <NavItem active={viewMode === 'bidding-view'} onClick={() => { setViewMode('bidding-view'); setMobileOpen(false); }} icon={<Landmark size={18}/>} label="Licitações" badge={hasAlerts} />
           <NavItem active={viewMode === 'supplier-view'} onClick={() => { setViewMode('supplier-view'); setMobileOpen(false); }} icon={<Truck size={18}/>} label="Fornecedores" />
+          <NavItem active={viewMode === 'contractor-view'} onClick={() => { setViewMode('contractor-view'); setMobileOpen(false); }} icon={<Users size={18}/>} label="Prestadores & Empreiteiros" />
           <NavItem active={viewMode === 'system-settings'} onClick={() => { setViewMode('system-settings'); setMobileOpen(false); }} icon={<Cog size={18}/>} label="Configurações" />
           
           <div className="py-6 px-3 flex items-center justify-between">

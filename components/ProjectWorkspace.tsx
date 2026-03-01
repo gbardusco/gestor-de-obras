@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo, useRef } from 'react';
-import { Project, GlobalSettings, WorkItem, Supplier, GlobalStockItem, GlobalStockMovement, GlobalTaskTag } from '../types';
+import { Project, GlobalSettings, WorkItem, Supplier, GlobalStockItem, GlobalStockMovement, GlobalTaskTag, StockRequest, Contractor } from '../types';
 import {
   Layers, BarChart3, Coins, Users, HardHat, BookOpen, FileText, Sliders,
   CheckCircle2, History, Calendar, Lock, ChevronDown,
@@ -34,10 +34,13 @@ interface ProjectWorkspaceProps {
   suppliers: Supplier[];
   globalStock: GlobalStockItem[];
   globalMovements: GlobalStockMovement[];
+  requests: StockRequest[];
   globalTaskTags: GlobalTaskTag[];
+  contractors: Contractor[];
   onUpdateProject: (data: Partial<Project>) => void;
   onUpdateGlobalStock: (stock: GlobalStockItem[]) => void;
   onUpdateGlobalMovements: (movements: GlobalStockMovement[]) => void;
+  onUpdateRequests: (requests: StockRequest[]) => void;
   onCloseMeasurement: () => void;
   canUndo: boolean;
   canRedo: boolean;
@@ -48,8 +51,8 @@ interface ProjectWorkspaceProps {
 export type TabID = 'wbs' | 'stats' | 'expenses' | 'stock' | 'checklist' | 'blueprint' | 'labor-contracts' | 'planning' | 'journal' | 'documents' | 'workforce' | 'branding';
 
 const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
-  project, globalSettings, suppliers, globalStock, globalMovements, globalTaskTags,
-  onUpdateProject, onUpdateGlobalStock, onUpdateGlobalMovements, onCloseMeasurement,
+  project, globalSettings, suppliers, globalStock, globalMovements, requests, globalTaskTags, contractors,
+  onUpdateProject, onUpdateGlobalStock, onUpdateGlobalMovements, onUpdateRequests, onCloseMeasurement,
   canUndo, canRedo, onUndo, onRedo
 }) => {
   const [tab, setTab] = useState<TabID>('wbs');
@@ -235,7 +238,6 @@ const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
           <TabBtn active={tab === 'planning'} id="planning" label="Canteiro Ágil" icon={<HardHat size={16} />} />
           <TabBtn active={tab === 'journal'} id="journal" label="Diário de Obra" icon={<BookOpen size={16} />} />
           <TabBtn active={tab === 'documents'} id="documents" label="Repositório" icon={<FileText size={16} />} />
-          <TabBtn active={tab === 'workforce'} id="workforce" label="Equipe Permanente" icon={<Users size={16} />} />
           <TabBtn active={tab === 'branding'} id="branding" label="Ajustes" icon={<Sliders size={16} />} />
         </div>
       </nav>
@@ -247,19 +249,20 @@ const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
           {tab === 'blueprint' && <BlueprintView project={project} onUpdateProject={onUpdateProject} onOpenModal={handleOpenModal} isReadOnly={displayData.isReadOnly} />}
           {tab === 'checklist' && <ProjectTaskChecklist project={project} globalTags={globalTaskTags} onUpdateProject={onUpdateProject} />}
           {tab === 'stats' && <StatsView project={{ ...project, items: displayData.items }} />}
-          {tab === 'expenses' && <ExpenseManager project={project} expenses={project.expenses} onAdd={(ex) => onUpdateProject({ expenses: [...project.expenses, ex] })} onAddMany={(exs) => onUpdateProject({ expenses: [...project.expenses, ...exs] })} onUpdate={(id, data) => onUpdateProject({ expenses: project.expenses.map(e => e.id === id ? { ...e, ...data } : e) })} onDelete={(id) => onUpdateProject({ expenses: project.expenses.filter(e => e.id !== id) })} workItems={displayData.items} measuredValue={treeService.calculateBasicStats(displayData.items, project.bdi).current} onUpdateExpenses={(exs) => onUpdateProject({ expenses: exs })} isReadOnly={displayData.isReadOnly} />}
+          {tab === 'expenses' && <ExpenseManager project={project} expenses={project.expenses} onAdd={(ex) => onUpdateProject({ expenses: [...project.expenses, ex] })} onAddMany={(exs) => onUpdateProject({ expenses: [...project.expenses, ...exs] })} onUpdate={(id, data) => onUpdateProject({ expenses: project.expenses.map(e => e.id === id ? { ...e, ...data } : e) })} onDelete={(id) => onUpdateProject({ expenses: project.expenses.filter(e => e.id !== id) })} workItems={displayData.items} measuredValue={treeService.calculateBasicStats(displayData.items, project.bdi).current} onUpdateExpenses={(exs) => onUpdateProject({ expenses: exs })} contractors={contractors} isReadOnly={displayData.isReadOnly} />}
           {tab === 'stock' && (
             <SiteStockMovementView 
               project={project} 
               globalStock={globalStock} 
               globalMovements={globalMovements}
+              requests={requests}
               onUpdateGlobalStock={onUpdateGlobalStock}
               onUpdateGlobalMovements={onUpdateGlobalMovements}
+              onUpdateRequests={onUpdateRequests}
               onUpdateProject={onUpdateProject}
             />
           )}
           {tab === 'labor-contracts' && <LaborContractsManager project={project} onUpdateProject={onUpdateProject} />}
-          {tab === 'workforce' && <WorkforceManager project={project} onUpdateProject={onUpdateProject} />}
           {tab === 'planning' && <PlanningView project={project} suppliers={suppliers} onUpdatePlanning={(p) => onUpdateProject({ planning: p })} onAddExpense={(ex) => onUpdateProject({ expenses: [...project.expenses, ex] })} categories={displayData.items.filter(i => i.type === 'category')} allWorkItems={displayData.items} />}
           {tab === 'journal' && <JournalView project={project} onUpdateJournal={(j) => onUpdateProject({ journal: j })} allWorkItems={displayData.items} />}
           {tab === 'documents' && <AssetManager assets={project.assets} onAdd={(a) => onUpdateProject({ assets: [...project.assets, a] })} onDelete={(id) => onUpdateProject({ assets: project.assets.filter(as => as.id !== id) })} isReadOnly={displayData.isReadOnly} />}

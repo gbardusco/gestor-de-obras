@@ -24,6 +24,7 @@ interface GlobalInventoryViewProps {
 }
 
 type InventoryMode = 'almoxarifado' | 'financeiro';
+type InventoryTab = 'stock' | 'requests';
 
 export const GlobalInventoryView: React.FC<GlobalInventoryViewProps> = ({
   stock, movements, requests, purchaseRequests, notifications, suppliers,
@@ -31,9 +32,11 @@ export const GlobalInventoryView: React.FC<GlobalInventoryViewProps> = ({
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [mode, setMode] = useState<InventoryMode>('almoxarifado');
+  const [activeTab, setActiveTab] = useState<InventoryTab>('stock');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isMovementModalOpen, setIsMovementModalOpen] = useState(false);
   const [movementType, setMovementType] = useState<'entry' | 'exit'>('entry');
+  const [selectedRequest, setSelectedRequest] = useState<StockRequest | null>(null);
 
   // KPIs
   const totalItems = stock.length;
@@ -60,6 +63,7 @@ export const GlobalInventoryView: React.FC<GlobalInventoryViewProps> = ({
       lastEntryDate: new Date().toISOString(),
       status: 'normal',
       order: stock.length,
+      committedQuantity: 0,
       priceHistory: [{ date: new Date().toISOString(), price: Number(formData.get('price')) }]
     };
     onUpdateStock([...stock, newItem]);
@@ -113,7 +117,6 @@ export const GlobalInventoryView: React.FC<GlobalInventoryViewProps> = ({
         let newPriceHistory = s.priceHistory || [];
         
         if (movementType === 'entry' && price > 0) {
-          // Fórmula simples de preço médio: (QtdAtual * PreçoMédio + QtdNova * PreçoNovo) / (QtdAtual + QtdNova)
           newAvgPrice = ((s.currentQuantity * s.averagePrice) + (quantity * price)) / (s.currentQuantity + quantity);
           newPriceHistory = [...newPriceHistory, { date: new Date().toISOString(), price }];
         }
@@ -131,9 +134,48 @@ export const GlobalInventoryView: React.FC<GlobalInventoryViewProps> = ({
       }
       return s;
     });
-    onUpdateStock(updatedStock);
 
-    // 2. Registrar Movimentação
+    // 2. Auto-Reservation Trigger (Se for entrada, verificar pedidos aguardando suprimento)
+    let finalRequests = [...requests];
+    let finalStock = [...updatedStock];
+
+    if (movementType === 'entry') {
+      // Buscar solicitações aguardando suprimento para este item
+      const pendingForThisItem = finalRequests
+        .filter(r => r.itemId === selectedStockItem.id && r.status === 'waiting_supply')
+        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+      let availableNewStock = quantity;
+
+      pendingForThisItem.forEach(req => {
+        if (availableNewStock <= 0) return;
+
+        const canFulfill = Math.min(req.pendingQuantity, availableNewStock);
+        if (canFulfill > 0) {
+          // Atualizar o ticket
+          finalRequests = finalRequests.map(r => {
+            if (r.id === req.id) {
+              const newStatus = 'available';
+              return {
+                ...r,
+                status: newStatus,
+                logs: [
+                  ...r.logs,
+                  { date: new Date().toISOString(), message: `Estoque reabastecido (NF ${invoiceNumber}). ${canFulfill} unidades agora disponíveis para retirada.`, status: newStatus }
+                ]
+              };
+            }
+            return r;
+          });
+          availableNewStock -= canFulfill;
+        }
+      });
+    }
+
+    onUpdateStock(finalStock);
+    onUpdateRequests(finalRequests);
+
+    // 3. Registrar Movimentação
     const newMovement: GlobalStockMovement = {
       id: crypto.randomUUID(),
       itemId: selectedStockItem.id,
@@ -152,6 +194,94 @@ export const GlobalInventoryView: React.FC<GlobalInventoryViewProps> = ({
     setSelectedStockItem(null);
   };
 
+  const handleApproveRequest = (request: StockRequest, fulfillQuantity: number) => {
+    const item = stock.find(s => s.id === request.itemId);
+    if (!item) return;
+
+    const isPartial = fulfillQuantity < request.pendingQuantity;
+    const remaining = request.pendingQuantity - fulfillQuantity;
+
+    // 1. Atualizar Estoque Global (Saída Real)
+    const updatedStock = stock.map(s => {
+      if (s.id === item.id) {
+        return {
+          ...s,
+          currentQuantity: s.currentQuantity - fulfillQuantity,
+          committedQuantity: Math.max(0, (s.committedQuantity || 0) - fulfillQuantity)
+        };
+      }
+      return s;
+    });
+    onUpdateStock(updatedStock);
+
+    // 2. Registrar Movimentação de Saída
+    const newMovement: GlobalStockMovement = {
+      id: crypto.randomUUID(),
+      itemId: item.id,
+      type: 'exit',
+      quantity: fulfillQuantity,
+      date: new Date().toISOString(),
+      responsible: 'Almoxarife Central',
+      originDestination: request.projectName,
+      projectId: request.projectId,
+      notes: `Atendimento ${isPartial ? 'Parcial' : 'Total'} do Ticket ${request.id.slice(0, 8)}`
+    };
+    onUpdateMovements([newMovement, ...movements]);
+
+    // 3. Atualizar Ticket (StockRequest)
+    const updatedRequests = requests.map(r => {
+      if (r.id === request.id) {
+        const newDelivered = r.deliveredQuantity + fulfillQuantity;
+        const newPending = r.pendingQuantity - fulfillQuantity;
+        let newStatus = newPending === 0 ? 'completed' : 'waiting_supply';
+        
+        const newLog = {
+          date: new Date().toISOString(),
+          message: isPartial 
+            ? `Atendimento parcial de ${fulfillQuantity} ${item.unit}. Restante (${newPending}) aguardando suprimento.`
+            : `Atendimento total concluído. Material despachado para a obra.`,
+          status: newStatus as any
+        };
+
+        return {
+          ...r,
+          deliveredQuantity: newDelivered,
+          pendingQuantity: newPending,
+          status: newStatus as any,
+          logs: [...r.logs, newLog]
+        };
+      }
+      return r;
+    });
+    onUpdateRequests(updatedRequests);
+
+    // 4. Se for parcial, criar Solicitação de Compra automática
+    if (isPartial) {
+      const purchaseReq: PurchaseRequest = {
+        id: crypto.randomUUID(),
+        itemId: item.id,
+        itemName: item.name,
+        quantity: remaining,
+        requestedBy: 'Sistema (Atendimento Parcial)',
+        date: new Date().toISOString(),
+        status: 'pending',
+        priority: 'high'
+      };
+      onUpdatePurchaseRequests([...purchaseRequests, purchaseReq]);
+      
+      onUpdateNotifications([{
+        id: crypto.randomUUID(),
+        title: 'Compra Automática Gerada',
+        message: `Atendimento parcial na obra ${request.projectName} gerou pedido de compra de ${remaining} ${item.unit} de ${item.name}.`,
+        type: 'purchase_update',
+        date: new Date().toISOString(),
+        isRead: false
+      }, ...notifications]);
+    }
+
+    setSelectedRequest(null);
+  };
+
   return (
     <div className="flex-1 flex flex-col min-w-0 overflow-hidden bg-slate-50 dark:bg-slate-950">
       <header className="p-8 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0">
@@ -160,6 +290,24 @@ export const GlobalInventoryView: React.FC<GlobalInventoryViewProps> = ({
             <h1 className="text-2xl font-black tracking-tight text-slate-800 dark:text-white uppercase">Estoque Central</h1>
             <div className="flex items-center gap-4 mt-2">
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Gestão de Ativos e Insumos da Prefeitura</p>
+              <div className="h-4 w-px bg-slate-200 dark:bg-slate-800" />
+              <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
+                <button 
+                  onClick={() => setActiveTab('stock')}
+                  className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${activeTab === 'stock' ? 'bg-white dark:bg-slate-700 text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                >
+                  <Package size={12} /> Estoque
+                </button>
+                <button 
+                  onClick={() => setActiveTab('requests')}
+                  className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${activeTab === 'requests' ? 'bg-white dark:bg-slate-700 text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                >
+                  <ShoppingCart size={12} /> Solicitações de Obra
+                  {requests.filter(r => r.status === 'pending').length > 0 && (
+                    <span className="w-2 h-2 bg-rose-500 rounded-full animate-pulse" />
+                  )}
+                </button>
+              </div>
               <div className="h-4 w-px bg-slate-200 dark:bg-slate-800" />
               <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
                 <button 
@@ -246,99 +394,159 @@ export const GlobalInventoryView: React.FC<GlobalInventoryViewProps> = ({
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-slate-50 dark:bg-slate-800/50 text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                  <th className="px-6 py-4">Item</th>
-                  <th className="px-6 py-4">Unidade</th>
-                  <th className="px-6 py-4 text-center">Saldo Atual</th>
-                  <th className="px-6 py-4 text-center">Estoque Mínimo</th>
-                  {mode === 'financeiro' && (
-                    <>
-                      <th className="px-6 py-4 text-right">Preço Médio</th>
-                      <th className="px-6 py-4 text-right">Última Cotação</th>
-                      <th className="px-6 py-4 text-right">Total Ativo</th>
-                    </>
-                  )}
-                  <th className="px-6 py-4 text-center">Status</th>
-                  <th className="px-6 py-4 text-center">Ações</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                {filteredStock.map(item => {
-                  const isCritical = item.currentQuantity <= item.minQuantity;
-                  return (
-                    <tr key={item.id} className="group hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-3">
-                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isCritical ? 'bg-rose-100 text-rose-600' : 'bg-slate-100 text-slate-600'} dark:bg-slate-800`}>
-                            <Package size={20} />
-                          </div>
-                          <div>
-                            <span className="text-xs font-black text-slate-700 dark:text-slate-200 uppercase tracking-tight block">{item.name}</span>
-                            {mode === 'financeiro' && item.supplierId && (
-                              <span className="text-[9px] font-bold text-slate-400 uppercase flex items-center gap-1 mt-0.5">
-                                <Truck size={10} /> {suppliers.find(s => s.id === item.supplierId)?.name || 'Fornecedor Direto'}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase">{item.unit}</td>
-                      <td className="px-6 py-4 text-center">
-                        <span className={`text-xs font-black ${isCritical ? 'text-rose-600' : 'text-slate-700 dark:text-slate-200'}`}>
-                          {item.currentQuantity}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-center text-[10px] font-bold text-slate-400">
-                        {item.minQuantity}
-                      </td>
-                      {mode === 'financeiro' && (
-                        <>
-                          <td className="px-6 py-4 text-right text-xs font-bold text-slate-500 dark:text-slate-400">
-                            {financial.formatVisual(item.averagePrice, 'R$')}
-                          </td>
-                          <td className="px-6 py-4 text-right text-xs font-bold text-emerald-600 dark:text-emerald-400">
-                            <div className="flex items-center justify-end gap-1">
-                              {financial.formatVisual(item.lastPrice, 'R$')}
-                              <TrendingUp size={10} />
+            {activeTab === 'stock' ? (
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-slate-50 dark:bg-slate-800/50 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                    <th className="px-6 py-4">Item</th>
+                    <th className="px-6 py-4">Unidade</th>
+                    <th className="px-6 py-4 text-center">Saldo Real</th>
+                    <th className="px-6 py-4 text-center">Saldo Comprometido</th>
+                    <th className="px-6 py-4 text-center">Estoque Mínimo</th>
+                    {mode === 'financeiro' && (
+                      <>
+                        <th className="px-6 py-4 text-right">Preço Médio</th>
+                        <th className="px-6 py-4 text-right">Última Cotação</th>
+                        <th className="px-6 py-4 text-right">Total Ativo</th>
+                      </>
+                    )}
+                    <th className="px-6 py-4 text-center">Status</th>
+                    <th className="px-6 py-4 text-center">Ações</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                  {filteredStock.map(item => {
+                    const isCritical = item.currentQuantity <= item.minQuantity;
+                    return (
+                      <tr key={item.id} className="group hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-3">
+                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isCritical ? 'bg-rose-100 text-rose-600' : 'bg-slate-100 text-slate-600'} dark:bg-slate-800`}>
+                              <Package size={20} />
                             </div>
-                          </td>
-                          <td className="px-6 py-4 text-right text-xs font-black text-slate-700 dark:text-slate-200">
-                            {financial.formatVisual(item.currentQuantity * item.averagePrice, 'R$')}
-                          </td>
-                        </>
-                      )}
-                      <td className="px-6 py-4 text-center">
-                        <span className={`px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest ${
-                          isCritical 
-                            ? 'bg-rose-100 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400' 
-                            : 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400'
-                        }`}>
-                          {isCritical ? 'Crítico' : 'Normal'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-center">
-                        <div className="flex items-center justify-center gap-2">
-                          {mode === 'almoxarifado' && (
-                            <button 
-                              onClick={() => handleRequestPurchase(item)}
-                              title="Solicitar Compra"
-                              className="p-2 text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-lg transition-all"
-                            >
-                              <ShoppingCart size={16} />
+                            <div>
+                              <span className="text-xs font-black text-slate-700 dark:text-slate-200 uppercase tracking-tight block">{item.name}</span>
+                              {mode === 'financeiro' && item.supplierId && (
+                                <span className="text-[9px] font-bold text-slate-400 uppercase flex items-center gap-1 mt-0.5">
+                                  <Truck size={10} /> {suppliers.find(s => s.id === item.supplierId)?.name || 'Fornecedor Direto'}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase">{item.unit}</td>
+                        <td className="px-6 py-4 text-center">
+                          <span className={`text-xs font-black ${isCritical ? 'text-rose-600' : 'text-slate-700 dark:text-slate-200'}`}>
+                            {item.currentQuantity}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-center">
+                          <span className="text-xs font-bold text-amber-600">
+                            {item.committedQuantity || 0}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-center text-[10px] font-bold text-slate-400">
+                          {item.minQuantity}
+                        </td>
+                        {mode === 'financeiro' && (
+                          <>
+                            <td className="px-6 py-4 text-right text-xs font-bold text-slate-500 dark:text-slate-400">
+                              {financial.formatVisual(item.averagePrice, 'R$')}
+                            </td>
+                            <td className="px-6 py-4 text-right text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                              <div className="flex items-center justify-end gap-1">
+                                {financial.formatVisual(item.lastPrice, 'R$')}
+                                <TrendingUp size={10} />
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 text-right text-xs font-black text-slate-700 dark:text-slate-200">
+                              {financial.formatVisual(item.currentQuantity * item.averagePrice, 'R$')}
+                            </td>
+                          </>
+                        )}
+                        <td className="px-6 py-4 text-center">
+                          <span className={`px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest ${
+                            isCritical 
+                              ? 'bg-rose-100 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400' 
+                              : 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400'
+                          }`}>
+                            {isCritical ? 'Crítico' : 'Normal'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-center">
+                          <div className="flex items-center justify-center gap-2">
+                            {mode === 'almoxarifado' && (
+                              <button 
+                                onClick={() => handleRequestPurchase(item)}
+                                title="Solicitar Compra"
+                                className="p-2 text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-lg transition-all"
+                              >
+                                <ShoppingCart size={16} />
+                              </button>
+                            )}
+                            <button className="p-2 text-slate-300 hover:text-slate-600 dark:hover:text-white transition-colors">
+                              <MoreHorizontal size={18} />
                             </button>
-                          )}
-                          <button className="p-2 text-slate-300 hover:text-slate-600 dark:hover:text-white transition-colors">
-                            <MoreHorizontal size={18} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            ) : (
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-slate-50 dark:bg-slate-800/50 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                    <th className="px-6 py-4">Obra</th>
+                    <th className="px-6 py-4">Material</th>
+                    <th className="px-6 py-4 text-center">Pendente</th>
+                    <th className="px-6 py-4 text-center">Status</th>
+                    <th className="px-6 py-4 text-center">Ações</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                  {requests.filter(r => r.status !== 'completed').map(request => {
+                    const item = stock.find(s => s.id === request.itemId);
+                    const canFulfillAny = (item?.currentQuantity || 0) > 0;
+                    return (
+                      <tr key={request.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
+                        <td className="px-6 py-4">
+                          <span className="text-xs font-black text-slate-700 dark:text-slate-200 uppercase tracking-tight">{request.projectName}</span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className="text-xs font-bold text-slate-500 uppercase">{request.itemName}</span>
+                        </td>
+                        <td className="px-6 py-4 text-center">
+                          <span className="text-xs font-black text-slate-700 dark:text-slate-200">{request.pendingQuantity} {item?.unit}</span>
+                        </td>
+                        <td className="px-6 py-4 text-center">
+                          <span className={`px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest ${
+                            request.status === 'pending' ? 'bg-slate-100 text-slate-600' :
+                            request.status === 'waiting_supply' ? 'bg-rose-100 text-rose-600' :
+                            'bg-indigo-100 text-indigo-600'
+                          }`}>
+                            {request.status === 'pending' ? 'Pendente' : 
+                             request.status === 'waiting_supply' ? 'Aguardando Suprimento' : 'Disponível'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-center">
+                          <div className="flex items-center justify-center gap-2">
+                            <button 
+                              onClick={() => setSelectedRequest(request)}
+                              className="px-4 py-2 bg-indigo-600 text-white rounded-xl text-[9px] font-black uppercase tracking-widest shadow-lg shadow-indigo-500/20 hover:scale-105 transition-all disabled:opacity-30"
+                              disabled={!canFulfillAny}
+                            >
+                              Atender
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            )}
           </div>
         </div>
       </div>
@@ -455,6 +663,77 @@ export const GlobalInventoryView: React.FC<GlobalInventoryViewProps> = ({
                 <button type="submit" className="px-8 py-4 bg-indigo-600 text-white rounded-2xl text-[11px] font-black uppercase tracking-widest shadow-xl shadow-indigo-500/20">Salvar Item</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {/* Modal de Atendimento de Solicitação */}
+      {selectedRequest && (
+        <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="bg-white dark:bg-slate-900 w-full max-w-lg rounded-[3rem] p-10 shadow-2xl border border-slate-200 dark:border-slate-800 relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-full h-2 bg-indigo-600" />
+            <div className="flex items-center justify-between mb-8">
+              <div>
+                <h2 className="text-2xl font-black text-slate-800 dark:text-white uppercase tracking-tighter">Atender Solicitação</h2>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Ticket #{selectedRequest.id.slice(0, 8)}</p>
+              </div>
+              <button onClick={() => setSelectedRequest(null)} className="p-2 text-slate-400 hover:text-rose-500 transition-colors"><XCircle size={24} /></button>
+            </div>
+
+            <div className="space-y-6 mb-10">
+              <div className="p-6 bg-slate-50 dark:bg-slate-800/50 rounded-3xl border border-slate-100 dark:border-slate-700">
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="p-3 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 rounded-2xl">
+                    <Package size={24} />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Material Solicitado</p>
+                    <p className="text-lg font-black text-slate-800 dark:text-white uppercase">{selectedRequest.itemName}</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Pendente na Obra</p>
+                    <p className="text-xl font-black text-rose-600">{selectedRequest.pendingQuantity}</p>
+                  </div>
+                  <div>
+                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Saldo Real em Estoque</p>
+                    <p className="text-xl font-black text-emerald-600">{stock.find(s => s.id === selectedRequest.itemId)?.currentQuantity || 0}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Quantidade a Despachar Agora</label>
+                <div className="relative">
+                  <input 
+                    id="fulfillQty"
+                    type="number" 
+                    max={Math.min(selectedRequest.pendingQuantity, stock.find(s => s.id === selectedRequest.itemId)?.currentQuantity || 0)}
+                    defaultValue={Math.min(selectedRequest.pendingQuantity, stock.find(s => s.id === selectedRequest.itemId)?.currentQuantity || 0)}
+                    className="w-full px-8 py-5 bg-slate-50 dark:bg-slate-800 border-2 border-transparent focus:border-indigo-500 rounded-[2rem] text-xl font-black outline-none transition-all dark:text-white"
+                  />
+                  <div className="absolute right-6 top-1/2 -translate-y-1/2 text-xs font-black text-slate-400 uppercase">{stock.find(s => s.id === selectedRequest.itemId)?.unit}</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-4">
+              <button 
+                onClick={() => setSelectedRequest(null)}
+                className="flex-1 py-5 text-slate-400 font-black uppercase text-xs tracking-widest hover:text-slate-600 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button 
+                onClick={() => {
+                  const qty = Number((document.getElementById('fulfillQty') as HTMLInputElement).value);
+                  handleApproveRequest(selectedRequest, qty);
+                }}
+                className="flex-[2] py-5 bg-indigo-600 text-white rounded-[2rem] font-black uppercase text-xs tracking-widest shadow-xl shadow-indigo-500/20 hover:scale-105 active:scale-95 transition-all"
+              >
+                Confirmar Entrega
+              </button>
+            </div>
           </div>
         </div>
       )}

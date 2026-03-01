@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo } from 'react';
-import { Project, WorkforceMember, WorkforceRole, WorkItem } from '../types';
+import { Project, WorkforceMember, WorkforceRole, WorkItem, Contractor } from '../types';
 import { workforceService } from '../services/workforceService';
 import { 
   Users, Plus, Search, Trash2, Edit2, ShieldCheck, AlertCircle, HardHat, FileText,
@@ -9,23 +9,27 @@ import {
 
 interface WorkforceManagerProps {
   project: Project;
+  contractors: Contractor[];
   onUpdateProject: (data: Partial<Project>) => void;
 }
 
-export const WorkforceManager: React.FC<WorkforceManagerProps> = ({ project, onUpdateProject }) => {
+export const WorkforceManager: React.FC<WorkforceManagerProps> = ({ project, contractors, onUpdateProject }) => {
   const [search, setSearch] = useState('');
+  const [contractorFilter, setContractorFilter] = useState<string>('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingMember, setEditingMember] = useState<WorkforceMember | null>(null);
 
   const workforce = project.workforce || [];
 
   const filteredMembers = useMemo(() => {
-    return workforce.filter(m => 
-      m.nome.toLowerCase().includes(search.toLowerCase()) || 
-      m.cpf_cnpj.includes(search) ||
-      m.cargo.toLowerCase().includes(search.toLowerCase())
-    );
-  }, [workforce, search]);
+    return workforce.filter(m => {
+      const matchesSearch = m.nome.toLowerCase().includes(search.toLowerCase()) || 
+                           m.cpf_cnpj.includes(search) ||
+                           m.cargo.toLowerCase().includes(search.toLowerCase());
+      const matchesContractor = contractorFilter === 'all' || m.contractorId === contractorFilter;
+      return matchesSearch && matchesContractor;
+    });
+  }, [workforce, search, contractorFilter]);
 
   const stats = useMemo(() => ({
     total: workforce.length,
@@ -57,9 +61,22 @@ export const WorkforceManager: React.FC<WorkforceManagerProps> = ({ project, onU
       </div>
 
       <div className="flex flex-col md:flex-row items-center justify-between gap-6 bg-white dark:bg-slate-900 p-6 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-sm">
-        <div className="relative flex-1 w-full md:max-w-md">
-           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-           <input placeholder="Buscar por nome, cargo ou CPF..." className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border-none rounded-xl text-sm outline-none focus:ring-4 focus:ring-indigo-500/10" value={search} onChange={e => setSearch(e.target.value)} />
+        <div className="flex flex-1 w-full gap-4">
+          <div className="relative flex-1">
+             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+             <input placeholder="Buscar por nome, cargo ou CPF..." className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border-none rounded-xl text-sm outline-none focus:ring-4 focus:ring-indigo-500/10" value={search} onChange={e => setSearch(e.target.value)} />
+          </div>
+          <select 
+            className="px-4 py-3 bg-slate-50 dark:bg-slate-800 border-none rounded-xl text-xs font-bold outline-none focus:ring-4 focus:ring-indigo-500/10"
+            value={contractorFilter}
+            onChange={e => setContractorFilter(e.target.value)}
+          >
+            <option value="all">Todas as Empresas</option>
+            <option value="">Próprio / Sem Vínculo</option>
+            {contractors.map(c => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
+          </select>
         </div>
         <button 
           onClick={() => { setEditingMember(null); setIsModalOpen(true); }}
@@ -110,6 +127,7 @@ export const WorkforceManager: React.FC<WorkforceManagerProps> = ({ project, onU
       {isModalOpen && (
         <MemberModal 
           member={editingMember} 
+          contractors={contractors}
           onClose={() => setIsModalOpen(false)} 
           onSave={handleSave} 
           allWorkItems={project.items.filter(i => i.type === 'item')}
@@ -119,7 +137,7 @@ export const WorkforceManager: React.FC<WorkforceManagerProps> = ({ project, onU
   );
 };
 
-const MemberModal = ({ member, onClose, onSave, allWorkItems }: any) => {
+const MemberModal = ({ member, contractors, onClose, onSave, allWorkItems }: any) => {
   const [data, setData] = useState<WorkforceMember>(member || workforceService.createMember('Servente'));
 
   return (
@@ -147,8 +165,25 @@ const MemberModal = ({ member, onClose, onSave, allWorkItems }: any) => {
                      </div>
                   </div>
                   <div>
-                    <label className="text-[10px] font-black text-slate-400 uppercase mb-2 block tracking-widest">Empresa Vinculada</label>
-                    <input className="w-full px-5 py-4 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-sm font-black outline-none" value={data.empresa_vinculada} onChange={e => setData({...data, empresa_vinculada: e.target.value})} />
+                    <label className="text-[10px] font-black text-slate-400 uppercase mb-2 block tracking-widest">Empresa Vinculada (Empreiteiro)</label>
+                    <select 
+                      className="w-full px-5 py-4 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-sm font-black outline-none focus:border-indigo-500"
+                      value={data.contractorId || ''}
+                      onChange={e => {
+                        const contId = e.target.value;
+                        const cont = contractors.find((c: Contractor) => c.id === contId);
+                        setData({
+                          ...data, 
+                          contractorId: contId || undefined,
+                          empresa_vinculada: cont ? cont.name : ''
+                        });
+                      }}
+                    >
+                      <option value="">Próprio / Sem Vínculo</option>
+                      {contractors.map((c: Contractor) => (
+                        <option key={c.id} value={c.id}>{c.name}</option>
+                      ))}
+                    </select>
                   </div>
                </div>
 

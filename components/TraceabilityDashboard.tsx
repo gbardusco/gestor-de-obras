@@ -60,7 +60,7 @@ export const TraceabilityDashboard: React.FC<TraceabilityDashboardProps> = ({
 
     if (action === 'approve') {
       const item = stock.find(s => s.id === request.itemId);
-      if (!item || item.currentQuantity < request.quantity) {
+      if (!item || item.currentQuantity < request.requestedQuantity) {
         alert('Saldo insuficiente no estoque central!');
         return;
       }
@@ -68,8 +68,8 @@ export const TraceabilityDashboard: React.FC<TraceabilityDashboardProps> = ({
       // Atualiza estoque
       const newStock = stock.map(s => s.id === item.id ? {
         ...s,
-        currentQuantity: s.currentQuantity - request.quantity,
-        status: (s.currentQuantity - request.quantity) <= s.minQuantity ? 'critical' : 'normal' as any
+        currentQuantity: s.currentQuantity - request.requestedQuantity,
+        status: (s.currentQuantity - request.requestedQuantity) <= s.minQuantity ? 'critical' : 'normal' as any
       } : s);
       onUpdateStock(newStock);
 
@@ -78,7 +78,7 @@ export const TraceabilityDashboard: React.FC<TraceabilityDashboardProps> = ({
         id: crypto.randomUUID(),
         itemId: item.id,
         type: 'exit',
-        quantity: request.quantity,
+        quantity: request.requestedQuantity,
         date: new Date().toISOString(),
         responsible: 'Gestor de Estoque',
         originDestination: request.projectName,
@@ -88,7 +88,7 @@ export const TraceabilityDashboard: React.FC<TraceabilityDashboardProps> = ({
       onUpdateMovements([newMovement, ...movements]);
     }
 
-    onUpdateRequests(requests.map(r => r.id === requestId ? { ...r, status: action === 'approve' ? 'approved' : 'rejected' } : r));
+    onUpdateRequests(requests.map(r => r.id === requestId ? { ...r, status: action === 'approve' ? 'completed' : 'rejected' } : r));
   };
 
   const handlePurchaseAction = (requestId: string, action: 'order' | 'complete' | 'cancel') => {
@@ -214,7 +214,7 @@ export const TraceabilityDashboard: React.FC<TraceabilityDashboardProps> = ({
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-lg font-black text-slate-800 dark:text-white">{request.quantity}</p>
+                    <p className="text-lg font-black text-slate-800 dark:text-white">{request.requestedQuantity}</p>
                     <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Qtd Solicitada</p>
                   </div>
                 </div>

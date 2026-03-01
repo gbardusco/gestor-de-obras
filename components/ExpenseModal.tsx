@@ -1,9 +1,9 @@
 
 import React, { useState, useEffect } from 'react';
-import { ProjectExpense, ItemType, ExpenseType, ExpenseStatus } from '../types';
+import { ProjectExpense, ItemType, ExpenseType, ExpenseStatus, Contractor } from '../types';
 import { financial } from '../utils/math';
 import { ExpenseAttachmentZone } from './ExpenseAttachmentZone';
-import { X, Save, Truck, Users, Calculator, FolderTree, Landmark, ReceiptText, ClipboardCheck, Percent, Layers } from 'lucide-react';
+import { X, Save, Truck, Users, Calculator, FolderTree, Landmark, ReceiptText, ClipboardCheck, Percent, Layers, Building2, MapPin, CreditCard } from 'lucide-react';
 
 interface ExpenseModalProps {
   isOpen: boolean;
@@ -13,11 +13,13 @@ interface ExpenseModalProps {
   expenseType: ExpenseType;
   itemType: ItemType;
   categories: (ProjectExpense & { depth: number })[];
+  contractors?: Contractor[];
   currencySymbol?: string;
 }
 
 export const ExpenseModal: React.FC<ExpenseModalProps> = ({
   isOpen, onClose, onSave, editingItem, expenseType, itemType: initialItemType, categories,
+  contractors = [],
   currencySymbol = 'R$'
 }) => {
   const isRevenue = expenseType === 'revenue';
@@ -186,6 +188,55 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
               <div className={isCategory ? "lg:col-span-12" : "lg:col-span-7"}>
+                {isLabor && !isCategory && (
+                  <div className="mb-8 p-6 bg-indigo-50 dark:bg-indigo-900/20 rounded-3xl border border-indigo-100 dark:border-indigo-800 animate-in slide-in-from-top-4">
+                    <label className="text-[10px] font-black text-indigo-600 dark:text-indigo-400 uppercase mb-3 block tracking-widest ml-1">Selecionar Empreiteiro (Global)</label>
+                    <div className="relative mb-4">
+                      <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 text-indigo-400" size={18} />
+                      <select 
+                        className="w-full pl-12 pr-4 py-4 rounded-2xl border-2 border-transparent bg-white dark:bg-slate-900 text-sm font-black outline-none focus:border-indigo-500 transition-all shadow-sm"
+                        value={formData.contractorId || ''}
+                        onChange={e => {
+                          const contId = e.target.value;
+                          const cont = contractors.find(c => c.id === contId);
+                          setFormData(prev => ({
+                            ...prev, 
+                            contractorId: contId || undefined,
+                            entityName: cont ? cont.name : prev.entityName,
+                            description: cont ? `Pagamento: ${cont.name}` : prev.description
+                          }));
+                        }}
+                      >
+                        <option value="">-- Selecionar Empreiteiro --</option>
+                        {contractors.map(c => (
+                          <option key={c.id} value={c.id}>{c.name} ({c.city})</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {formData.contractorId && (
+                      <div className="grid grid-cols-2 gap-4 animate-in fade-in duration-500">
+                        <div className="flex items-center gap-3 p-3 bg-white/50 dark:bg-slate-800/50 rounded-xl border border-indigo-50 dark:border-indigo-900/30">
+                          <MapPin size={14} className="text-indigo-500" />
+                          <div>
+                            <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Cidade Base</p>
+                            <p className="text-[10px] font-bold text-slate-700 dark:text-slate-200">{contractors.find(c => c.id === formData.contractorId)?.city}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3 p-3 bg-white/50 dark:bg-slate-800/50 rounded-xl border border-indigo-50 dark:border-indigo-900/30">
+                          <CreditCard size={14} className="text-emerald-500" />
+                          <div>
+                            <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Dados Bancários</p>
+                            <p className="text-[10px] font-bold text-slate-700 dark:text-slate-200">
+                              {contractors.find(c => c.id === formData.contractorId)?.bankName} | Ag: {contractors.find(c => c.id === formData.contractorId)?.bankAgency}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                   <div>
                     <label className="text-[10px] font-black text-slate-400 uppercase mb-2 block tracking-widest ml-1">Vínculo Hierárquico</label>

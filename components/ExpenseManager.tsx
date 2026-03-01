@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { ProjectExpense, ExpenseType, WorkItem, ItemType, Project } from '../types';
+import { ProjectExpense, ExpenseType, WorkItem, ItemType, Project, Contractor } from '../types';
 import { financial } from '../utils/math';
 import { expenseService } from '../services/expenseService';
 import { treeService } from '../services/treeService';
@@ -24,11 +24,14 @@ interface ExpenseManagerProps {
   workItems: WorkItem[];
   measuredValue: number;
   onUpdateExpenses: (expenses: ProjectExpense[]) => void;
+  contractors?: Contractor[];
   isReadOnly?: boolean;
 }
 
 export const ExpenseManager: React.FC<ExpenseManagerProps> = ({
-  project, expenses, onAdd, onAddMany, onUpdate, onDelete, workItems, measuredValue, onUpdateExpenses, isReadOnly
+  project, expenses, onAdd, onAddMany, onUpdate, onDelete, workItems, measuredValue, onUpdateExpenses, 
+  contractors = [],
+  isReadOnly
 }) => {
   const [activeTab, setActiveTab] = useState<ExpenseType | 'overview'>('overview');
   const [searchQuery, setSearchQuery] = useState('');
@@ -251,6 +254,7 @@ export const ExpenseManager: React.FC<ExpenseManagerProps> = ({
         expenseType={activeTab === 'overview' ? 'material' : (activeTab as ExpenseType)}
         itemType={modalItemType}
         categories={processedExpenseCategories as any}
+        contractors={contractors}
         currencySymbol={project.theme?.currencySymbol || 'R$'}
       />
     </div>

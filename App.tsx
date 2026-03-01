@@ -10,20 +10,22 @@ import { SettingsView } from './components/SettingsView';
 import ProjectWorkspace from './components/ProjectWorkspace';
 import { BiddingView } from './components/BiddingView';
 import { SupplierManager } from './components/SupplierManager';
+import { ContractorManager } from './components/ContractorManager';
 import { GlobalInventoryView } from './components/GlobalInventoryView';
 import { TraceabilityDashboard } from './components/TraceabilityDashboard';
 import { GlobalTaskDictionaryView } from './components/GlobalTaskDictionaryView';
 import { GlobalSuppliesIntelligence } from './components/GlobalSuppliesIntelligence';
+import { NotificationSystem } from './components/NotificationSystem';
 
 import { Menu } from 'lucide-react';
 
-type ViewMode = 'global-dashboard' | 'project-workspace' | 'system-settings' | 'bidding-view' | 'supplier-view' | 'global-stock' | 'traceability' | 'task-dictionary' | 'supplies-intelligence';
+type ViewMode = 'global-dashboard' | 'project-workspace' | 'system-settings' | 'bidding-view' | 'supplier-view' | 'contractor-view' | 'global-stock' | 'traceability' | 'task-dictionary' | 'supplies-intelligence';
 
 const App: React.FC = () => {
   const { 
-    projects, biddings, groups, suppliers, globalStock, globalMovements, stockRequests, purchaseRequests, notifications, globalTaskTags, activeProject, activeProjectId, setActiveProjectId, 
+    projects, biddings, groups, suppliers, contractors, globalStock, globalMovements, stockRequests, purchaseRequests, notifications, globalTaskTags, activeProject, activeProjectId, setActiveProjectId, 
     globalSettings, setGlobalSettings,
-    updateActiveProject, updateProjects, updateGroups, updateSuppliers, updateBiddings, updateCertificates, bulkUpdate,
+    updateActiveProject, updateProjects, updateGroups, updateSuppliers, updateContractors, updateBiddings, updateCertificates, bulkUpdate,
     updateGlobalStock, updateGlobalMovements, updateStockRequests, updatePurchaseRequests, updateNotifications, updateGlobalTaskTags,
     undo, redo, canUndo, canRedo
   } = useProjectState();
@@ -84,6 +86,11 @@ const App: React.FC = () => {
         certificates={safeGlobalSettings.certificates}
       />
 
+      <NotificationSystem 
+        notifications={notifications} 
+        onDismiss={(id) => updateNotifications(notifications.map(n => n.id === id ? { ...n, isRead: true } : n))} 
+      />
+
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
         <header className="no-print lg:hidden h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center px-4 shrink-0 z-50">
           <button onClick={() => setMobileMenuOpen(true)} className="p-2 text-slate-600 dark:text-slate-300"><Menu size={24} /></button>
@@ -101,6 +108,8 @@ const App: React.FC = () => {
         )}
 
         {viewMode === 'supplier-view' && <SupplierManager suppliers={suppliers} onUpdateSuppliers={updateSuppliers} />}
+
+        {viewMode === 'contractor-view' && <ContractorManager contractors={contractors} projects={projects} onUpdateContractors={updateContractors} />}
 
         {viewMode === 'global-stock' && (
           <GlobalInventoryView 
@@ -159,12 +168,15 @@ const App: React.FC = () => {
             project={activeProject}
             globalSettings={safeGlobalSettings as any}
             suppliers={suppliers}
+            contractors={contractors}
             globalStock={globalStock}
             globalMovements={globalMovements}
+            requests={stockRequests}
             globalTaskTags={globalTaskTags}
             onUpdateProject={updateActiveProject}
             onUpdateGlobalStock={updateGlobalStock}
             onUpdateGlobalMovements={updateGlobalMovements}
+            onUpdateRequests={updateStockRequests}
             onCloseMeasurement={handleCloseMeasurement}
             canUndo={canUndo} 
             canRedo={canRedo} 

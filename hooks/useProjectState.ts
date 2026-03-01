@@ -1,6 +1,6 @@
 
 import { useState, useCallback, useEffect } from 'react';
-import { Project, ProjectGroup, GlobalSettings, BiddingProcess, Supplier, CompanyCertificate, GlobalStockItem, GlobalStockMovement, StockRequest, PurchaseRequest, GlobalNotification, GlobalTaskTag } from '../types';
+import { Project, ProjectGroup, GlobalSettings, BiddingProcess, Supplier, CompanyCertificate, GlobalStockItem, GlobalStockMovement, StockRequest, PurchaseRequest, GlobalNotification, GlobalTaskTag, Contractor } from '../types';
 import { journalService } from '../services/journalService';
 
 interface State {
@@ -8,6 +8,7 @@ interface State {
   biddings: BiddingProcess[];
   groups: ProjectGroup[];
   suppliers: Supplier[];
+  contractors: Contractor[];
   globalStock: GlobalStockItem[];
   globalMovements: GlobalStockMovement[];
   stockRequests: StockRequest[];
@@ -32,7 +33,7 @@ const MAX_HISTORY = 20;
 
 const INITIAL_STOCK: GlobalStockItem[] = [
   { 
-    id: 's1', name: 'Cimento CP-II', unit: 'Saco 50kg', currentQuantity: 450, minQuantity: 100, 
+    id: 's1', name: 'Cimento CP-II', unit: 'Saco 50kg', currentQuantity: 450, committedQuantity: 0, minQuantity: 100, 
     averagePrice: 32.50, lastPrice: 34.00, lastEntryDate: new Date().toISOString(), 
     category: 'Insumos Básicos',
     status: 'normal', order: 0, supplierId: 'sup1',
@@ -43,7 +44,7 @@ const INITIAL_STOCK: GlobalStockItem[] = [
     ]
   },
   { 
-    id: 's2', name: 'Areia Lavada', unit: 'm³', currentQuantity: 15, minQuantity: 20, 
+    id: 's2', name: 'Areia Lavada', unit: 'm³', currentQuantity: 15, committedQuantity: 10, minQuantity: 20, 
     averagePrice: 120.00, lastPrice: 125.00, lastEntryDate: new Date().toISOString(), 
     category: 'Insumos Básicos',
     status: 'critical', order: 1, supplierId: 'sup2',
@@ -53,7 +54,7 @@ const INITIAL_STOCK: GlobalStockItem[] = [
     ]
   },
   { 
-    id: 's3', name: 'Brita nº 1', unit: 'm³', currentQuantity: 40, minQuantity: 15, 
+    id: 's3', name: 'Brita nº 1', unit: 'm³', currentQuantity: 40, committedQuantity: 0, minQuantity: 15, 
     averagePrice: 115.00, lastPrice: 118.00, lastEntryDate: new Date().toISOString(), 
     category: 'Insumos Básicos',
     status: 'normal', order: 2,
@@ -67,7 +68,21 @@ const INITIAL_MOVEMENTS: GlobalStockMovement[] = [
 ];
 
 const INITIAL_REQUESTS: StockRequest[] = [
-  { id: 'r1', projectId: 'p1', projectName: 'Reforma Escola Municipal', itemId: 's2', itemName: 'Areia Lavada', quantity: 10, date: new Date().toISOString(), status: 'pending' },
+  { 
+    id: 'r1', 
+    projectId: 'p1', 
+    projectName: 'Reforma Escola Municipal', 
+    itemId: 's2', 
+    itemName: 'Areia Lavada', 
+    requestedQuantity: 10, 
+    deliveredQuantity: 0,
+    pendingQuantity: 10,
+    date: new Date().toISOString(), 
+    status: 'pending',
+    logs: [
+      { date: new Date().toISOString(), message: 'Solicitação inicial realizada pela obra.', status: 'pending' }
+    ]
+  },
 ];
 
 const INITIAL_PURCHASE_REQUESTS: PurchaseRequest[] = [
@@ -86,6 +101,44 @@ const INITIAL_TASK_TAGS: GlobalTaskTag[] = [
   { id: 't5', name: 'Fundação', createdAt: new Date().toISOString() },
 ];
 
+const INITIAL_CONTRACTORS: Contractor[] = [
+  {
+    id: 'cont1',
+    name: 'Construções Silva Ltda',
+    cnpj: '12.345.678/0001-90',
+    type: 'PJ',
+    city: 'São Paulo',
+    specialty: 'Alvenaria',
+    status: 'Ativo',
+    documents: ['Contrato Social', 'CND Municipal'],
+    bankName: 'Itaú',
+    bankAgency: '0123',
+    bankAccount: '45678-9',
+    pixKey: '12345678000190',
+    contactName: 'Ricardo Silva',
+    email: 'contato@silvaconstrucoes.com',
+    phone: '(11) 98888-7777',
+    order: 0
+  },
+  {
+    id: 'cont2',
+    name: 'Elétrica & Cia',
+    cnpj: '98.765.432/0001-10',
+    type: 'PJ',
+    city: 'Campinas',
+    specialty: 'Elétrica',
+    status: 'Ativo',
+    documents: ['Alvará de Funcionamento'],
+    bankName: 'Bradesco',
+    bankAgency: '4455',
+    bankAccount: '11223-4',
+    contactName: 'Ana Paula',
+    email: 'financeiro@eletricacia.com.br',
+    phone: '(19) 3222-1111',
+    order: 1
+  }
+];
+
 export const useProjectState = () => {
   const [present, setPresent] = useState<State>(() => {
     const saved = localStorage.getItem('promeasure_v4_data');
@@ -100,6 +153,7 @@ export const useProjectState = () => {
           purchaseRequests: parsed.purchaseRequests || INITIAL_PURCHASE_REQUESTS,
           notifications: parsed.notifications || INITIAL_NOTIFICATIONS,
           globalTaskTags: parsed.globalTaskTags || INITIAL_TASK_TAGS,
+          contractors: parsed.contractors || INITIAL_CONTRACTORS,
           projects: (parsed.projects || []).map((p: any) => ({
             ...p,
             workforce: p.workforce || [],
@@ -121,6 +175,7 @@ export const useProjectState = () => {
       biddings: [], 
       groups: [], 
       suppliers: [], 
+      contractors: INITIAL_CONTRACTORS,
       globalStock: INITIAL_STOCK, 
       globalMovements: INITIAL_MOVEMENTS, 
       stockRequests: INITIAL_REQUESTS, 
@@ -216,6 +271,7 @@ export const useProjectState = () => {
     updateProjects: (projects: Project[]) => commit(prev => ({ ...prev, projects })),
     updateGroups: (groups: ProjectGroup[]) => commit(prev => ({ ...prev, groups })),
     updateSuppliers: (suppliers: Supplier[]) => commit(prev => ({ ...prev, suppliers })),
+    updateContractors: (contractors: Contractor[]) => commit(prev => ({ ...prev, contractors })),
     updateBiddings: (biddings: BiddingProcess[]) => commit(prev => ({ ...prev, biddings })),
     updateGlobalStock: (stock: GlobalStockItem[]) => commit(prev => ({ ...prev, globalStock: stock })),
     updateGlobalMovements: (movements: GlobalStockMovement[]) => commit(prev => ({ ...prev, globalMovements: movements })),
