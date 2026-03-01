@@ -3,7 +3,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { Project, ProjectGroup, GlobalSettings, BiddingProcess, Supplier, CompanyCertificate, GlobalStockItem, GlobalStockMovement, StockRequest, PurchaseRequest, GlobalNotification, GlobalTaskTag, Contractor } from '../types';
 import { journalService } from '../services/journalService';
 
-interface State {
+export interface State {
   projects: Project[];
   biddings: BiddingProcess[];
   groups: ProjectGroup[];
