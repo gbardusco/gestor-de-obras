@@ -4,7 +4,7 @@ import { laborContractService } from '../services/laborContractService';
 import { 
   Briefcase, Plus, Search, Trash2, Edit2, DollarSign, Calendar, 
   CheckCircle2, Clock, AlertCircle, User, FileText, Download, X,
-  TrendingUp, TrendingDown, Wallet
+  TrendingUp, TrendingDown, Wallet, LayoutGrid, List, Table, Rows
 } from 'lucide-react';
 
 interface LaborContractsManagerProps {
@@ -20,6 +20,7 @@ export const LaborContractsManager: React.FC<LaborContractsManagerProps> = ({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingContract, setEditingContract] = useState<LaborContract | null>(null);
   const [filterType, setFilterType] = useState<'all' | 'empreita' | 'diaria'>('all');
+  const [viewMode, setViewMode] = useState<'detailed' | 'grid' | 'table' | 'compact'>('detailed');
 
   const contracts = project.laborContracts || [];
   const workforce = project.workforce || [];
@@ -92,20 +93,55 @@ export const LaborContractsManager: React.FC<LaborContractsManagerProps> = ({
 
       {/* Filtros e Busca */}
       <div className="flex flex-col md:flex-row items-center justify-between gap-6 bg-white dark:bg-slate-900 p-6 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-sm">
-        <div className="flex gap-3">
-          {(['all', 'empreita', 'diaria'] as const).map(type => (
-            <button
-              key={type}
-              onClick={() => setFilterType(type)}
-              className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
-                filterType === type
-                  ? 'bg-indigo-600 text-white shadow-lg'
-                  : 'bg-slate-100 dark:bg-slate-800 text-slate-400 hover:text-slate-600'
-              }`}
+        <div className="flex items-center gap-6">
+          <div className="flex gap-3">
+            {(['all', 'empreita', 'diaria'] as const).map(type => (
+              <button
+                key={type}
+                onClick={() => setFilterType(type)}
+                className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                  filterType === type
+                    ? 'bg-indigo-600 text-white shadow-lg'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-400 hover:text-slate-600'
+                }`}
+              >
+                {type === 'all' ? 'Todos' : type === 'empreita' ? 'Empreitas' : 'Diárias'}
+              </button>
+            ))}
+          </div>
+
+          <div className="h-8 w-px bg-slate-100 dark:bg-slate-800" />
+
+          <div className="flex gap-2">
+            <button 
+              onClick={() => setViewMode('detailed')}
+              className={`p-2.5 rounded-xl transition-all ${viewMode === 'detailed' ? 'bg-indigo-100 text-indigo-600' : 'text-slate-400 hover:bg-slate-50'}`}
+              title="Visualização Detalhada"
             >
-              {type === 'all' ? 'Todos' : type === 'empreita' ? 'Empreitas' : 'Diárias'}
+              <Rows size={18} />
             </button>
-          ))}
+            <button 
+              onClick={() => setViewMode('compact')}
+              className={`p-2.5 rounded-xl transition-all ${viewMode === 'compact' ? 'bg-indigo-100 text-indigo-600' : 'text-slate-400 hover:bg-slate-50'}`}
+              title="Lista Compacta"
+            >
+              <List size={18} />
+            </button>
+            <button 
+              onClick={() => setViewMode('grid')}
+              className={`p-2.5 rounded-xl transition-all ${viewMode === 'grid' ? 'bg-indigo-100 text-indigo-600' : 'text-slate-400 hover:bg-slate-50'}`}
+              title="Cards"
+            >
+              <LayoutGrid size={18} />
+            </button>
+            <button 
+              onClick={() => setViewMode('table')}
+              className={`p-2.5 rounded-xl transition-all ${viewMode === 'table' ? 'bg-indigo-100 text-indigo-600' : 'text-slate-400 hover:bg-slate-50'}`}
+              title="Tabela"
+            >
+              <Table size={18} />
+            </button>
+          </div>
         </div>
 
         <div className="relative flex-1 w-full md:max-w-md">
@@ -126,151 +162,90 @@ export const LaborContractsManager: React.FC<LaborContractsManagerProps> = ({
         </button>
       </div>
 
-      {/* Lista de Contratos */}
-      <div className="grid grid-cols-1 gap-6">
-        {filteredContracts.map(contract => {
-          const associado = workforce.find(w => w.id === contract.associadoId);
-          const progress = (contract.valorPago / contract.valorTotal) * 100 || 0;
-          
-          return (
-            <div 
+      {/* Conteúdo Dinâmico conforme ViewMode */}
+      {viewMode === 'detailed' && (
+        <div className="grid grid-cols-1 gap-6">
+          {filteredContracts.map(contract => (
+            <DetailedContractCard 
               key={contract.id} 
-              className="bg-white dark:bg-slate-900 p-6 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-lg transition-all"
-            >
-              <div className="flex items-start justify-between mb-6">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
-                    <span className={`px-3 py-1 rounded-xl text-[9px] font-black uppercase ${
-                      contract.tipo === 'empreita' 
-                        ? 'bg-indigo-50 dark:bg-indigo-900 text-indigo-600' 
-                        : 'bg-emerald-50 dark:bg-emerald-900 text-emerald-600'
-                    }`}>
-                      {contract.tipo}
-                    </span>
-                    <span className={`px-3 py-1 rounded-xl text-[9px] font-black uppercase ${
-                      contract.status === 'pago' 
-                        ? 'bg-emerald-50 dark:bg-emerald-900 text-emerald-600'
-                        : contract.status === 'parcial'
-                        ? 'bg-amber-50 dark:bg-amber-900 text-amber-600'
-                        : 'bg-rose-50 dark:bg-rose-900 text-rose-600'
-                    }`}>
-                      {contract.status}
-                    </span>
-                  </div>
-                  <h3 className="text-lg font-black text-slate-800 dark:text-white mb-1">
-                    {contract.descricao}
-                  </h3>
-                  <div className="flex items-center gap-2 text-sm text-slate-500">
-                    <User size={14} />
-                    <span className="font-bold">{associado?.nome || 'Associado não encontrado'}</span>
-                    <span className="text-slate-300 mx-2">•</span>
-                    <Calendar size={14} />
-                    <span>{new Date(contract.dataInicio).toLocaleDateString('pt-BR')}</span>
-                    {contract.dataFim && (
-                      <>
-                        <span className="text-slate-300 mx-2">→</span>
-                        <span>{new Date(contract.dataFim).toLocaleDateString('pt-BR')}</span>
-                      </>
-                    )}
-                  </div>
-                </div>
+              contract={contract} 
+              workforce={workforce} 
+              onEdit={() => { setEditingContract(contract); setIsModalOpen(true); }}
+              onDelete={() => removeContract(contract.id)}
+            />
+          ))}
+        </div>
+      )}
 
-                <div className="flex gap-2">
-                  <button 
-                    onClick={() => { setEditingContract(contract); setIsModalOpen(true); }}
-                    className="p-3 bg-slate-50 dark:bg-slate-800 text-slate-400 hover:text-indigo-600 rounded-xl transition-all"
-                  >
-                    <Edit2 size={16}/>
-                  </button>
-                  <button 
-                    onClick={() => removeContract(contract.id)}
-                    className="p-3 bg-slate-50 dark:bg-slate-800 text-slate-400 hover:text-rose-500 rounded-xl transition-all"
-                  >
-                    <Trash2 size={16}/>
-                  </button>
-                </div>
-              </div>
-
-              {/* Valores e Progresso */}
-              <div className="grid grid-cols-3 gap-4 mb-6">
-                <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl">
-                  <p className="text-[9px] font-black text-slate-400 uppercase mb-1">Valor Total</p>
-                  <p className="text-xl font-black text-slate-800 dark:text-white">
-                    R$ {contract.valorTotal.toLocaleString('pt-BR', {minimumFractionDigits: 2})}
-                  </p>
-                </div>
-                <div className="bg-emerald-50 dark:bg-emerald-900/20 p-4 rounded-2xl">
-                  <p className="text-[9px] font-black text-emerald-600 uppercase mb-1">Pago</p>
-                  <p className="text-xl font-black text-emerald-600">
-                    R$ {contract.valorPago.toLocaleString('pt-BR', {minimumFractionDigits: 2})}
-                  </p>
-                </div>
-                <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-2xl">
-                  <p className="text-[9px] font-black text-amber-600 uppercase mb-1">Saldo</p>
-                  <p className="text-xl font-black text-amber-600">
-                    R$ {(contract.valorTotal - contract.valorPago).toLocaleString('pt-BR', {minimumFractionDigits: 2})}
-                  </p>
-                </div>
-              </div>
-
-              {/* Barra de Progresso */}
-              <div className="mb-6">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-[9px] font-black text-slate-400 uppercase">Progresso</span>
-                  <span className="text-sm font-black text-indigo-600">{progress.toFixed(1)}%</span>
-                </div>
-                <div className="h-3 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-gradient-to-r from-indigo-500 to-indigo-600 transition-all duration-500"
-                    style={{ width: `${Math.min(progress, 100)}%` }}
-                  />
-                </div>
-              </div>
-
-              {/* Pagamentos */}
-              {contract.pagamentos.length > 0 && (
-                <div>
-                  <h4 className="text-[10px] font-black text-slate-400 uppercase mb-3 flex items-center gap-2">
-                    <FileText size={12} /> Histórico de Pagamentos ({contract.pagamentos.length})
-                  </h4>
-                  <div className="space-y-2">
-                    {contract.pagamentos.slice(-3).map(pag => (
-                      <div 
-                        key={pag.id} 
-                        className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800 rounded-xl"
-                      >
-                        <div className="flex items-center gap-3">
-                          <CheckCircle2 size={14} className="text-emerald-500" />
-                          <div>
-                            <p className="text-xs font-bold text-slate-800 dark:text-white">
-                              {pag.descricao || 'Pagamento'}
-                            </p>
-                            <p className="text-[9px] text-slate-400">
-                              {new Date(pag.data).toLocaleDateString('pt-BR')}
-                            </p>
-                          </div>
-                        </div>
-                        <p className="text-sm font-black text-emerald-600">
-                          R$ {pag.valor.toLocaleString('pt-BR', {minimumFractionDigits: 2})}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          );
-        })}
-
-        {filteredContracts.length === 0 && (
-          <div className="text-center py-16 bg-slate-50 dark:bg-slate-900 rounded-[2.5rem] border-2 border-dashed border-slate-200 dark:border-slate-800">
-            <Briefcase size={48} className="mx-auto text-slate-300 mb-4" />
-            <p className="text-slate-400 font-bold">
-              {search ? 'Nenhum contrato encontrado' : 'Nenhum contrato cadastrado'}
-            </p>
+      {viewMode === 'compact' && (
+        <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+          <div className="divide-y divide-slate-100 dark:divide-slate-800">
+            {filteredContracts.map(contract => (
+              <CompactContractItem 
+                key={contract.id} 
+                contract={contract} 
+                workforce={workforce}
+                onEdit={() => { setEditingContract(contract); setIsModalOpen(true); }}
+                onDelete={() => removeContract(contract.id)}
+              />
+            ))}
           </div>
-        )}
-      </div>
+        </div>
+      )}
+
+      {viewMode === 'grid' && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredContracts.map(contract => (
+            <GridContractCard 
+              key={contract.id} 
+              contract={contract} 
+              workforce={workforce}
+              onEdit={() => { setEditingContract(contract); setIsModalOpen(true); }}
+              onDelete={() => removeContract(contract.id)}
+            />
+          ))}
+        </div>
+      )}
+
+      {viewMode === 'table' && (
+        <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-50 dark:bg-slate-800/50 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                  <th className="px-6 py-4">Contrato / Descrição</th>
+                  <th className="px-6 py-4">Associado</th>
+                  <th className="px-6 py-4">Tipo</th>
+                  <th className="px-6 py-4">Valor Total</th>
+                  <th className="px-6 py-4">Pago</th>
+                  <th className="px-6 py-4">Status</th>
+                  <th className="px-6 py-4 text-center">Ações</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                {filteredContracts.map(contract => (
+                  <TableContractRow 
+                    key={contract.id} 
+                    contract={contract} 
+                    workforce={workforce}
+                    onEdit={() => { setEditingContract(contract); setIsModalOpen(true); }}
+                    onDelete={() => removeContract(contract.id)}
+                  />
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {filteredContracts.length === 0 && (
+        <div className="text-center py-16 bg-slate-50 dark:bg-slate-900 rounded-[2.5rem] border-2 border-dashed border-slate-200 dark:border-slate-800">
+          <Briefcase size={48} className="mx-auto text-slate-300 mb-4" />
+          <p className="text-slate-400 font-bold">
+            {search ? 'Nenhum contrato encontrado' : 'Nenhum contrato cadastrado'}
+          </p>
+        </div>
+      )}
 
       {isModalOpen && (
         <ContractModal 
@@ -578,6 +553,253 @@ const ContractModal = ({ contract, workforce, workItems, onClose, onSave }: any)
         </div>
       </div>
     </div>
+  );
+};
+
+const DetailedContractCard = ({ contract, workforce, onEdit, onDelete }: any) => {
+  const associado = workforce.find((w: any) => w.id === contract.associadoId);
+  const progress = (contract.valorPago / contract.valorTotal) * 100 || 0;
+
+  return (
+    <div className="bg-white dark:bg-slate-900 p-6 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-lg transition-all">
+      <div className="flex items-start justify-between mb-6">
+        <div className="flex-1">
+          <div className="flex items-center gap-3 mb-2">
+            <span className={`px-3 py-1 rounded-xl text-[9px] font-black uppercase ${
+              contract.tipo === 'empreita' 
+                ? 'bg-indigo-50 dark:bg-indigo-900 text-indigo-600' 
+                : 'bg-emerald-50 dark:bg-emerald-900 text-emerald-600'
+            }`}>
+              {contract.tipo}
+            </span>
+            <span className={`px-3 py-1 rounded-xl text-[9px] font-black uppercase ${
+              contract.status === 'pago' 
+                ? 'bg-emerald-50 dark:bg-emerald-900 text-emerald-600'
+                : contract.status === 'parcial'
+                ? 'bg-amber-50 dark:bg-amber-900 text-amber-600'
+                : 'bg-rose-50 dark:bg-rose-900 text-rose-600'
+            }`}>
+              {contract.status}
+            </span>
+          </div>
+          <h3 className="text-lg font-black text-slate-800 dark:text-white mb-1">
+            {contract.descricao}
+          </h3>
+          <div className="flex items-center gap-2 text-sm text-slate-500">
+            <User size={14} />
+            <span className="font-bold">{associado?.nome || 'Associado não encontrado'}</span>
+            <span className="text-slate-300 mx-2">•</span>
+            <Calendar size={14} />
+            <span>{new Date(contract.dataInicio).toLocaleDateString('pt-BR')}</span>
+            {contract.dataFim && (
+              <>
+                <span className="text-slate-300 mx-2">→</span>
+                <span>{new Date(contract.dataFim).toLocaleDateString('pt-BR')}</span>
+              </>
+            )}
+          </div>
+        </div>
+
+        <div className="flex gap-2">
+          <button 
+            onClick={onEdit}
+            className="p-3 bg-slate-50 dark:bg-slate-800 text-slate-400 hover:text-indigo-600 rounded-xl transition-all"
+          >
+            <Edit2 size={16}/>
+          </button>
+          <button 
+            onClick={onDelete}
+            className="p-3 bg-slate-50 dark:bg-slate-800 text-slate-400 hover:text-rose-500 rounded-xl transition-all"
+          >
+            <Trash2 size={16}/>
+          </button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-3 gap-4 mb-6">
+        <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl">
+          <p className="text-[9px] font-black text-slate-400 uppercase mb-1">Valor Total</p>
+          <p className="text-xl font-black text-slate-800 dark:text-white">
+            R$ {contract.valorTotal.toLocaleString('pt-BR', {minimumFractionDigits: 2})}
+          </p>
+        </div>
+        <div className="bg-emerald-50 dark:bg-emerald-900/20 p-4 rounded-2xl">
+          <p className="text-[9px] font-black text-emerald-600 uppercase mb-1">Pago</p>
+          <p className="text-xl font-black text-emerald-600">
+            R$ {contract.valorPago.toLocaleString('pt-BR', {minimumFractionDigits: 2})}
+          </p>
+        </div>
+        <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-2xl">
+          <p className="text-[9px] font-black text-amber-600 uppercase mb-1">Saldo</p>
+          <p className="text-xl font-black text-amber-600">
+            R$ {(contract.valorTotal - contract.valorPago).toLocaleString('pt-BR', {minimumFractionDigits: 2})}
+          </p>
+        </div>
+      </div>
+
+      <div className="mb-6">
+        <div className="flex justify-between items-center mb-2">
+          <span className="text-[9px] font-black text-slate-400 uppercase">Progresso</span>
+          <span className="text-sm font-black text-indigo-600">{progress.toFixed(1)}%</span>
+        </div>
+        <div className="h-3 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+          <div 
+            className="h-full bg-gradient-to-r from-indigo-500 to-indigo-600 transition-all duration-500"
+            style={{ width: `${Math.min(progress, 100)}%` }}
+          />
+        </div>
+      </div>
+
+      {contract.pagamentos.length > 0 && (
+        <div>
+          <h4 className="text-[10px] font-black text-slate-400 uppercase mb-3 flex items-center gap-2">
+            <FileText size={12} /> Histórico de Pagamentos ({contract.pagamentos.length})
+          </h4>
+          <div className="space-y-2">
+            {contract.pagamentos.slice(-3).map((pag: any) => (
+              <div 
+                key={pag.id} 
+                className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800 rounded-xl"
+              >
+                <div className="flex items-center gap-3">
+                  <CheckCircle2 size={14} className="text-emerald-500" />
+                  <div>
+                    <p className="text-xs font-bold text-slate-800 dark:text-white">
+                      {pag.descricao || 'Pagamento'}
+                    </p>
+                    <p className="text-[9px] text-slate-400">
+                      {new Date(pag.data).toLocaleDateString('pt-BR')}
+                    </p>
+                  </div>
+                </div>
+                <p className="text-sm font-black text-emerald-600">
+                  R$ {pag.valor.toLocaleString('pt-BR', {minimumFractionDigits: 2})}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const CompactContractItem = ({ contract, workforce, onEdit, onDelete }: any) => {
+  const associado = workforce.find((w: any) => w.id === contract.associadoId);
+  const progress = (contract.valorPago / contract.valorTotal) * 100 || 0;
+
+  return (
+    <div className="flex items-center justify-between p-4 hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
+      <div className="flex items-center gap-4 flex-1">
+        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+          contract.tipo === 'empreita' ? 'bg-indigo-50 text-indigo-600' : 'bg-emerald-50 text-emerald-600'
+        }`}>
+          <Briefcase size={20} />
+        </div>
+        <div className="flex-1">
+          <h4 className="text-xs font-black text-slate-800 dark:text-white uppercase tracking-tight">{contract.descricao}</h4>
+          <p className="text-[10px] text-slate-400 font-bold uppercase">{associado?.nome}</p>
+        </div>
+        <div className="hidden md:block w-32">
+          <div className="h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+            <div className="h-full bg-indigo-500" style={{ width: `${progress}%` }} />
+          </div>
+        </div>
+        <div className="text-right w-24">
+          <p className="text-xs font-black text-slate-700 dark:text-slate-300">R$ {contract.valorTotal.toLocaleString('pt-BR')}</p>
+          <p className="text-[9px] font-bold text-emerald-600 uppercase">Pago: R$ {contract.valorPago.toLocaleString('pt-BR')}</p>
+        </div>
+      </div>
+      <div className="flex items-center gap-2 ml-4">
+        <button onClick={onEdit} className="p-2 text-slate-400 hover:text-indigo-600 transition-colors"><Edit2 size={14}/></button>
+        <button onClick={onDelete} className="p-2 text-slate-400 hover:text-rose-500 transition-colors"><Trash2 size={14}/></button>
+      </div>
+    </div>
+  );
+};
+
+const GridContractCard = ({ contract, workforce, onEdit, onDelete }: any) => {
+  const associado = workforce.find((w: any) => w.id === contract.associadoId);
+  const progress = (contract.valorPago / contract.valorTotal) * 100 || 0;
+
+  return (
+    <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-md transition-all">
+      <div className="flex justify-between items-start mb-4">
+        <span className={`px-2 py-0.5 rounded-lg text-[8px] font-black uppercase ${
+          contract.tipo === 'empreita' ? 'bg-indigo-50 text-indigo-600' : 'bg-emerald-50 text-emerald-600'
+        }`}>
+          {contract.tipo}
+        </span>
+        <div className="flex gap-1">
+          <button onClick={onEdit} className="p-1.5 text-slate-400 hover:text-indigo-600 transition-colors"><Edit2 size={12}/></button>
+          <button onClick={onDelete} className="p-1.5 text-slate-400 hover:text-rose-500 transition-colors"><Trash2 size={12}/></button>
+        </div>
+      </div>
+      <h4 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-tight mb-1 truncate">{contract.descricao}</h4>
+      <p className="text-[10px] text-slate-400 font-bold uppercase mb-4">{associado?.nome}</p>
+      
+      <div className="space-y-3">
+        <div className="flex justify-between items-end">
+          <div>
+            <p className="text-[8px] font-black text-slate-400 uppercase">Valor Total</p>
+            <p className="text-sm font-black text-slate-800 dark:text-white">R$ {contract.valorTotal.toLocaleString('pt-BR')}</p>
+          </div>
+          <div className="text-right">
+            <p className="text-[8px] font-black text-emerald-600 uppercase">Pago</p>
+            <p className="text-sm font-black text-emerald-600">R$ {contract.valorPago.toLocaleString('pt-BR')}</p>
+          </div>
+        </div>
+        <div className="h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+          <div className="h-full bg-indigo-500" style={{ width: `${progress}%` }} />
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const TableContractRow = ({ contract, workforce, onEdit, onDelete }: any) => {
+  const associado = workforce.find((w: any) => w.id === contract.associadoId);
+  
+  return (
+    <tr className="group hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
+      <td className="px-6 py-4">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500">
+            <Briefcase size={16} />
+          </div>
+          <span className="text-xs font-black text-slate-700 dark:text-slate-200 uppercase tracking-tight">{contract.descricao}</span>
+        </div>
+      </td>
+      <td className="px-6 py-4">
+        <span className="text-xs font-bold text-slate-600 dark:text-slate-400">{associado?.nome}</span>
+      </td>
+      <td className="px-6 py-4">
+        <span className={`px-2 py-1 rounded-lg text-[8px] font-black uppercase ${
+          contract.tipo === 'empreita' ? 'bg-indigo-50 text-indigo-600' : 'bg-emerald-50 text-emerald-600'
+        }`}>
+          {contract.tipo}
+        </span>
+      </td>
+      <td className="px-6 py-4 text-xs font-black text-slate-700 dark:text-slate-300">
+        R$ {contract.valorTotal.toLocaleString('pt-BR')}
+      </td>
+      <td className="px-6 py-4 text-xs font-black text-emerald-600">
+        R$ {contract.valorPago.toLocaleString('pt-BR')}
+      </td>
+      <td className="px-6 py-4">
+        <span className={`px-2 py-1 rounded-lg text-[8px] font-black uppercase ${
+          contract.status === 'pago' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'
+        }`}>
+          {contract.status}
+        </span>
+      </td>
+      <td className="px-6 py-4 text-center">
+        <div className="flex items-center justify-center gap-2">
+          <button onClick={onEdit} className="p-2 text-slate-400 hover:text-indigo-600 transition-colors"><Edit2 size={14}/></button>
+          <button onClick={onDelete} className="p-2 text-slate-400 hover:text-rose-500 transition-colors"><Trash2 size={14}/></button>
+        </div>
+      </td>
+    </tr>
   );
 };
 
