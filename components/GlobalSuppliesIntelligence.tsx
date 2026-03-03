@@ -7,13 +7,14 @@ import {
   CheckCircle2, FileText, History, 
   BarChart3, Target, Info,
   ChevronRight, ExternalLink, Award, Zap, Clock,
-  TrendingUp, TrendingDown
+  TrendingUp, TrendingDown, Plus
 } from 'lucide-react';
 import { 
   GlobalStockItem, GlobalStockMovement, Project, Supplier, 
   PurchaseRequest, ProjectExpense 
 } from '../types';
 import { financial } from '../utils/math';
+import { SupplyRegistrationModal } from './SupplyRegistrationModal';
 
 interface GlobalSuppliesIntelligenceProps {
   stock: GlobalStockItem[];
@@ -21,15 +22,17 @@ interface GlobalSuppliesIntelligenceProps {
   projects: Project[];
   suppliers: Supplier[];
   purchaseRequests: PurchaseRequest[];
+  onAddSupply: (supply: Partial<GlobalStockItem>) => void;
 }
 
 export const GlobalSuppliesIntelligence: React.FC<GlobalSuppliesIntelligenceProps> = ({
-  stock, movements, projects, suppliers, purchaseRequests
+  stock, movements, projects, suppliers, purchaseRequests, onAddSupply
 }) => {
   const [filterCategory, setFilterCategory] = useState('all');
   const [filterSupplier, setFilterSupplier] = useState('all');
   const [filterProject, setFilterProject] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   // 1. Agregações para Analytics
   const categories = useMemo(() => {
@@ -95,6 +98,12 @@ export const GlobalSuppliesIntelligence: React.FC<GlobalSuppliesIntelligenceProp
             </div>
           </div>
           <div className="flex items-center gap-3">
+            <button 
+              onClick={() => setIsModalOpen(true)}
+              className="flex items-center gap-3 px-6 py-3 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-indigo-600 hover:text-white transition-all"
+            >
+              <Plus size={16} /> Novo Insumo
+            </button>
             <button className="flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-2xl text-[11px] font-black uppercase tracking-widest shadow-xl shadow-indigo-500/20 hover:scale-105 transition-all">
               <ArrowUpRight size={16} /> Exportar Relatório
             </button>
@@ -259,6 +268,13 @@ export const GlobalSuppliesIntelligence: React.FC<GlobalSuppliesIntelligenceProp
           </div>
         </div>
       </div>
+
+      <SupplyRegistrationModal 
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        existingSupplies={stock}
+        onConfirm={onAddSupply}
+      />
     </div>
   );
 };

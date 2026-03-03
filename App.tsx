@@ -17,6 +17,7 @@ import { GlobalTaskDictionaryView } from './components/GlobalTaskDictionaryView'
 import { GlobalSuppliesIntelligence } from './components/GlobalSuppliesIntelligence';
 import { NotificationSystem } from './components/NotificationSystem';
 
+import { GlobalStockItem } from './types';
 import { Menu } from 'lucide-react';
 
 type ViewMode = 'global-dashboard' | 'project-workspace' | 'system-settings' | 'bidding-view' | 'supplier-view' | 'contractor-view' | 'global-stock' | 'traceability' | 'task-dictionary' | 'supplies-intelligence';
@@ -158,6 +159,35 @@ const App: React.FC = () => {
             projects={projects}
             suppliers={suppliers}
             purchaseRequests={purchaseRequests}
+            onAddSupply={(newSupply) => {
+              const item: GlobalStockItem = {
+                id: Math.random().toString(36).substr(2, 9),
+                name: '',
+                unit: '',
+                currentQuantity: 0,
+                committedQuantity: 0,
+                minQuantity: 0,
+                averagePrice: 0,
+                lastPrice: 0,
+                lastEntryDate: new Date().toISOString(),
+                category: '',
+                status: 'normal',
+                order: globalStock.length,
+                ...newSupply
+              } as GlobalStockItem;
+              updateGlobalStock([...globalStock, item]);
+              updateNotifications([
+                {
+                  id: Math.random().toString(36).substr(2, 9),
+                  title: 'Novo Insumo Cadastrado',
+                  message: `O insumo "${item.name}" foi adicionado ao catálogo global.`,
+                  type: 'stock_alert',
+                  date: new Date().toISOString(),
+                  isRead: false
+                },
+                ...notifications
+              ]);
+            }}
           />
         )}
 
