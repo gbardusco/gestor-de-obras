@@ -116,7 +116,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <NavItem active={viewMode === 'bidding-view'} onClick={() => { setViewMode('bidding-view'); setMobileOpen(false); }} icon={<Landmark size={18}/>} label="Licitações" badge={hasAlerts} />
           <NavItem active={viewMode === 'supplier-view'} onClick={() => { setViewMode('supplier-view'); setMobileOpen(false); }} icon={<Truck size={18}/>} label="Fornecedores" />
           <NavItem active={viewMode === 'contractor-view'} onClick={() => { setViewMode('contractor-view'); setMobileOpen(false); }} icon={<Users size={18}/>} label="Prestadores & Empreiteiros" />
-          <NavItem active={viewMode === 'backup-center'} onClick={() => { setViewMode('backup-center'); setMobileOpen(false); }} icon={<Database size={18}/>} label="Centro de Backup" />
           <NavItem active={viewMode === 'system-settings'} onClick={() => { setViewMode('system-settings'); setMobileOpen(false); }} icon={<Cog size={18}/>} label="Configurações" />
           
           <div className="py-6 px-3 flex items-center justify-between">

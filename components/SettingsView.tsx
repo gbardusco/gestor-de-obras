@@ -1,15 +1,19 @@
 
 import React from 'react';
-import { Building2, ShieldCheck, Trash2, Cog, Coins } from 'lucide-react';
+import { Building2, ShieldCheck, Trash2, Cog, Coins, Database } from 'lucide-react';
 import { GlobalSettings } from '../types';
+import { BackupCenter } from './BackupCenter';
+import { State } from '../hooks/useProjectState';
 
 interface SettingsViewProps {
   settings: GlobalSettings;
   onUpdate: (s: GlobalSettings) => void;
   projectCount: number;
+  state: State;
+  onRestore: (data: Partial<State>) => void;
 }
 
-export const SettingsView: React.FC<SettingsViewProps> = ({ settings, onUpdate, projectCount }) => {
+export const SettingsView: React.FC<SettingsViewProps> = ({ settings, onUpdate, projectCount, state, onRestore }) => {
   return (
     <div className="flex-1 overflow-y-auto p-6 sm:p-12 animate-in slide-in-from-bottom-4 duration-500 bg-slate-50 dark:bg-slate-950">
       <div className="max-w-4xl mx-auto space-y-10">
@@ -56,6 +60,22 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ settings, onUpdate, 
                   />
                 </div>
               </div>
+            </div>
+          </section>
+
+          {/* SOBERANIA DE DADOS (BACKUP CENTER) */}
+          <section className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+            <div className="p-8 border-b border-slate-100 dark:border-slate-800 flex items-center gap-4">
+              <div className="p-3 bg-indigo-600 text-white rounded-2xl shadow-lg shadow-indigo-500/20">
+                <Database size={24} />
+              </div>
+              <div>
+                <h3 className="font-black uppercase text-xs tracking-widest text-slate-800 dark:text-white">Soberania de Dados</h3>
+                <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase">Backup e Portabilidade .canteiro</p>
+              </div>
+            </div>
+            <div className="bg-slate-50/50 dark:bg-slate-950/50">
+              <BackupCenter state={state} onRestore={onRestore} />
             </div>
           </section>
 

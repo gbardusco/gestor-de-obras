@@ -16,11 +16,10 @@ import { TraceabilityDashboard } from './components/TraceabilityDashboard';
 import { GlobalTaskDictionaryView } from './components/GlobalTaskDictionaryView';
 import { GlobalSuppliesIntelligence } from './components/GlobalSuppliesIntelligence';
 import { NotificationSystem } from './components/NotificationSystem';
-import { BackupCenter } from './components/BackupCenter';
 
 import { Menu } from 'lucide-react';
 
-type ViewMode = 'global-dashboard' | 'project-workspace' | 'system-settings' | 'bidding-view' | 'supplier-view' | 'contractor-view' | 'global-stock' | 'traceability' | 'task-dictionary' | 'supplies-intelligence' | 'backup-center';
+type ViewMode = 'global-dashboard' | 'project-workspace' | 'system-settings' | 'bidding-view' | 'supplier-view' | 'contractor-view' | 'global-stock' | 'traceability' | 'task-dictionary' | 'supplies-intelligence';
 
 const App: React.FC = () => {
   const { 
@@ -96,7 +95,7 @@ const App: React.FC = () => {
         <header className="no-print lg:hidden h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center px-4 shrink-0 z-50">
           <button onClick={() => setMobileMenuOpen(true)} className="p-2 text-slate-600 dark:text-slate-300"><Menu size={24} /></button>
           <span className="ml-4 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 truncate">
-            {viewMode === 'global-dashboard' ? 'Portal de Obras' : viewMode === 'bidding-view' ? 'Setor de Licitações' : viewMode === 'supplier-view' ? 'Base de Fornecedores' : viewMode === 'backup-center' ? 'Centro de Backup' : viewMode === 'system-settings' ? 'Configurações de Sistema' : 'Obra em Gestão'}
+            {viewMode === 'global-dashboard' ? 'Portal de Obras' : viewMode === 'bidding-view' ? 'Setor de Licitações' : viewMode === 'supplier-view' ? 'Base de Fornecedores' : viewMode === 'system-settings' ? 'Configurações de Sistema' : 'Obra em Gestão'}
           </span>
         </header>
 
@@ -162,14 +161,15 @@ const App: React.FC = () => {
           />
         )}
 
-        {viewMode === 'system-settings' && <SettingsView settings={safeGlobalSettings as any} onUpdate={setGlobalSettings} projectCount={projects.length} />}
-
-        {viewMode === 'backup-center' && (
-          <BackupCenter 
+        {viewMode === 'system-settings' && (
+          <SettingsView 
+            settings={safeGlobalSettings as any} 
+            onUpdate={setGlobalSettings} 
+            projectCount={projects.length}
             state={{ 
               projects, biddings, groups, suppliers, contractors, globalStock, globalMovements, stockRequests, purchaseRequests, notifications, globalTaskTags, activeProjectId, activeBiddingId: null, globalSettings: safeGlobalSettings as any 
             }} 
-            onRestore={bulkUpdate} 
+            onRestore={bulkUpdate}
           />
         )}
 
