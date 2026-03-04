@@ -7,7 +7,7 @@ import {
   CheckCircle2, FileText, History, 
   BarChart3, Target, Info,
   ChevronRight, ExternalLink, Award, Zap, Clock,
-  TrendingUp, TrendingDown, Plus
+  TrendingUp, TrendingDown, Plus, LayoutGrid, List
 } from 'lucide-react';
 import { 
   GlobalStockItem, GlobalStockMovement, Project, Supplier, 
@@ -15,6 +15,8 @@ import {
 } from '../types';
 import { financial } from '../utils/math';
 import { SupplyRegistrationModal } from './SupplyRegistrationModal';
+import { SupplyItemAnalyticsModal } from './SupplyItemAnalyticsModal';
+import { AcquisitionsModal } from './AcquisitionsModal';
 
 interface GlobalSuppliesIntelligenceProps {
   stock: GlobalStockItem[];
@@ -33,6 +35,9 @@ export const GlobalSuppliesIntelligence: React.FC<GlobalSuppliesIntelligenceProp
   const [filterProject, setFilterProject] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
+  const [selectedItem, setSelectedItem] = useState<GlobalStockItem | null>(null);
+  const [isAcquisitionsModalOpen, setIsAcquisitionsModalOpen] = useState(false);
 
   // 1. Agregações para Analytics
   const categories = useMemo(() => {
@@ -64,6 +69,41 @@ export const GlobalSuppliesIntelligence: React.FC<GlobalSuppliesIntelligenceProp
   // 3. Log de Transações (Timeline)
   const transactionLog = useMemo(() => {
     const logs: any[] = [];
+    
+    // Mock data for demonstration
+    logs.push(
+      {
+        id: 'mock-1',
+        date: new Date(Date.now() - 86400000 * 2).toISOString(),
+        description: 'Cimento CP-II 50kg (Lote 500un)',
+        amount: 14500.00,
+        supplier: 'Votorantim Cimentos S.A.',
+        project: 'Residencial Aurora',
+        status: 'DELIVERED',
+        hasInvoice: true
+      },
+      {
+        id: 'mock-2',
+        date: new Date(Date.now() - 86400000 * 5).toISOString(),
+        description: 'Aço CA-50 10mm (Barra 12m)',
+        amount: 8900.50,
+        supplier: 'Gerdau Comercial Aços',
+        project: 'Edifício Horizonte',
+        status: 'DELIVERED',
+        hasInvoice: true
+      },
+      {
+        id: 'mock-3',
+        date: new Date(Date.now() - 86400000 * 7).toISOString(),
+        description: 'Areia Lavada Fina (Carga 12m³)',
+        amount: 1200.00,
+        supplier: 'Mineradora Vale do Sol',
+        project: 'Residencial Aurora',
+        status: 'PAID',
+        hasInvoice: false
+      }
+    );
+
     projects.forEach(project => {
       project.expenses?.forEach(expense => {
         if (expense.type === 'material') {
@@ -98,6 +138,12 @@ export const GlobalSuppliesIntelligence: React.FC<GlobalSuppliesIntelligenceProp
             </div>
           </div>
           <div className="flex items-center gap-3">
+            <button 
+              onClick={() => setIsAcquisitionsModalOpen(true)}
+              className="flex items-center gap-3 px-6 py-3 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-slate-200 dark:hover:bg-slate-700 transition-all"
+            >
+              <History size={16} /> Últimas Aquisições
+            </button>
             <button 
               onClick={() => setIsModalOpen(true)}
               className="flex items-center gap-3 px-6 py-3 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-indigo-600 hover:text-white transition-all"
@@ -175,9 +221,9 @@ export const GlobalSuppliesIntelligence: React.FC<GlobalSuppliesIntelligenceProp
           </div>
         </div>
 
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-          {/* 3. Tabela Mestra de Insumos */}
-          <div className="xl:col-span-2 bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+        <div className="grid grid-cols-1 gap-8">
+          {/* 3. Catálogo Consolidado (Full Width) */}
+          <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
             <div className="p-8 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 rounded-xl">
@@ -185,86 +231,112 @@ export const GlobalSuppliesIntelligence: React.FC<GlobalSuppliesIntelligenceProp
                 </div>
                 <h3 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-widest">Catálogo Consolidado</h3>
               </div>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="bg-slate-50/50 dark:bg-slate-800/50">
-                    <th className="p-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Insumo</th>
-                    <th className="p-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Preço Médio</th>
-                    <th className="p-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Melhor Compra</th>
-                    <th className="p-6 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                  {filteredStock.map(item => {
-                    const bestPrice = Math.min(...(item.priceHistory?.map(h => h.price) || [item.averagePrice]));
-                    const lastPrice = item.priceHistory?.[item.priceHistory.length - 1]?.price || item.averagePrice;
-                    const prevPrice = item.priceHistory?.[item.priceHistory.length - 2]?.price || lastPrice;
-                    const fluctuation = lastPrice > prevPrice ? 'up' : lastPrice < prevPrice ? 'down' : 'stable';
-
-                    return (
-                      <tr key={item.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors group">
-                        <td className="p-6">
-                          <div>
-                            <p className="text-xs font-black text-slate-800 dark:text-white uppercase tracking-tight">{item.name}</p>
-                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{item.category || 'Geral'}</p>
-                          </div>
-                        </td>
-                        <td className="p-6">
-                          <p className="text-xs font-black text-indigo-600">{financial.formatVisual(item.averagePrice)}</p>
-                        </td>
-                        <td className="p-6">
-                          <div className="flex items-center gap-2">
-                            <Award size={14} className="text-emerald-500" />
-                            <p className="text-xs font-bold text-emerald-600">{financial.formatVisual(bestPrice)}</p>
-                          </div>
-                        </td>
-                        <td className="p-6">
-                          <div className="flex justify-center">
-                            {fluctuation === 'up' ? (
-                              <TrendingUp size={16} className="text-rose-500" />
-                            ) : fluctuation === 'down' ? (
-                              <TrendingDown size={16} className="text-emerald-500" />
-                            ) : (
-                              <div className="w-2 h-2 rounded-full bg-slate-300" />
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          {/* 4. Timeline de Suprimentos */}
-          <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-            <div className="p-8 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-slate-50 dark:bg-slate-800 text-slate-400 rounded-xl">
-                  <History size={18} />
-                </div>
-                <h3 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-widest">Últimas Aquisições</h3>
+              <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
+                <button 
+                  onClick={() => setViewMode('table')}
+                  className={`p-2 rounded-lg transition-all ${viewMode === 'table' ? 'bg-white dark:bg-slate-700 text-indigo-600 shadow-sm' : 'text-slate-400'}`}
+                >
+                  <List size={18} />
+                </button>
+                <button 
+                  onClick={() => setViewMode('grid')}
+                  className={`p-2 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-white dark:bg-slate-700 text-indigo-600 shadow-sm' : 'text-slate-400'}`}
+                >
+                  <LayoutGrid size={18} />
+                </button>
               </div>
             </div>
-            <div className="divide-y divide-slate-100 dark:divide-slate-800 max-h-[600px] overflow-y-auto custom-scrollbar">
-              {transactionLog.map(log => (
-                <div key={log.id} className="p-6 hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{new Date(log.date).toLocaleDateString()}</span>
-                    <span className="text-xs font-black text-slate-900 dark:text-white">{financial.formatVisual(log.amount)}</span>
-                  </div>
-                  <p className="text-xs font-black text-slate-800 dark:text-white uppercase tracking-tight truncate">{log.description}</p>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest truncate max-w-[100px]">{log.supplier}</span>
-                    <div className="w-1 h-1 bg-slate-300 rounded-full" />
-                    <span className="text-[9px] font-bold text-indigo-500 uppercase tracking-widest truncate">{log.project}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
+
+            {viewMode === 'table' ? (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-slate-50/50 dark:bg-slate-800/50">
+                      <th className="p-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Insumo</th>
+                      <th className="p-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Preço Médio</th>
+                      <th className="p-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Melhor Compra</th>
+                      <th className="p-6 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                    {filteredStock.map(item => {
+                      const bestPrice = Math.min(...(item.priceHistory?.map(h => h.price) || [item.averagePrice]));
+                      const lastPrice = item.priceHistory?.[item.priceHistory.length - 1]?.price || item.averagePrice;
+                      const prevPrice = item.priceHistory?.[item.priceHistory.length - 2]?.price || lastPrice;
+                      const fluctuation = lastPrice > prevPrice ? 'up' : lastPrice < prevPrice ? 'down' : 'stable';
+
+                      return (
+                        <tr 
+                          key={item.id} 
+                          onClick={() => setSelectedItem(item)}
+                          className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors group cursor-pointer"
+                        >
+                          <td className="p-6">
+                            <div>
+                              <p className="text-xs font-black text-slate-800 dark:text-white uppercase tracking-tight">{item.name}</p>
+                              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{item.category || 'Geral'}</p>
+                            </div>
+                          </td>
+                          <td className="p-6">
+                            <p className="text-xs font-black text-indigo-600">{financial.formatVisual(item.averagePrice)}</p>
+                          </td>
+                          <td className="p-6">
+                            <div className="flex items-center gap-2">
+                              <Award size={14} className="text-emerald-500" />
+                              <p className="text-xs font-bold text-emerald-600">{financial.formatVisual(bestPrice)}</p>
+                            </div>
+                          </td>
+                          <td className="p-6">
+                            <div className="flex justify-center">
+                              {fluctuation === 'up' ? (
+                                <TrendingUp size={16} className="text-rose-500" />
+                              ) : fluctuation === 'down' ? (
+                                <TrendingDown size={16} className="text-emerald-500" />
+                              ) : (
+                                <div className="w-2 h-2 rounded-full bg-slate-300" />
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="p-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {filteredStock.map(item => {
+                  const bestPrice = Math.min(...(item.priceHistory?.map(h => h.price) || [item.averagePrice]));
+                  return (
+                    <motion.div 
+                      key={item.id}
+                      whileHover={{ y: -5 }}
+                      onClick={() => setSelectedItem(item)}
+                      className="bg-slate-50 dark:bg-slate-800/40 p-6 rounded-3xl border border-slate-100 dark:border-slate-700 cursor-pointer group"
+                    >
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="p-3 bg-white dark:bg-slate-900 rounded-2xl text-indigo-600 shadow-sm">
+                          <Package size={20} />
+                        </div>
+                        <div className="text-right">
+                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{item.unit}</p>
+                          <p className="text-xs font-black text-indigo-600 mt-1">{financial.formatVisual(item.averagePrice)}</p>
+                        </div>
+                      </div>
+                      <h4 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-tight mb-1">{item.name}</h4>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">{item.category}</p>
+                      <div className="pt-4 border-t border-slate-200 dark:border-slate-700 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Award size={14} className="text-emerald-500" />
+                          <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Melhor: {financial.formatVisual(bestPrice)}</span>
+                        </div>
+                        <ChevronRight size={16} className="text-slate-300 group-hover:text-indigo-500 transition-colors" />
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -274,6 +346,20 @@ export const GlobalSuppliesIntelligence: React.FC<GlobalSuppliesIntelligenceProp
         onClose={() => setIsModalOpen(false)}
         existingSupplies={stock}
         onConfirm={onAddSupply}
+      />
+
+      <SupplyItemAnalyticsModal 
+        isOpen={!!selectedItem}
+        onClose={() => setSelectedItem(null)}
+        item={selectedItem}
+        projects={projects}
+        suppliers={suppliers}
+      />
+
+      <AcquisitionsModal 
+        isOpen={isAcquisitionsModalOpen}
+        onClose={() => setIsAcquisitionsModalOpen(false)}
+        logs={transactionLog}
       />
     </div>
   );
