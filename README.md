@@ -1,63 +1,64 @@
-# ProMeasure Pro v0.4
-### High-Precision Engineering Measurement & Lifecycle Management Platform
+# ProMeasure - Sistema de Gestão de Obras e Engenharia
 
-O **ProMeasure Pro** é uma plataforma de classe empresarial (SaaS-ready) projetada para suprir a lacuna entre o orçamento teórico e a execução física em obras de infraestrutura e edificações de alta complexidade. 
-
-Diferente de planilhas convencionais, o sistema implementa um **Motor de Cálculo Hierárquico Relacional**, garantindo integridade matemática absoluta em estruturas analíticas (EAP) multiníveis.
+O **ProMeasure** é uma plataforma robusta e integrada para gestão 360º de obras, desde a fase de licitação até o encerramento da construção. O sistema combina inteligência de mercado, controle financeiro rigoroso e gestão de canteiro em tempo real.
 
 ---
 
-## 🏗️ Core Pillars & Business Logic
+## 🏗️ Estrutura do Sistema
 
-### 1. Motor de EAP Dinâmico (WBS Engine)
-*   **Hierarquia Recursiva:** Implementação de árvore virtual que gera automaticamente a numeração de itens (ex: 1.1.2.1) e propaga alterações de ordem via Drag-and-Drop sem perda de referência.
-*   **Column Focus:** Recentemente otimizado para o padrão brasileiro de orçamentação, utilizando a nomenclatura de coluna `ITEM` (antigo WBS) e rastreabilidade de procedência via coluna `FONTE` (SINAPI, SBC, Próprio, etc).
+O sistema é dividido em dois grandes ecossistemas: **Gestão Global (Corporativa)** e **Gestão de Obra (Workspace)**.
 
-### 2. Rollups Financeiros de Alta Precisão
-*   **Cascateamento Automático:** Valores medidos na "folha" (item de serviço) são somados recursivamente para as categorias superiores em tempo real.
-*   **Gestão de BDI (Benefícios e Despesas Indiretas):** Aplicação de taxas customizáveis por projeto com recálculo instantâneo de preços unitários e totais contratuais.
-*   **Prevenção de Erros de Ponto Flutuante:** Utilização de utilitários de arredondamento financeiro (`DecimalSafe`) para garantir que 0.1 + 0.2 seja exatamente 0.3 no fechamento da medição.
+### 1. Gestão Global (Nível Corporativo)
+Focada na visão estratégica da empresa e no suporte compartilhado entre todas as obras.
 
-### 3. Compliance & Governança (Auditoria)
-*   **Snapshots de Medição:** Sistema de "Time Machine" que congela o estado da obra em cada fechamento, permitindo auditoria retroativa de qualquer período anterior.
-*   **Diário de Obra Automatizado:** Engine de logs que gera registros de auditoria automáticos quando itens atingem 100% ou quando gastos superam limites críticos de sensibilidade financeira.
+*   **Portal de Obras (Dashboard):** Visão consolidada de todos os projetos ativos, agrupados por categorias ou regiões. Permite a criação de novas obras e monitoramento de KPIs globais.
+*   **Setor de Licitações:** Gestão de editais, elaboração de propostas e conversão automática de licitações vencidas em projetos operacionais.
+*   **Inteligência de Suprimentos:** Central de análise de mercado com histórico de preços, catálogo consolidado de insumos e analytics de economia (saving).
+*   **Estoque Central & Rastreabilidade:** Controle de pátio centralizado, gestão de requisições das obras e rastreio completo do material (da compra ao consumo final).
+*   **Base de Fornecedores e Empreiteiros:** Cadastro unificado de parceiros com histórico de performance, documentos de conformidade e avaliações.
+*   **Dicionário Global de Tarefas:** Padronização de processos e tags para garantir que todas as obras falem a mesma língua técnica.
+*   **Centro de Soberania de Dados (Backup):** Localizado nas configurações, permite exportar e importar todo o banco de dados do sistema em arquivos criptografados `.canteiro`.
 
-### 4. Ciclo de Vida de Licitações (Bidding)
-*   **Pipeline de Propostas:** Gestão de editais desde a prospecção até a conversão em obra ativa.
-*   **Compliance Documental:** Monitoramento de validade de certidões negativas e documentos de habilitação com alertas visuais de criticidade.
+### 2. Gestão de Obra (Workspace do Engenheiro)
+Ambiente dedicado à operação diária de um projeto específico, com ferramentas de controle de campo e escritório.
 
----
-
-## 🛠️ Stack Tecnológica & Arquitetura
-
-*   **Frontend:** React 18+ com **TypeScript Strict Mode** para eliminação de erros em tempo de compilação.
-*   **State Management:** Hooks customizados com persistência em `localStorage` (Arquitetura orientada a migração rápida para API REST/PostgreSQL).
-*   **Data Processing:** Engine [SheetJS](https://sheetjs.com/) para parsing heurístico de planilhas Excel.
-*   **UI/UX:** Tailwind CSS com suporte a **Institutional Dark Mode** e layout de impressão otimizado para normas de engenharia (A4 Paisagem).
-
----
-
-## 📐 Decisões de Engenharia (Architect's Note)
-
-O sistema utiliza uma **Representação Flattened** no armazenamento para performance de escrita, mas reconstrói uma **Virtual Tree** em memória para todos os cálculos de rollup. Isso permite que a interface renderize milhares de itens com performance O(n) enquanto mantém a lógica de negócio complexa isolada na camada de serviço (`treeService.ts`).
-
-### Estrutura de Pastas (Clean Architecture)
-*   `/services`: Single Source of Truth para lógica de negócio (EAP, Finanças, Excel).
-*   `/hooks`: Abstração de persistência e estados globais.
-*   `/utils`: Utilitários matemáticos e formatadores de locale.
-*   `/components`: UI Components atômicos e Views complexas.
+*   **Planilha EAP (WBS):** Gestão da Estrutura Analítica do Projeto, controle de quantidades contratuais e medições periódicas com congelamento de histórico.
+*   **Canteiro Ágil (Planejamento):** Cronograma de curto prazo, previsão de insumos críticos e gestão de marcos (milestones).
+*   **Fluxo Financeiro:** Gestão de despesas (materiais, mão de obra, administrativo), controle de pagamentos e fluxo de caixa da obra.
+*   **Diário de Obra Digital:** Registro diário de atividades, condições climáticas, fotos de progresso e ocorrências técnicas.
+*   **Estoque de Obra:** Controle de entradas e saídas no almoxarifado local, integrado às requisições do estoque central.
+*   **Contratos de Mão de Obra:** Gestão de contratos de empreitada ou diária, vinculados a itens da EAP e controle de pagamentos.
+*   **Checklist de Campo:** Verificação técnica de serviços executados para garantia de qualidade e liberação de medições.
+*   **Repositório de Documentos:** Armazenamento de projetos, ARTs, alvarás e outros ativos críticos da obra.
+*   **Quantitativos e Memória:** Detalhamento técnico de como os quantitativos foram calculados, servindo de base para auditorias.
 
 ---
 
-## 🚀 Deployment & Instalação
+## 🛠️ Tecnologias Utilizadas
 
-A aplicação foi desenhada para ser executada como um módulo ES6 nativo, eliminando a necessidade de builders complexos para prototipagem rápida, mas mantendo total compatibilidade com ambientes de CI/CD modernos.
-
-1.  Clone o repositório.
-2.  Inicie um servidor estático na raiz (ex: `npx serve .` ou Live Server).
-3.  Acesse `http://localhost:3000`.
-
-*Para produção, consulte o arquivo `deployment.md` para configurações de Docker e instâncias gerenciadas de banco de dados.*
+*   **Frontend:** React 18 com TypeScript.
+*   **Estilização:** Tailwind CSS para uma interface moderna, responsiva e com suporte a Dark Mode.
+*   **Animações:** Framer Motion para transições fluidas e modais imersivos.
+*   **Ícones:** Lucide React.
+*   **Estado:** Hook customizado `useProjectState` com persistência local e suporte a Undo/Redo.
+*   **Relatórios:** Sistema de impressão customizado para geração de PDFs técnicos (EAP, Financeiro, Planejamento).
 
 ---
-**Desenvolvido com rigor técnico para profissionais que não aceitam margem de erro.**
+
+## 🔒 Segurança e Dados
+
+*   **Offline-First:** O sistema opera primariamente no navegador, garantindo velocidade e disponibilidade.
+*   **Privacidade:** Não há armazenamento em nuvem de terceiros por padrão; os dados pertencem ao usuário e podem ser salvos via Centro de Backup.
+*   **Integridade:** Verificações de similaridade no cadastro de insumos e travas de segurança em medições encerradas.
+
+---
+
+## 🚀 Como Começar
+
+1.  **Configurações:** Defina o nome da sua empresa e preferências no menu de configurações.
+2.  **Fornecedores:** Cadastre seus parceiros principais para alimentar a inteligência de preços.
+3.  **Nova Obra:** Crie um projeto do zero ou importe de uma licitação.
+4.  **EAP:** Monte sua planilha de orçamento e comece a lançar as medições de progresso.
+
+---
+*ProMeasure v0.8 - Gestão de Engenharia de Alta Performance*
