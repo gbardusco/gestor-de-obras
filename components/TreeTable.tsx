@@ -131,17 +131,22 @@ export const TreeTable: React.FC<TreeTableProps> = ({
 
   const rootItems = data.filter(i => i.depth === 0);
 
-  // Correção de arredondamento acumulada de todos os nós raiz.
-  // Cada nó raiz já carrega a soma do erro de todos os seus descendentes.
-  // totalCorrigido = somaTruncada - roundingCorrection
+  // roundingCorrection compensa o desvio acumulado de truncate(unitPrice*qty)
+  // em relação ao valor exato — aplica-se SOMENTE ao contractTotal.
   const totalRoundingCorrection = financial.truncate(
     rootItems.reduce((acc, i) => acc + (i.roundingCorrection || 0), 0)
   );
 
-  const rawContract = financial.sum(rootItems.map(i => i.contractTotal));
-  const correctedContract = financial.truncate(rawContract - totalRoundingCorrection);
-  const totalContract = contractTotalOverride ?? correctedContract;
-  const totalCurrent = currentTotalOverride ?? financial.sum(rootItems.map(i => i.currentTotal));
+  const rawContract      = financial.sum(rootItems.map(i => i.contractTotal));
+  const rawAccumulated   = financial.sum(rootItems.map(i => i.accumulatedTotal));
+
+  const correctedContract    = financial.truncate(rawContract - totalRoundingCorrection);
+  const correctedAccumulated = financial.truncate(rawAccumulated - totalRoundingCorrection);
+
+  const totalContract    = contractTotalOverride ?? correctedContract;
+  const totalCurrent     = currentTotalOverride ?? financial.sum(rootItems.map(i => i.currentTotal));
+  // Saldo do rodapé sempre = contrato - acumulado (nunca soma de balanceTotals)
+  const totalBalance     = financial.truncate(totalContract - correctedAccumulated);
 
   return (
     <div className="flex flex-col gap-4">
@@ -451,7 +456,7 @@ export const TreeTable: React.FC<TreeTableProps> = ({
                   <>
                     <td className="p-4 border-r border-white/10"></td>
                     <td className="p-4 border-r border-white/10 text-right text-emerald-400 text-base tracking-tighter whitespace-nowrap">
-                      {financial.formatVisual(financial.truncate(financial.sum(rootItems.map(i => i.accumulatedTotal)) - totalRoundingCorrection), currencySymbol)}
+                      {financial.formatVisual(correctedAccumulated, currencySymbol)}
                     </td>
                     <td className="p-4 border-r border-white/10"></td>
                   </>
@@ -461,7 +466,7 @@ export const TreeTable: React.FC<TreeTableProps> = ({
                   <>
                     <td className="p-4 border-r border-white/10"></td>
                     <td className="p-4 border-r border-white/10 text-right text-rose-400 text-base tracking-tighter whitespace-nowrap">
-                      {financial.formatVisual(financial.truncate(financial.sum(rootItems.map(i => i.balanceTotal)) - totalRoundingCorrection), currencySymbol)}
+                      {financial.formatVisual(totalBalance, currencySymbol)}
                     </td>
                   </>
                 )}

@@ -141,28 +141,32 @@ export const treeService = {
     const tree = treeService.buildTree(items);
     const processed = tree.map((r, i) => treeService.processRecursive(r, '', i, bdi));
     
-    // Correção de arredondamento acumulada de todos os nós raiz
+    // roundingCorrection existe apenas para o contractTotal — compensa o erro
+    // acumulado de truncate(unitPrice * qty) vs o valor exato base*bdi*qty.
+    // NÃO aplicar no accumulated ou balance: esses já são calculados por
+    // subtração direta (contractTotal - accumulatedTotal), sem esse desvio.
     const totalRoundingCorrection = financial.truncate(
       processed.reduce((acc, n) => acc + (n.roundingCorrection || 0), 0)
     );
 
-    const rawTotals = {
-      contract: financial.truncate(financial.sum(processed.map(n => n.contractTotal || 0)) - totalRoundingCorrection),
-      current: financial.sum(processed.map(n => n.currentTotal || 0)),
-      accumulated: financial.truncate(financial.sum(processed.map(n => n.accumulatedTotal || 0)) - totalRoundingCorrection),
-      balance: financial.truncate(financial.sum(processed.map(n => n.balanceTotal || 0)) - totalRoundingCorrection),
-    };
+    const rawContract    = financial.sum(processed.map(n => n.contractTotal || 0));
+    const rawAccumulated = financial.sum(processed.map(n => n.accumulatedTotal || 0));
+    const rawCurrent     = financial.sum(processed.map(n => n.currentTotal || 0));
 
-    const contract = project?.contractTotalOverride ?? rawTotals.contract;
-    const current = project?.currentTotalOverride ?? rawTotals.current;
-    const balance = financial.truncate(contract - rawTotals.accumulated);
+    const correctedContract    = financial.truncate(rawContract - totalRoundingCorrection);
+    const correctedAccumulated = financial.truncate(rawAccumulated - totalRoundingCorrection);
+
+    const contract    = project?.contractTotalOverride ?? correctedContract;
+    const current     = project?.currentTotalOverride ?? rawCurrent;
+    // Saldo = contrato - acumulado (sempre por subtração direta, nunca soma de balanceTotals)
+    const balance     = financial.truncate(contract - correctedAccumulated);
 
     return {
       contract,
       current,
-      accumulated: rawTotals.accumulated,
+      accumulated: correctedAccumulated,
       balance,
-      progress: contract > 0 ? (rawTotals.accumulated / contract) * 100 : 0
+      progress: contract > 0 ? (correctedAccumulated / contract) * 100 : 0
     };
   },
 
