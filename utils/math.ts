@@ -1,4 +1,3 @@
-
 export const financial = {
   /**
    * Arredondamento financeiro padrão (2 casas decimais).
@@ -73,6 +72,31 @@ export const financial = {
   sum: (values: number[]): number => {
     const total = values.reduce((acc, val) => acc + (val || 0), 0);
     return financial.truncate(total);
+  },
+
+  /**
+   * Soma exata SEM truncagem — usada para calcular o valor real
+   * antes do arredondamento de cada item, permitindo medir o erro acumulado.
+   */
+  sumExact: (values: number[]): number => {
+    return values.reduce((acc, val) => acc + (val || 0), 0);
+  },
+
+  /**
+   * Calcula a correção de arredondamento acumulada de uma lista de itens.
+   * 
+   * Recebe os valores já truncados e os valores exatos correspondentes.
+   * Retorna a diferença: (soma dos truncados) - (soma dos exatos).
+   * 
+   * - Se > 0: a soma truncada está ACIMA do real → subtrair do total
+   * - Se < 0: a soma truncada está ABAIXO do real → adicionar ao total
+   * 
+   * No rodapé: totalCorrigido = somaTruncada - roundingCorrection
+   */
+  calcRoundingCorrection: (truncatedValues: number[], exactValues: number[]): number => {
+    const sumTrunc = financial.sum(truncatedValues);
+    const sumExact = financial.sumExact(exactValues);
+    return financial.truncate(sumTrunc - sumExact);
   },
 
   /**

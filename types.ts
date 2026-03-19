@@ -1,4 +1,3 @@
-
 export type ItemType = 'category' | 'item';
 
 export interface WorkItem {
@@ -36,6 +35,10 @@ export interface WorkItem {
   // Saldo
   balanceQuantity: number;
   balanceTotal: number;
+
+  // Correção de arredondamento: diferença acumulada entre soma exata e soma truncada
+  // Negativo = soma truncada está acima do valor real (mais comum com truncate)
+  roundingCorrection?: number;
 
   children?: WorkItem[];
 }

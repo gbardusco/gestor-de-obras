@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { WorkItem } from '../types';
 import { financial } from '../utils/math';
@@ -131,7 +130,17 @@ export const TreeTable: React.FC<TreeTableProps> = ({
   };
 
   const rootItems = data.filter(i => i.depth === 0);
-  const totalContract = contractTotalOverride ?? financial.sum(rootItems.map(i => i.contractTotal));
+
+  // Correção de arredondamento acumulada de todos os nós raiz.
+  // Cada nó raiz já carrega a soma do erro de todos os seus descendentes.
+  // totalCorrigido = somaTruncada - roundingCorrection
+  const totalRoundingCorrection = financial.truncate(
+    rootItems.reduce((acc, i) => acc + (i.roundingCorrection || 0), 0)
+  );
+
+  const rawContract = financial.sum(rootItems.map(i => i.contractTotal));
+  const correctedContract = financial.truncate(rawContract - totalRoundingCorrection);
+  const totalContract = contractTotalOverride ?? correctedContract;
   const totalCurrent = currentTotalOverride ?? financial.sum(rootItems.map(i => i.currentTotal));
 
   return (
@@ -442,7 +451,7 @@ export const TreeTable: React.FC<TreeTableProps> = ({
                   <>
                     <td className="p-4 border-r border-white/10"></td>
                     <td className="p-4 border-r border-white/10 text-right text-emerald-400 text-base tracking-tighter whitespace-nowrap">
-                      {financial.formatVisual(financial.sum(rootItems.map(i => i.accumulatedTotal)), currencySymbol)}
+                      {financial.formatVisual(financial.truncate(financial.sum(rootItems.map(i => i.accumulatedTotal)) - totalRoundingCorrection), currencySymbol)}
                     </td>
                     <td className="p-4 border-r border-white/10"></td>
                   </>
@@ -452,7 +461,7 @@ export const TreeTable: React.FC<TreeTableProps> = ({
                   <>
                     <td className="p-4 border-r border-white/10"></td>
                     <td className="p-4 border-r border-white/10 text-right text-rose-400 text-base tracking-tighter whitespace-nowrap">
-                      {financial.formatVisual(financial.sum(rootItems.map(i => i.balanceTotal)), currencySymbol)}
+                      {financial.formatVisual(financial.truncate(financial.sum(rootItems.map(i => i.balanceTotal)) - totalRoundingCorrection), currencySymbol)}
                     </td>
                   </>
                 )}
