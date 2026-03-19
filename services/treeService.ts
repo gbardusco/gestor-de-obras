@@ -41,52 +41,32 @@ export const treeService = {
           treeService.processRecursive(child, wbs, idx, projectBdi)
         );
         
-        node.contractTotal = financial.sum(node.children.map(c => c.contractTotal || 0));
-        node.previousTotal = financial.sum(node.children.map(c => c.previousTotal || 0));
-        node.currentTotal = financial.sum(node.children.map(c => c.currentTotal || 0));
+        node.contractTotal    = financial.sum(node.children.map(c => c.contractTotal || 0));
+        node.previousTotal    = financial.sum(node.children.map(c => c.previousTotal || 0));
+        node.currentTotal     = financial.sum(node.children.map(c => c.currentTotal || 0));
         node.accumulatedTotal = financial.sum(node.children.map(c => c.accumulatedTotal || 0));
-        node.balanceTotal = financial.sum(node.children.map(c => c.balanceTotal || 0));
-
-        // Acumula a correção de arredondamento de todos os filhos
-        // para que o nó raiz exponha o erro total da planilha.
-        node.roundingCorrection = financial.truncate(
-          node.children.reduce((acc, c) => acc + (c.roundingCorrection || 0), 0)
-        );
+        node.balanceTotal     = financial.sum(node.children.map(c => c.balanceTotal || 0));
         
         node.accumulatedPercentage = node.contractTotal > 0 
           ? financial.round((node.accumulatedTotal / node.contractTotal) * 100) 
           : 0;
       } else {
         node.contractTotal = node.currentTotal = node.accumulatedTotal = node.balanceTotal = node.accumulatedPercentage = 0;
-        node.roundingCorrection = 0;
       }
     } else {
       const bdiFactor = 1 + (projectBdi / 100);
-      // Fallback para unitPrice se unitPriceNoBdi estiver ausente
       const basePrice = node.unitPriceNoBdi !== undefined ? node.unitPriceNoBdi : (node.unitPrice || 0);
-
-      // Valor exato do preço unitário ANTES do truncate
-      const exactUnitPrice = basePrice * bdiFactor;
-      node.unitPrice = financial.truncate(exactUnitPrice);
-
-      // Valor exato do total contratual ANTES do truncate
-      const exactContractTotal = exactUnitPrice * (node.contractQuantity || 0);
+      node.unitPrice     = financial.truncate(basePrice * bdiFactor);
       node.contractTotal = financial.truncate(node.unitPrice * (node.contractQuantity || 0));
-
-      // Erro de arredondamento deste item: truncado - exato
-      // Positivo = truncado está acima do real → rodapé deve subtrair
-      node.roundingCorrection = financial.truncate(node.contractTotal - exactContractTotal);
       
       node.previousTotal = financial.truncate((node.previousQuantity || 0) * node.unitPrice);
-      node.currentTotal = financial.truncate((node.currentQuantity || 0) * node.unitPrice);
+      node.currentTotal  = financial.truncate((node.currentQuantity || 0) * node.unitPrice);
       
       node.accumulatedQuantity = financial.round((node.previousQuantity || 0) + (node.currentQuantity || 0));
-      node.accumulatedTotal = financial.truncate(node.accumulatedQuantity * node.unitPrice);
+      node.accumulatedTotal    = financial.truncate(node.accumulatedQuantity * node.unitPrice);
       
       node.balanceQuantity = financial.round((node.contractQuantity || 0) - node.accumulatedQuantity);
-      // Saldo financeiro = contrato - acumulado (subtração direta dos totais já calculados).
-      // NÃO usar balanceQty * unitPrice: o round() na quantidade introduz erro que
-      // se amplifica ao multiplicar pelo preço, causando divergência visível no rodapé.
+      // Saldo = contrato - acumulado (subtração direta evita erro de round na quantidade)
       node.balanceTotal = financial.truncate(node.contractTotal - node.accumulatedTotal);
       
       node.currentPercentage = (node.contractQuantity || 0) > 0 
@@ -103,18 +83,17 @@ export const treeService = {
     return items.map(item => {
       if (item.type === 'category') return item;
       const bdiFactor = 1 + (bdi / 100);
-      const newUnitPrice = financial.truncate((item.unitPriceNoBdi || 0) * bdiFactor);
-      const contractTotal = financial.truncate(newUnitPrice * (item.contractQuantity || 0));
+      const newUnitPrice    = financial.truncate((item.unitPriceNoBdi || 0) * bdiFactor);
+      const contractTotal   = financial.truncate(newUnitPrice * (item.contractQuantity || 0));
       const accumulatedTotal = financial.truncate(((item.previousQuantity || 0) + (item.currentQuantity || 0)) * newUnitPrice);
       return {
         ...item,
         unitPrice: newUnitPrice,
         contractTotal,
-        previousTotal: financial.truncate((item.previousQuantity || 0) * newUnitPrice),
-        currentTotal: financial.truncate((item.currentQuantity || 0) * newUnitPrice),
+        previousTotal:    financial.truncate((item.previousQuantity || 0) * newUnitPrice),
+        currentTotal:     financial.truncate((item.currentQuantity || 0) * newUnitPrice),
         accumulatedTotal,
-        // Saldo = contrato - acumulado (subtração direta, sem passar por balanceQty)
-        balanceTotal: financial.truncate(contractTotal - accumulatedTotal)
+        balanceTotal:     financial.truncate(contractTotal - accumulatedTotal),
       };
     });
   },
@@ -141,32 +120,22 @@ export const treeService = {
     const tree = treeService.buildTree(items);
     const processed = tree.map((r, i) => treeService.processRecursive(r, '', i, bdi));
     
-    // roundingCorrection existe apenas para o contractTotal — compensa o erro
-    // acumulado de truncate(unitPrice * qty) vs o valor exato base*bdi*qty.
-    // NÃO aplicar no accumulated ou balance: esses já são calculados por
-    // subtração direta (contractTotal - accumulatedTotal), sem esse desvio.
-    const totalRoundingCorrection = financial.truncate(
-      processed.reduce((acc, n) => acc + (n.roundingCorrection || 0), 0)
-    );
-
     const rawContract    = financial.sum(processed.map(n => n.contractTotal || 0));
     const rawAccumulated = financial.sum(processed.map(n => n.accumulatedTotal || 0));
     const rawCurrent     = financial.sum(processed.map(n => n.currentTotal || 0));
 
-    const correctedContract    = financial.truncate(rawContract - totalRoundingCorrection);
-    const correctedAccumulated = financial.truncate(rawAccumulated - totalRoundingCorrection);
-
-    const contract    = project?.contractTotalOverride ?? correctedContract;
-    const current     = project?.currentTotalOverride ?? rawCurrent;
-    // Saldo = contrato - acumulado (sempre por subtração direta, nunca soma de balanceTotals)
-    const balance     = financial.truncate(contract - correctedAccumulated);
+    const contract    = project?.contractTotalOverride ?? rawContract;
+    const current     = project?.currentTotalOverride  ?? rawCurrent;
+    const accumulated = rawAccumulated;
+    // Saldo sempre por subtração direta: contrato - acumulado
+    const balance     = financial.truncate(contract - accumulated);
 
     return {
       contract,
       current,
-      accumulated: correctedAccumulated,
+      accumulated,
       balance,
-      progress: contract > 0 ? (correctedAccumulated / contract) * 100 : 0
+      progress: contract > 0 ? (accumulated / contract) * 100 : 0,
     };
   },
 

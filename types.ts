@@ -36,10 +36,6 @@ export interface WorkItem {
   balanceQuantity: number;
   balanceTotal: number;
 
-  // Correção de arredondamento: diferença acumulada entre soma exata e soma truncada
-  // Negativo = soma truncada está acima do valor real (mais comum com truncate)
-  roundingCorrection?: number;
-
   children?: WorkItem[];
 }
 

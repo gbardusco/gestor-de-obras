@@ -131,22 +131,14 @@ export const TreeTable: React.FC<TreeTableProps> = ({
 
   const rootItems = data.filter(i => i.depth === 0);
 
-  // roundingCorrection compensa o desvio acumulado de truncate(unitPrice*qty)
-  // em relação ao valor exato — aplica-se SOMENTE ao contractTotal.
-  const totalRoundingCorrection = financial.truncate(
-    rootItems.reduce((acc, i) => acc + (i.roundingCorrection || 0), 0)
-  );
+  const rawContract    = financial.sum(rootItems.map(i => i.contractTotal));
+  const rawAccumulated = financial.sum(rootItems.map(i => i.accumulatedTotal));
 
-  const rawContract      = financial.sum(rootItems.map(i => i.contractTotal));
-  const rawAccumulated   = financial.sum(rootItems.map(i => i.accumulatedTotal));
-
-  const correctedContract    = financial.truncate(rawContract - totalRoundingCorrection);
-  const correctedAccumulated = financial.truncate(rawAccumulated - totalRoundingCorrection);
-
-  const totalContract    = contractTotalOverride ?? correctedContract;
-  const totalCurrent     = currentTotalOverride ?? financial.sum(rootItems.map(i => i.currentTotal));
-  // Saldo do rodapé sempre = contrato - acumulado (nunca soma de balanceTotals)
-  const totalBalance     = financial.truncate(totalContract - correctedAccumulated);
+  const totalContract    = contractTotalOverride ?? rawContract;
+  const totalCurrent     = currentTotalOverride  ?? financial.sum(rootItems.map(i => i.currentTotal));
+  const totalAccumulated = rawAccumulated;
+  // Saldo do rodapé = contrato - acumulado (nunca soma de balanceTotals individuais)
+  const totalBalance     = financial.truncate(totalContract - totalAccumulated);
 
   return (
     <div className="flex flex-col gap-4">
@@ -456,7 +448,7 @@ export const TreeTable: React.FC<TreeTableProps> = ({
                   <>
                     <td className="p-4 border-r border-white/10"></td>
                     <td className="p-4 border-r border-white/10 text-right text-emerald-400 text-base tracking-tighter whitespace-nowrap">
-                      {financial.formatVisual(correctedAccumulated, currencySymbol)}
+                      {financial.formatVisual(totalAccumulated, currencySymbol)}
                     </td>
                     <td className="p-4 border-r border-white/10"></td>
                   </>

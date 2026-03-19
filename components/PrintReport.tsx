@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Project, WorkItem, ProjectExpense, DEFAULT_THEME } from '../types';
 import { financial } from '../utils/math';
@@ -34,7 +33,13 @@ export const PrintReport: React.FC<PrintReportProps> = ({ project, companyName, 
   const finalStats = {
     ...stats,
     contract: project.contractTotalOverride ?? stats.contract,
-    current: project.currentTotalOverride ?? stats.current,
+    current:  project.currentTotalOverride  ?? stats.current,
+    // Saldo sempre por subtração direta
+    balance:  financial.truncate(
+      (project.contractTotalOverride ?? stats.contract) - stats.accumulated
+    ),
+    // Anterior = acumulado - período atual (derivado, evita centavo de diferença)
+    previous: financial.truncate(stats.accumulated - (project.currentTotalOverride ?? stats.current)),
   };
 
   const dynamicStyles = `
@@ -277,7 +282,7 @@ export const PrintReport: React.FC<PrintReportProps> = ({ project, companyName, 
               <td colSpan={8} className="p-2 pr-4 text-right">TOTAIS CONSOLIDADOS</td>
               <td className="text-right">{financial.formatVisual(finalStats.contract, currencySymbol)}</td>
               <td></td>
-              <td className="text-right">{financial.formatVisual(finalStats.accumulated - finalStats.current, currencySymbol)}</td>
+              <td className="text-right">{financial.formatVisual(finalStats.previous, currencySymbol)}</td>
               <td className="bg-medi-period"></td>
               <td className="text-right bg-medi-period" style={{ color: theme.accentText }}>{financial.formatVisual(finalStats.current, currencySymbol)}</td>
               <td></td>
