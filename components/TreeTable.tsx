@@ -130,15 +130,8 @@ export const TreeTable: React.FC<TreeTableProps> = ({
   };
 
   const rootItems = data.filter(i => i.depth === 0);
-
-  const rawContract    = financial.sum(rootItems.map(i => i.contractTotal));
-  const rawAccumulated = financial.sum(rootItems.map(i => i.accumulatedTotal));
-
-  const totalContract    = contractTotalOverride ?? rawContract;
-  const totalCurrent     = currentTotalOverride  ?? financial.sum(rootItems.map(i => i.currentTotal));
-  const totalAccumulated = rawAccumulated;
-  // Saldo do rodapé = contrato - acumulado (nunca soma de balanceTotals individuais)
-  const totalBalance     = financial.truncate(totalContract - totalAccumulated);
+  const totalContract = contractTotalOverride ?? financial.sum(rootItems.map(i => i.contractTotal));
+  const totalCurrent = currentTotalOverride ?? financial.sum(rootItems.map(i => i.currentTotal));
 
   return (
     <div className="flex flex-col gap-4">
@@ -448,7 +441,7 @@ export const TreeTable: React.FC<TreeTableProps> = ({
                   <>
                     <td className="p-4 border-r border-white/10"></td>
                     <td className="p-4 border-r border-white/10 text-right text-emerald-400 text-base tracking-tighter whitespace-nowrap">
-                      {financial.formatVisual(totalAccumulated, currencySymbol)}
+                      {financial.formatVisual(financial.sum(rootItems.map(i => i.accumulatedTotal)), currencySymbol)}
                     </td>
                     <td className="p-4 border-r border-white/10"></td>
                   </>
@@ -458,7 +451,7 @@ export const TreeTable: React.FC<TreeTableProps> = ({
                   <>
                     <td className="p-4 border-r border-white/10"></td>
                     <td className="p-4 border-r border-white/10 text-right text-rose-400 text-base tracking-tighter whitespace-nowrap">
-                      {financial.formatVisual(totalBalance, currencySymbol)}
+                      {financial.formatVisual(financial.sum(rootItems.map(i => i.balanceTotal)), currencySymbol)}
                     </td>
                   </>
                 )}
